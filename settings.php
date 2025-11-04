@@ -57,7 +57,11 @@ if ($hassiteconfig) {
         new lang_string('ratelimits_heading_desc', 'aiprovider_datacurso')
     ));
 
-    foreach (\aiprovider_datacurso\provider::get_services() as $service) {
+    $services = \aiprovider_datacurso\provider::get_services();
+
+    // Order services by name.
+    \core_collator::asort_array_of_arrays_by_key($services, 'name');
+    foreach ($services as $service) {
         $sid = $service['id'];
         $sname = $service['name'];
 
