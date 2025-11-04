@@ -24,6 +24,43 @@ namespace aiprovider_datacurso\local;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class ratelimiter {
+
+    /**
+     * Determine if the given user is allowed to use a service.
+     *
+     * This checks, in order:
+     * - Empty service id: allow.
+     * - Site administrators: always allow.
+     * - If user restriction for the service is disabled: allow.
+     * - Otherwise, only allow users listed in the configured allowed users list for the service.
+     *
+     * @param string $serviceid Service identifier such as 'local_coursegen'.
+     * @param int $userid Moodle user id.
+     * @return bool True if the user is allowed to access the service, false otherwise.
+     */
+    public function is_user_allowed(string $serviceid, int $userid): bool {
+        if (empty($serviceid)) {
+            return true;
+        }
+
+        if (is_siteadmin($userid)) {
+            return true;
+        }
+
+        if (!$this->is_user_restriction_enabled($serviceid)) {
+            return true;
+        }
+
+        $settings = get_config('aiprovider_datacurso');
+
+        $coursecreators = explode(',', $settings->ratelimit_local_coursegen_coursecreators);
+        if (empty($coursecreators)) {
+            return true;
+        }
+
+        return in_array($userid, $coursecreators);
+    }
+
     /**
      * Cached pre-check using only DB data. No remote calls. No writes.
      *
@@ -162,6 +199,17 @@ class ratelimiter {
      */
     private function is_rate_limit_enabled(string $serviceid): bool {
         $value = get_config('aiprovider_datacurso', "ratelimit_{$serviceid}_enable");
+        return (int)$value === 1;
+    }
+
+    /**
+     * Determine whether the user restriction is enabled for the service.
+     *
+     * @param string $serviceid Service identifier such as 'local_coursegen'.
+     * @return bool True when the user restriction is enabled, false otherwise.
+     */
+    private function is_user_restriction_enabled(string $serviceid): bool {
+        $value = get_config('aiprovider_datacurso', "ratelimit_{$serviceid}_allowedusers_enable");
         return (int)$value === 1;
     }
 

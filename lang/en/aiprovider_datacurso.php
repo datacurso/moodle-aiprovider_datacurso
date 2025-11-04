@@ -120,6 +120,7 @@ $string['nodata'] = 'No information found';
 $string['not_assigned'] = 'Not assigned';
 $string['not_configured'] = 'Not configured';
 $string['not_created'] = 'Not created';
+$string['notallowed'] = 'You are not allowed to perform this action. Please contact your administrator for more information.';
 $string['notenoughtokens'] = 'Insufficient AI credits. Please visit <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Manage Credits</a> in the Datacurso Shop to allocate or purchase more credits. Or contact your administrator.';
 $string['of'] = 'of';
 $string['orgid'] = 'Organization ID';

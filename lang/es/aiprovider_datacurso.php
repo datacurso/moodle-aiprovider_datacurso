@@ -117,6 +117,7 @@ $string['nodata'] = 'No se encontró información';
 $string['not_assigned'] = 'No asignado';
 $string['not_configured'] = 'No configurado';
 $string['not_created'] = 'No creado';
+$string['notallowed'] = 'No tiene permiso para realizar esta acción. Por favor, contacte a su administrador para más información.';
 $string['notenoughtokens'] = 'Créditos de IA insuficientes. Por favor, visite <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Gestionar Créditos</a> en la Tienda Datacurso para asignar o comprar más créditos. O contacte a su administrador.';
 $string['of'] = 'de';
 $string['orgid'] = 'ID de organización';

@@ -121,6 +121,12 @@ class datacurso_api_base {
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
         $userid = (int)($payload['userid'] ?? $USER->id);
         $ratelimiter = new \aiprovider_datacurso\local\ratelimiter();
+
+        // Validate if user is allowed to make this request.
+        if (!$ratelimiter->is_user_allowed($serviceid, $userid)) {
+            throw new \moodle_exception('notallowed', 'aiprovider_datacurso');
+        }
+
         if (!$ratelimiter->precheck($serviceid, $userid)) {
             $remaining = $ratelimiter->get_time_until_next_window((string)$serviceid, (int)$userid);
             $retrytimestamp = time() + max(0, (int)$remaining);
