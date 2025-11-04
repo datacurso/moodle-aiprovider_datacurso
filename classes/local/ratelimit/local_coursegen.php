@@ -51,18 +51,30 @@ class local_coursegen extends ratelimit_settings {
         );
         $settings->add($allowedusersenable);
 
-        $coursecreators = $this->create_user_setting(
+        $attributes = $this->get_autocomplete_attributes();
+        $choices = $this->get_user_choices([
+            'moodle/course:create',
+            'local/coursegen:createcoursewithai',
+        ]);
+
+        $coursecreators = new autocomplete(
             "{$configprefix}_coursecreators",
-            'ratelimit_local_coursegen_coursecreators',
-            'ratelimit_local_coursegen_coursecreators_desc'
+            new \lang_string('ratelimit_local_coursegen_coursecreators', self::PLUGIN),
+            new \lang_string('ratelimit_local_coursegen_coursecreators_desc', self::PLUGIN),
+            [],
+            $choices,
+            $attributes
         );
         $settings->add($coursecreators);
         $settings->hide_if("{$configprefix}_coursecreators", "{$configprefix}_allowedusers_enable", 'eq', 0);
 
-        $activitycreators = $this->create_user_setting(
+        $activitycreators = new autocomplete(
             "{$configprefix}_activitycreators",
-            'ratelimit_local_coursegen_activitycreators',
-            'ratelimit_local_coursegen_activitycreators_desc'
+            new \lang_string('ratelimit_local_coursegen_activitycreators', self::PLUGIN),
+            new \lang_string('ratelimit_local_coursegen_activitycreators_desc', self::PLUGIN),
+            [],
+            $choices,
+            $attributes
         );
         $settings->add($activitycreators);
         $settings->hide_if("{$configprefix}_activitycreators", "{$configprefix}_allowedusers_enable", 'eq', 0);

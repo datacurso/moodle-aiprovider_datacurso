@@ -83,4 +83,19 @@ abstract class ratelimit_settings {
 
         return $choices;
     }
+
+    /**
+     * Get the autocomplete attributes for the user selection.
+     *
+     * @return array
+     */
+    protected static function get_autocomplete_attributes(): array {
+        return [
+            'ajax' => 'core_user/form_user_selector',
+            'multiple' => true,
+            'showsuggestions' => true,
+            'placeholder' => get_string('search'),
+            'noselectionstring' => get_string('noselection', 'form'),
+        ];
+    }
 }
