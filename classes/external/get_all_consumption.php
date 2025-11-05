@@ -73,7 +73,7 @@ class get_all_consumption extends external_api {
 
         $context = \context_system::instance();
         self::validate_context($context);
-        require_capability('aiprovider_datacurso/datacurso:viewreports', $context);
+        require_capability('aiprovider/datacurso:viewreports', $context);
 
         $client = new datacurso_api();
 

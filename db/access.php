@@ -26,16 +26,8 @@ defined('MOODLE_INTERNAL') || die();
 
 $capabilities = [
     // Capability to view AI usage reports and statistics.
-    'aiprovider_datacurso/datacurso:viewreports' => [
+    'aiprovider/datacurso:viewreports' => [
         'captype' => 'read',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'archetypes' => [
-            'manager' => CAP_ALLOW,
-        ],
-    ],
-    // Capability to manage AI provider settings and configuration.
-    'aiprovider_datacurso/datacurso:manage' => [
-        'captype' => 'write',
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => [
             'manager' => CAP_ALLOW,

@@ -34,7 +34,7 @@ require('../../../../config.php');
 // Ensure the user is logged in and has permission to access this page.
 $context = context_system::instance();
 require_login();
-require_capability('aiprovider_datacurso/datacurso:viewreports', $context);
+require_capability('aiprovider/datacurso:viewreports', $context);
 
 // Set up page context and layout.
 $PAGE->set_context($context);

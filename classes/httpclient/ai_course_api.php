@@ -32,7 +32,8 @@ class ai_course_api extends datacurso_api_base {
      * @param string|null $licensekey The license key obtained from Datacurso SHOP.
      */
     public function __construct(?string $licensekey = null) {
-        parent::__construct('https://course-ai.datacurso.com', $licensekey);
+        // parent::__construct('https://course-ai.datacurso.com', $licensekey);
+        parent::__construct('http://langgraph-server:8000', $licensekey);
     }
 
     /**
@@ -43,7 +44,8 @@ class ai_course_api extends datacurso_api_base {
      */
     public function get_streaming_url_for_session(string $sessionid): string {
         // Build streaming URL with session ID.
-        $baseurl = rtrim($this->baseurl, '/');
+        // $baseurl = rtrim($this->baseurl, '/');
+        $baseurl = 'http://localhost:8000';
         return $baseurl . '/course/stream?session_id=' . urlencode($sessionid);
     }
 
@@ -55,7 +57,8 @@ class ai_course_api extends datacurso_api_base {
      */
     public function get_mod_streaming_url_for_job(string $jobid): string {
         // Build streaming URL with job ID.
-        $baseurl = rtrim($this->baseurl, '/');
+        // $baseurl = rtrim($this->baseurl, '/');
+        $baseurl = 'http://localhost:8000';
         return $baseurl . '/resources/create-mod/stream?job_id=' . urlencode($jobid);
     }
 }

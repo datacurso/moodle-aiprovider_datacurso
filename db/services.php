@@ -35,7 +35,7 @@ $functions = [
         'description' => 'Gets the current credit balance from the external API',
         'type'        => 'read',
         'ajax'        => true,
-        'capabilities' => 'aiprovider_datacurso/datacurso:viewreports',
+        'capabilities' => 'aiprovider/datacurso:viewreports',
 
     ],
     'aiprovider_datacurso_get_consumption_history' => [
@@ -45,7 +45,7 @@ $functions = [
         'description' => 'Gets the token consumption history from the external API',
         'type'        => 'read',
         'ajax'        => true,
-        'capabilities' => 'aiprovider_datacurso/datacurso:viewreports',
+        'capabilities' => 'aiprovider/datacurso:viewreports',
     ],
     'aiprovider_datacurso_get_all_consumption' => [
         'classname'   => 'aiprovider_datacurso\external\get_all_consumption',
@@ -54,7 +54,7 @@ $functions = [
         'description' => 'Gets the complete history of token consumption from the external API',
         'type'        => 'read',
         'ajax'        => true,
-        'capabilities' => 'aiprovider_datacurso/datacurso:viewreports',
+        'capabilities' => 'aiprovider/datacurso:viewreports',
     ],
     'aiprovider_datacurso_webservice_setup' => [
         'classname'   => 'aiprovider_datacurso\\external\\webservice_config_api',
@@ -90,7 +90,7 @@ $functions = [
         'description' => 'Get the list of available AI services for filtering.',
         'type'        => 'read',
         'ajax'        => true,
-        'capabilities' => 'aiprovider_datacurso/datacurso:viewreports',
+        'capabilities' => 'aiprovider/datacurso:viewreports',
     ],
     'aiprovider_datacurso_get_actions' => [
         'classname'   => 'aiprovider_datacurso\external\get_actions',
@@ -99,7 +99,7 @@ $functions = [
         'description' => 'Get the list of available AI actions.',
         'type'        => 'read',
         'ajax'        => true,
-        'capabilities' => 'aiprovider_datacurso/datacurso:viewreports',
+        'capabilities' => 'aiprovider/datacurso:viewreports',
 
     ],
 ];
