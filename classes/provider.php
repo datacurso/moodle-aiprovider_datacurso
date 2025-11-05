@@ -25,8 +25,8 @@ use core_ai\aiactions;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider extends \core_ai\provider {
-    /** @var string License key for Datacurso API. */
-    private string $licensekey;
+    /** @var mixed License key for Datacurso API. */
+    private mixed $licensekey;
 
     /**
      * Builder.

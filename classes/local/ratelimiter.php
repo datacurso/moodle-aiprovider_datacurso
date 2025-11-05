@@ -52,8 +52,9 @@ class ratelimiter {
         }
 
         $settings = get_config('aiprovider_datacurso');
+        $coursecreators = $settings->ratelimit_local_coursegen_coursecreators ?? '';
 
-        $coursecreators = explode(',', $settings->ratelimit_local_coursegen_coursecreators);
+        $coursecreators = explode(',', $coursecreators);
         if (empty($coursecreators)) {
             return true;
         }
