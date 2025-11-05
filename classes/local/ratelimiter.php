@@ -87,7 +87,7 @@ class ratelimiter {
 
         // Read-only fetch of existing record. Do not create on precheck.
         global $DB;
-        $record = $DB->get_record('aiprovider_datacurso_rl', [
+        $record = $DB->get_record('aiprovider_datacurso_rlimit', [
             'userid' => $userid,
             'serviceid' => $serviceid,
         ]);
@@ -276,7 +276,7 @@ class ratelimiter {
     private function load_usage_record(int $userid, string $serviceid, int $windowstart): \stdClass {
         global $DB;
 
-        $record = $DB->get_record('aiprovider_datacurso_rl', [
+        $record = $DB->get_record('aiprovider_datacurso_rlimit', [
             'userid' => $userid,
             'serviceid' => $serviceid,
         ]);
@@ -286,7 +286,7 @@ class ratelimiter {
         }
 
         $record = $this->create_usage_record($userid, $serviceid, $windowstart);
-        $record->id = $DB->insert_record('aiprovider_datacurso_rl', $record);
+        $record->id = $DB->insert_record('aiprovider_datacurso_rlimit', $record);
 
         return $record;
     }
@@ -330,7 +330,7 @@ class ratelimiter {
         $record->lastsync = $now;
         $record->timemodified = $now;
 
-        $DB->update_record('aiprovider_datacurso_rl', $record);
+        $DB->update_record('aiprovider_datacurso_rlimit', $record);
     }
 
     /**
@@ -355,7 +355,7 @@ class ratelimiter {
         $currenttime = time();
 
         global $DB;
-        $record = $DB->get_record('aiprovider_datacurso_rl', [
+        $record = $DB->get_record('aiprovider_datacurso_rlimit', [
             'userid' => $userid,
             'serviceid' => $serviceid,
         ]);

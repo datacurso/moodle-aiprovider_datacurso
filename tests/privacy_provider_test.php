@@ -108,7 +108,7 @@ final class privacy_provider_test extends provider_testcase {
 
         $data = $writer->get_data([
             get_string('privacy:metadata:aiprovider_datacurso', 'aiprovider_datacurso'),
-            get_string('privacy:metadata:aiprovider_datacurso_rl', 'aiprovider_datacurso'),
+            get_string('privacy:metadata:aiprovider_datacurso_rlimit', 'aiprovider_datacurso'),
         ]);
 
         // Compare expected fields (cast scalar for consistency).
@@ -137,13 +137,13 @@ final class privacy_provider_test extends provider_testcase {
         $user2 = $this->getDataGenerator()->create_user();
         $rec2 = $this->create_usage_record($user2->id, 'local_coursegen');
 
-        $this->assertCount(1, $DB->get_records('aiprovider_datacurso_rl', ['userid' => $user1->id]));
-        $this->assertCount(1, $DB->get_records('aiprovider_datacurso_rl', ['userid' => $user2->id]));
+        $this->assertCount(1, $DB->get_records('aiprovider_datacurso_rlimit', ['userid' => $user1->id]));
+        $this->assertCount(1, $DB->get_records('aiprovider_datacurso_rlimit', ['userid' => $user2->id]));
 
         provider::delete_data_for_all_users_in_context($user1ctx);
 
-        $this->assertCount(0, $DB->get_records('aiprovider_datacurso_rl', ['userid' => $user1->id]));
-        $this->assertCount(1, $DB->get_records('aiprovider_datacurso_rl', ['userid' => $user2->id]));
+        $this->assertCount(0, $DB->get_records('aiprovider_datacurso_rlimit', ['userid' => $user1->id]));
+        $this->assertCount(1, $DB->get_records('aiprovider_datacurso_rlimit', ['userid' => $user2->id]));
     }
 
     /**
@@ -161,14 +161,14 @@ final class privacy_provider_test extends provider_testcase {
         $user2 = $this->getDataGenerator()->create_user();
         $rec2 = $this->create_usage_record($user2->id, 'local_coursegen');
 
-        $this->assertCount(1, $DB->get_records('aiprovider_datacurso_rl', ['userid' => $user1->id]));
-        $this->assertCount(1, $DB->get_records('aiprovider_datacurso_rl', ['userid' => $user2->id]));
+        $this->assertCount(1, $DB->get_records('aiprovider_datacurso_rlimit', ['userid' => $user1->id]));
+        $this->assertCount(1, $DB->get_records('aiprovider_datacurso_rlimit', ['userid' => $user2->id]));
 
         $approved = new approved_contextlist($user1, 'aiprovider_datacurso', [$user1ctx->id]);
         provider::delete_data_for_user($approved);
 
-        $this->assertCount(0, $DB->get_records('aiprovider_datacurso_rl', ['userid' => $user1->id]));
-        $this->assertCount(1, $DB->get_records('aiprovider_datacurso_rl', ['userid' => $user2->id]));
+        $this->assertCount(0, $DB->get_records('aiprovider_datacurso_rlimit', ['userid' => $user1->id]));
+        $this->assertCount(1, $DB->get_records('aiprovider_datacurso_rlimit', ['userid' => $user2->id]));
     }
 
     /**
@@ -216,7 +216,7 @@ final class privacy_provider_test extends provider_testcase {
     }
 
     /**
-     * Helper to create a usage record in aiprovider_datacurso_rl for a user.
+     * Helper to create a usage record in aiprovider_datacurso_rlimit for a user.
      *
      * @param int $userid
      * @param string $serviceid
@@ -234,7 +234,7 @@ final class privacy_provider_test extends provider_testcase {
             'timecreated' => $now,
             'timemodified' => $now,
         ];
-        $rec->id = $DB->insert_record('aiprovider_datacurso_rl', $rec);
+        $rec->id = $DB->insert_record('aiprovider_datacurso_rlimit', $rec);
         return $rec;
     }
 }

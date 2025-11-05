@@ -38,31 +38,34 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
     //
     // You will also have to create the db/install.xml file by using the XMLDB Editor.
     // Documentation for the XMLDB Editor can be found at {@link https://docs.moodle.org/dev/XMLDB_editor}.
+    if ($oldversion < 2025110500) {
 
-    if ($oldversion < 2025103002) {
-        // Define table aiprovider_datacurso_rl to be created.
-        $table = new xmldb_table('aiprovider_datacurso_rl');
+        // Define table aiprovider_datacurso_rlimit to be created.
+        $table = new xmldb_table('aiprovider_datacurso_rlimit');
 
-        // Adding fields to table aiprovider_datacurso_rl.
+        // Adding fields to table aiprovider_datacurso_rlimit.
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
         $table->add_field('serviceid', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('windowstart', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
-        $table->add_field('tokensused', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
-        $table->add_field('lastsync', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('windowstart', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('tokensused', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('lastsync', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('usermodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
         $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
         $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
 
-        // Adding keys to table aiprovider_datacurso_rl.
+        // Adding keys to table aiprovider_datacurso_rlimit.
         $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('usermodified', XMLDB_KEY_FOREIGN, ['usermodified'], 'user', ['id']);
+        $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
 
-        // Conditionally launch create table for aiprovider_datacurso_rl.
+        // Conditionally launch create table for aiprovider_datacurso_rlimit.
         if (!$dbman->table_exists($table)) {
             $dbman->create_table($table);
         }
 
         // Datacurso savepoint reached.
-        upgrade_plugin_savepoint(true, 2025103002, 'aiprovider', 'datacurso');
+        upgrade_plugin_savepoint(true, 2025110500, 'aiprovider', 'datacurso');
     }
     return true;
 }
