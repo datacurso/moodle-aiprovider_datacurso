@@ -41,6 +41,7 @@ abstract class ratelimit_settings {
     /**
      * Retrieve the list of selectable users for the autocomplete control.
      *
+     * @param array $capabilities Capability names users must have to be selectable.
      * @return array<string,string>
      */
     protected static function get_user_choices(array $capabilities): array {
