@@ -24,7 +24,6 @@ namespace aiprovider_datacurso\local;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class ratelimiter {
-
     /**
      * Determine if the given user is allowed to use a service.
      *

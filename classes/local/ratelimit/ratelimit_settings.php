@@ -46,7 +46,7 @@ abstract class ratelimit_settings {
     protected static function get_user_choices(array $capabilities): array {
         global $DB;
 
-        list($insql, $params) = $DB->get_in_or_equal($capabilities, SQL_PARAMS_NAMED);
+        [$insql, $params] = $DB->get_in_or_equal($capabilities, SQL_PARAMS_NAMED);
 
         $params['deleted'] = 0;
         $params['suspended'] = 0;
