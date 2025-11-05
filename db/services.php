@@ -63,7 +63,7 @@ $functions = [
         'description' => 'Run automatic setup: enable WS, user/role, service, token',
         'type'        => 'write',
         'ajax'        => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'aiprovider/datacurso:configurews',
     ],
     'aiprovider_datacurso_webservice_regenerate_token' => [
         'classname'   => 'aiprovider_datacurso\\external\\webservice_config_api',
@@ -72,7 +72,7 @@ $functions = [
         'description' => 'Regenerate the permanent token for the service user',
         'type'        => 'write',
         'ajax'        => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'aiprovider/datacurso:configurews',
     ],
     'aiprovider_datacurso_webservice_get_status' => [
         'classname'   => 'aiprovider_datacurso\\external\\webservice_config_api',
@@ -81,7 +81,7 @@ $functions = [
         'description' => 'Get current Datacurso webservice configuration status',
         'type'        => 'read',
         'ajax'        => true,
-        'capabilities' => 'moodle/site:config',
+        'capabilities' => 'aiprovider/datacurso:configurews',
     ],
     'aiprovider_datacurso_get_services' => [
         'classname'   => 'aiprovider_datacurso\external\get_services',

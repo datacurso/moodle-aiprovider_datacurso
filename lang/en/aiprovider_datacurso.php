@@ -51,6 +51,7 @@ $string['contextwstoken'] = 'Web service token for course context';
 $string['contextwstoken_desc'] = 'Token used by the AI to retrieve course information (context). Stored securely. Create/manage tokens in Site administration > Server > Web services > Manage tokens.';
 $string['created'] = 'Created';
 $string['curlerror'] = 'Datacurso API cURL error: {$a}';
+$string['datacurso:configurews'] = 'Configure Datacurso web service';
 $string['datacurso:manage'] = 'Manage AI provider settings';
 $string['datacurso:use'] = 'Use Datacurso AI services';
 $string['datacurso:viewreports'] = 'View AI usage reports';

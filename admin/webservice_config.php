@@ -25,7 +25,7 @@
 require('../../../../config.php');
 
 require_login();
-require_capability('moodle/site:config', context_system::instance());
+require_capability('aiprovider/datacurso:configurews', context_system::instance());
 
 $PAGE->set_context(context_system::instance());
 $PAGE->set_url(new moodle_url('/ai/provider/datacurso/admin/webservice_config.php'));

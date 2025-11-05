@@ -52,6 +52,9 @@ class webservice_config_api extends external_api {
      */
     public static function setup(): array {
         self::validate_parameters(self::setup_parameters(), []);
+        $coursecontext = \context_system::instance();
+        self::validate_context($coursecontext);
+        require_capability('aiprovider/datacurso:configurews', $coursecontext);
         return webservice_config::setup();
     }
 
@@ -80,6 +83,9 @@ class webservice_config_api extends external_api {
      */
     public static function regenerate_token(): array {
         self::validate_parameters(self::regenerate_token_parameters(), []);
+        $coursecontext = \context_system::instance();
+        self::validate_context($coursecontext);
+        require_capability('aiprovider/datacurso:configurews', $coursecontext);
         $result = webservice_config::regenerate_token();
         return $result;
     }
@@ -109,6 +115,9 @@ class webservice_config_api extends external_api {
      */
     public static function get_status(): array {
         self::validate_parameters(self::get_status_parameters(), []);
+        $coursecontext = \context_system::instance();
+        self::validate_context($coursecontext);
+        require_capability('aiprovider/datacurso:configurews', $coursecontext);
         return webservice_config::get_status();
     }
 
