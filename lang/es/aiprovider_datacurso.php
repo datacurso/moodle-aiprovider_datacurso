@@ -51,6 +51,7 @@ $string['contextwstoken'] = 'Token de servicio web para contexto del curso';
 $string['contextwstoken_desc'] = 'Token utilizado por la IA para recuperar información del curso (contexto). Almacenado de forma segura. Crear/gestionar tokens en Administración del sitio > Servidor > Servicios web > Gestionar tokens.';
 $string['created'] = 'Creado';
 $string['curlerror'] = 'Error cURL de la API de Datacurso: {$a}';
+$string['datacurso:configurews'] = 'Configurar servicio web de Datacurso';
 $string['datacurso:manage'] = 'Gestionar configuración del proveedor de IA';
 $string['datacurso:use'] = 'Usar servicios de IA de Datacurso';
 $string['datacurso:viewreports'] = 'Ver informes de uso de IA';
