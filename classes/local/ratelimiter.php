@@ -25,6 +25,43 @@ namespace aiprovider_datacurso\local;
  */
 class ratelimiter {
     /**
+     * Determine if the given user is allowed to use a service.
+     *
+     * This checks, in order:
+     * - Empty service id: allow.
+     * - Site administrators: always allow.
+     * - If user restriction for the service is disabled: allow.
+     * - Otherwise, only allow users listed in the configured allowed users list for the service.
+     *
+     * @param string $serviceid Service identifier such as 'local_coursegen'.
+     * @param int $userid Moodle user id.
+     * @return bool True if the user is allowed to access the service, false otherwise.
+     */
+    public function is_user_allowed(string $serviceid, int $userid): bool {
+        if (empty($serviceid)) {
+            return true;
+        }
+
+        if (is_siteadmin($userid)) {
+            return true;
+        }
+
+        if (!$this->is_user_restriction_enabled($serviceid)) {
+            return true;
+        }
+
+        $settings = get_config('aiprovider_datacurso');
+        $coursecreators = $settings->ratelimit_local_coursegen_coursecreators ?? '';
+
+        $coursecreators = explode(',', $coursecreators);
+        if (empty($coursecreators)) {
+            return true;
+        }
+
+        return in_array($userid, $coursecreators);
+    }
+
+    /**
      * Cached pre-check using only DB data. No remote calls. No writes.
      *
      * @param string|null $serviceid Service identifier such as 'local_coursegen'.
@@ -50,7 +87,7 @@ class ratelimiter {
 
         // Read-only fetch of existing record. Do not create on precheck.
         global $DB;
-        $record = $DB->get_record('aiprovider_datacurso_rl', [
+        $record = $DB->get_record('aiprovider_datacurso_rlimit', [
             'userid' => $userid,
             'serviceid' => $serviceid,
         ]);
@@ -73,59 +110,6 @@ class ratelimiter {
 
         $effectivetokens = (int)($record->tokensused ?? 0);
         return $effectivetokens < $limit;
-    }
-
-    /**
-     * Evaluate the limit for a user/service pair and refresh cached usage.
-     *
-     * @param string $serviceid Service identifier such as 'local_coursegen'.
-     * @param int $userid Moodle user id.
-     * @param string|null $actionpath Current request path (e.g. '/course/execute').
-     * @return bool True when the request is allowed, false when the limit is exceeded.
-     */
-    public function check(string $serviceid, int $userid, ?string $actionpath = null): bool {
-        if (!$this->is_rate_limit_enabled($serviceid)) {
-            return true;
-        }
-
-        $limit = $this->get_service_limit($serviceid);
-        if ($limit <= 0) {
-            return true;
-        }
-
-        $windowseconds = $this->get_window_length_in_seconds($serviceid);
-        $currenttime = time();
-
-        // Load or create the usage record. On first creation, start the window now.
-        $record = $this->load_usage_record($userid, $serviceid, $currenttime);
-
-        // Determine the active window start. Keep it fixed within the current window.
-        $activewindowstart = (int)($record->windowstart ?? 0);
-        if ($activewindowstart <= 0) {
-            $activewindowstart = $currenttime;
-        }
-
-        // If current time is beyond the end of the stored window, advance by whole windows.
-        $windowend = $activewindowstart + $windowseconds;
-        if ($currenttime >= $windowend) {
-            $elapsed = $currenttime - $activewindowstart;
-            $windowsadvance = intdiv($elapsed, $windowseconds);
-            if ($windowsadvance > 0) {
-                $activewindowstart = $activewindowstart + ($windowsadvance * $windowseconds);
-                $windowend = $activewindowstart + $windowseconds;
-            }
-        }
-
-        $tokensused = $this->get_tokens_used_during_window(
-            $userid,
-            $serviceid,
-            $activewindowstart,
-            $windowend,
-            $actionpath
-        );
-        $this->update_usage_record($record, $tokensused, $activewindowstart, $currenttime);
-
-        return $tokensused < $limit;
     }
 
     /**
@@ -219,6 +203,17 @@ class ratelimiter {
     }
 
     /**
+     * Determine whether the user restriction is enabled for the service.
+     *
+     * @param string $serviceid Service identifier such as 'local_coursegen'.
+     * @return bool True when the user restriction is enabled, false otherwise.
+     */
+    private function is_user_restriction_enabled(string $serviceid): bool {
+        $value = get_config('aiprovider_datacurso', "ratelimit_{$serviceid}_allowedusers_enable");
+        return (int)$value === 1;
+    }
+
+    /**
      * Fetch the numeric limit configured for the service.
      *
      * @param string $serviceid
@@ -281,7 +276,7 @@ class ratelimiter {
     private function load_usage_record(int $userid, string $serviceid, int $windowstart): \stdClass {
         global $DB;
 
-        $record = $DB->get_record('aiprovider_datacurso_rl', [
+        $record = $DB->get_record('aiprovider_datacurso_rlimit', [
             'userid' => $userid,
             'serviceid' => $serviceid,
         ]);
@@ -291,7 +286,7 @@ class ratelimiter {
         }
 
         $record = $this->create_usage_record($userid, $serviceid, $windowstart);
-        $record->id = $DB->insert_record('aiprovider_datacurso_rl', $record);
+        $record->id = $DB->insert_record('aiprovider_datacurso_rlimit', $record);
 
         return $record;
     }
@@ -335,7 +330,7 @@ class ratelimiter {
         $record->lastsync = $now;
         $record->timemodified = $now;
 
-        $DB->update_record('aiprovider_datacurso_rl', $record);
+        $DB->update_record('aiprovider_datacurso_rlimit', $record);
     }
 
     /**
@@ -360,7 +355,7 @@ class ratelimiter {
         $currenttime = time();
 
         global $DB;
-        $record = $DB->get_record('aiprovider_datacurso_rl', [
+        $record = $DB->get_record('aiprovider_datacurso_rlimit', [
             'userid' => $userid,
             'serviceid' => $serviceid,
         ]);

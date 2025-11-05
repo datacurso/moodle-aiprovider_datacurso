@@ -47,7 +47,7 @@ class get_credits_balance extends external_api {
         $params = self::validate_parameters(self::execute_parameters(), []);
         $context = \context_system::instance();
         self::validate_context($context);
-        require_capability('aiprovider_datacurso/datacurso:viewreports', $context);
+        require_capability('aiprovider/datacurso:viewreports', $context);
         $client = new datacurso_api();
 
         $response = $client->get('/tokens/saldo');
