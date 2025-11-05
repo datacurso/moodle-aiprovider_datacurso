@@ -55,11 +55,6 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
 
         // Adding keys to table aiprovider_datacurso_rl.
         $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
-        $table->add_key('userid_serviceid_uix', XMLDB_KEY_UNIQUE, ['userid', 'serviceid']);
-
-        // Adding indexes to table aiprovider_datacurso_rl.
-        $table->add_index('userid_idx', XMLDB_INDEX_NOTUNIQUE, ['userid']);
-        $table->add_index('serviceid_idx', XMLDB_INDEX_NOTUNIQUE, ['serviceid']);
 
         // Conditionally launch create table for aiprovider_datacurso_rl.
         if (!$dbman->table_exists($table)) {
