@@ -196,6 +196,7 @@ $string['tokensused'] = 'Créditos utilizados';
 $string['tokenthreshold'] = 'Umbral de créditos';
 $string['tokenthreshold_desc'] = 'Número de créditos a partir del cual se mostrará una notificación para comprar más.';
 $string['total_consumed'] = 'Créditos consumidos';
+$string['upgrade_sync_error'] = 'Error de actualización de Datacurso: {$a}';
 $string['userid'] = 'Usuario';
 $string['userratelimit'] = 'Límite de solicitudes por usuario';
 $string['userratelimit_desc'] = 'Número máximo de solicitudes permitidas por hora para cada usuario individual.';

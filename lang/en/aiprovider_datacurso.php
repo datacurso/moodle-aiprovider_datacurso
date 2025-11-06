@@ -221,6 +221,7 @@ $string['tokensused'] = 'Credits used';
 $string['tokenthreshold'] = 'Credits threshold';
 $string['tokenthreshold_desc'] = 'Number of credits from which a notification will be shown to purchase more.';
 $string['total_consumed'] = 'Credits consumed';
+$string['upgrade_sync_error'] = 'Datacurso upgrade error: {$a}';
 $string['userid'] = 'User';
 $string['userratelimit'] = 'Per-user request limit';
 $string['userratelimit_desc'] = 'Maximum number of requests allowed per hour for each individual user.';
