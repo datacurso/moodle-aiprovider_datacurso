@@ -414,14 +414,57 @@ class webservice_config {
     private static function assign_role_capabilities(int $roleid): void {
         $context = context_system::instance();
         set_role_contextlevels($roleid, [CONTEXT_SYSTEM, CONTEXT_COURSE, CONTEXT_MODULE]);
-        assign_capability('webservice/rest:use', CAP_ALLOW, $roleid, $context, true);
-        assign_capability('moodle/category:viewhiddencategories', CAP_ALLOW, $roleid, $context, true);
-        assign_capability('moodle/course:enrolreview', CAP_ALLOW, $roleid, $context, true);
-        assign_capability('moodle/course:view', CAP_ALLOW, $roleid, $context, true);
-        assign_capability('moodle/course:viewhiddencourses', CAP_ALLOW, $roleid, $context, true);
-        assign_capability('moodle/course:viewhiddensections', CAP_ALLOW, $roleid, $context, true);
-        assign_capability('moodle/course:viewparticipants', CAP_ALLOW, $roleid, $context, true);
-        assign_capability('moodle/course:viewhiddenactivities', CAP_ALLOW, $roleid, $context, true);
+        $capabilities = self::get_capabilities();
+        foreach ($capabilities as $capability) {
+            // Capability must exist.
+            if (get_capability_info($capability)) {
+                assign_capability($capability, CAP_ALLOW, $roleid, $context, true);
+            }
+        }
+    }
+
+    /**
+     * Get a list of capabilities to assign to the role.
+     *
+     * @return array
+     */
+    private static function get_capabilities(): array {
+        return [
+            'webservice/rest:use',
+            'moodle/category:viewhiddencategories',
+            'moodle/course:enrolreview',
+            'moodle/course:view',
+            'moodle/course:viewhiddencourses',
+            'moodle/course:viewhiddensections',
+            'moodle/course:viewparticipants',
+            'moodle/course:viewhiddenactivities',
+            'moodle/course:view',
+            'moodle/course:viewhiddencourses',
+            'mod/forum:viewdiscussion',
+            'mod/forum:viewqandawithoutposting',
+            'mod/wiki:viewpage',
+            'mod/glossary:view',
+            'mod/book:read',
+            'mod/lesson:view',
+            'mod/choice:choose',
+            'mod/choice:readresponses',
+            'mod/feedback:view',
+            'mod/feedback:viewanalysepage',
+            'mod/scorm:viewreport',
+            'mod/scorm:viewscores',
+            'mod/h5pactivity:view',
+            'mod/h5pactivity:reviewattempts',
+            'mod/resource:view',
+            'mod/page:view',
+            'mod/assign:view',
+            'mod/assign:viewgrades',
+            'mod/data:viewentry',
+            'mod/data:view',
+            'mod/folder:view',
+            'mod/label:view',
+            'mod/url:view',
+            'mod/workshop:view',
+        ];
     }
 
     /**
@@ -471,10 +514,7 @@ class webservice_config {
     private static function attach_default_functions(int $serviceid): void {
         global $DB;
         $webservicemanager = new \webservice();
-        $wsfunctions = [
-            'core_course_get_contents',
-            'mod_assign_get_submissions',
-        ];
+        $wsfunctions = self::get_web_service_functions();
         foreach ($wsfunctions as $functionname) {
             $existfunction = $DB->record_exists('external_functions', ['name' => $functionname]);
             $isassigned = $DB->record_exists('external_services_functions', [
@@ -485,6 +525,63 @@ class webservice_config {
                 $webservicemanager->add_external_function_to_service($functionname, $serviceid);
             }
         }
+    }
+
+    /**
+     * Get a list of web service functions to attach to the service.
+     *
+     * @return array
+     */
+    private static function get_web_service_functions(): array {
+        return [
+            'core_course_get_contents',
+            'mod_assign_get_submissions',
+            'mod_forum_get_forum_discussions',
+            'mod_forum_get_discussion_posts',
+            'mod_wiki_get_wikis_by_courses',
+            'mod_wiki_get_subwikis',
+            'mod_wiki_get_subwiki_pages',
+            'mod_wiki_get_page_contents',
+            'mod_wiki_get_subwiki_files',
+            'mod_glossary_get_glossaries_by_courses',
+            'mod_glossary_get_entries_by_search',
+            'mod_glossary_get_entry_by_id',
+            'mod_book_get_books_by_courses',
+            'mod_lesson_get_lessons_by_courses',
+            'mod_lesson_get_pages',
+            'mod_lesson_get_page_data',
+            'mod_choice_get_choices_by_courses',
+            'mod_choice_get_choice_options',
+            'mod_choice_get_choice_results',
+            'mod_feedback_get_feedbacks_by_courses',
+            'mod_feedback_get_items',
+            'mod_feedback_get_finished_responses',
+            'mod_feedback_get_analysis',
+            'mod_scorm_get_scorms_by_courses',
+            'mod_scorm_get_scorm_scoes',
+            'mod_scorm_get_scorm_user_data',
+            'mod_scorm_get_scorm_sco_tracks',
+            'mod_h5pactivity_get_h5pactivities_by_courses',
+            'mod_h5pactivity_get_attempts',
+            'mod_h5pactivity_get_results',
+            'mod_resource_get_resources_by_courses',
+            'mod_resource_view_resource',
+            'mod_page_get_pages_by_courses',
+            'mod_assign_get_assignments',
+            'mod_assign_view_assign',
+            'mod_assign_get_submission_status',
+            'mod_data_get_databases_by_courses',
+            'mod_data_get_entries',
+            'mod_data_get_fields',
+            'mod_folder_get_folders_by_courses',
+            'mod_folder_view_folder',
+            'mod_label_get_labels_by_courses',
+            'mod_url_get_urls_by_courses',
+            'mod_url_view_url',
+            'mod_workshop_get_workshops_by_courses',
+            'mod_workshop_view_workshop',
+            'mod_workshop_get_submissions',
+        ];
     }
 
     /**
@@ -507,6 +604,27 @@ class webservice_config {
                 'userid' => $userid,
             ];
             $webservicemanager->add_ws_authorised_user($serviceuser);
+        }
+    }
+
+    /**
+     * Upgrade-time synchronization: if the Datacurso service/role already exist,
+     * attach any new WS functions to the service and assign any new capabilities to the role.
+     * No external calls are performed.
+     *
+     * @return void
+     */
+    public static function upgrade_sync_ws_and_capabilities(): void {
+        global $DB;
+
+        // 1) Attach any missing functions to existing service.
+        if ($service = $DB->get_record('external_services', ['shortname' => self::SERVICESHORTNAME])) {
+            self::attach_default_functions((int)$service->id);
+        }
+
+        // 2) Assign any missing capabilities to existing role and ensure context levels.
+        if ($roleid = (int)$DB->get_field('role', 'id', ['shortname' => self::ROLESHORTNAME])) {
+            self::assign_role_capabilities($roleid);
         }
     }
 

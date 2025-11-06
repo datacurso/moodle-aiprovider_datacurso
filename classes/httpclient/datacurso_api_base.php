@@ -118,16 +118,17 @@ class datacurso_api_base {
         }
 
         // Enforce per-user, per-service rate limit using cached DB pre-check.
+        // Service could be null if the path is not mapped.
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
         $userid = (int)($payload['userid'] ?? $USER->id);
         $ratelimiter = new \aiprovider_datacurso\local\ratelimiter();
 
         // Validate if user is allowed to make this request.
-        if (!$ratelimiter->is_user_allowed($serviceid, $userid)) {
+        if (!empty($serviceid) && !$ratelimiter->is_user_allowed($serviceid, $userid)) {
             throw new \moodle_exception('notallowed', 'aiprovider_datacurso');
         }
 
-        if (!$ratelimiter->precheck($serviceid, $userid)) {
+        if (!empty($serviceid) && !$ratelimiter->precheck($serviceid, $userid)) {
             $remaining = $ratelimiter->get_time_until_next_window((string)$serviceid, (int)$userid);
             $retrytimestamp = time() + max(0, (int)$remaining);
             $retryat = userdate($retrytimestamp, get_string('strftimedatetime', 'langconfig'));
@@ -215,8 +216,10 @@ class datacurso_api_base {
             throw new \moodle_exception('jsondecodeerror', 'aiprovider_datacurso', '', json_last_error_msg());
         }
 
-        // Post-success sync: only after a valid, non-error response.
-        $ratelimiter->sync_after_success($serviceid, $userid, $path);
+        if (!empty($serviceid)) {
+            // Post-success sync: only after a valid, non-error response.
+            $ratelimiter->sync_after_success($serviceid, $userid, $path);
+        }
 
         return $decodedresponse;
     }
