@@ -76,6 +76,18 @@ php admin/cli/upgrade.php
 
 to complete the installation from the command line.
 
+## Testing locally (cURL settings)
+
+If you plan to test from a local environment, adjust Moodle’s cURL security settings so the provider and its dependent plugins can make HTTP requests:
+
+1. In the site administration search box, type "curl" and open the page that shows cURL/HTTP security settings.
+2. In the first field `cURL blocked hosts list`, remove any registered IP addresses or host entries.
+3. In the second field `cURL allowed ports list`, add the port where your local Moodle is running (for example: `8000`).
+
+These Moodle security settings directly affect the Datacurso AI Provider and, therefore, the functionality of any plugins that depend on it.
+
+![cURL settings](./_docs/images/aiprovider_datacurso_curl_settings.png)
+
 ## Getting license keys
 
 1. Sign in or create an account on the [shop DataCurso](https://shop.datacurso.com)
