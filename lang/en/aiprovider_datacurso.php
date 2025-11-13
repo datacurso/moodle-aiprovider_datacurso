@@ -80,6 +80,7 @@ $string['generate_analysis_general'] = 'Generate general rating analysis with AI
 $string['generate_analysis_story_student'] = 'Generate analysis story student with AI';
 $string['generate_assign_answer'] = 'Generate assignment review with AI';
 $string['generate_certificate_answer'] = 'Generate certificate message with AI';
+$string['generate_chat_message'] = 'Generate tutor AI message';
 $string['generate_creation_course'] = 'Create complete course with AI';
 $string['generate_forum_chat'] = 'Generate forum response with AI';
 $string['generate_image'] = 'Generate image with AI';

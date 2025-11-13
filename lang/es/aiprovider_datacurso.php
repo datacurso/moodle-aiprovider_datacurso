@@ -79,6 +79,7 @@ $string['generate_analysis_general'] = 'Generar análisis de calificación gener
 $string['generate_analysis_story_student'] = 'Generar análisis de historia del estudiante con IA';
 $string['generate_assign_answer'] = 'Generar revisión de tarea con IA';
 $string['generate_certificate_answer'] = 'Generar mensaje de certificado con IA';
+$string['generate_chat_message'] = 'Generar mensaje de tutor IA';
 $string['generate_creation_course'] = 'Crear curso completo con IA';
 $string['generate_forum_chat'] = 'Generar respuesta de foro con IA';
 $string['generate_image'] = 'Generar imagen con IA';
