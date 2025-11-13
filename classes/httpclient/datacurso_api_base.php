@@ -33,6 +33,7 @@ class datacurso_api_base {
     private const SERVICES_REQUIRING_WEBSERVICE = [
         'local_assign_ai',
         'local_forum_ai',
+        'local_dttutor',
     ];
 
     /** @var string $baseurl The base URL for Datacurso API requests */
