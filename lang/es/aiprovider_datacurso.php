@@ -79,6 +79,7 @@ $string['generate_analysis_general'] = 'Generar análisis de calificación gener
 $string['generate_analysis_story_student'] = 'Generar análisis de historia del estudiante con IA';
 $string['generate_assign_answer'] = 'Generar revisión de tarea con IA';
 $string['generate_certificate_answer'] = 'Generar mensaje de certificado con IA';
+$string['generate_chat_message'] = 'Generar mensaje de tutor IA';
 $string['generate_creation_course'] = 'Crear curso completo con IA';
 $string['generate_forum_chat'] = 'Generar respuesta de foro con IA';
 $string['generate_image'] = 'Generar imagen con IA';
@@ -119,6 +120,7 @@ $string['not_assigned'] = 'No asignado';
 $string['not_configured'] = 'No configurado';
 $string['not_created'] = 'No creado';
 $string['notallowed'] = 'No tiene permiso para realizar esta acción. Por favor, contacte a su administrador para más información.';
+$string['error_webservice_not_configured'] = 'No es posible continuar con esta acción porque el servicio web de Datacurso que proporciona datos contextuales a la IA no está configurado. Complete la configuración automática en <a href="{$a->url}">Configuración de servicio web Datacurso</a> e inténtelo de nuevo. O contacte a su administrador para más información.';
 $string['notenoughtokens'] = 'Créditos de IA insuficientes. Por favor, visite <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Gestionar Créditos</a> en la Tienda Datacurso para asignar o comprar más créditos. O contacte a su administrador.';
 $string['of'] = 'de';
 $string['orgid'] = 'ID de organización';
