@@ -79,7 +79,28 @@ class webservice_config {
         self::set_service_and_token($status);
         self::compute_flags($status);
         $status = self::verify_remote_registration($status);
+
         return $status;
+    }
+
+    /**
+     * Quickly tell if the Datacurso webservice has been fully configured.
+     *
+     * @return bool
+     */
+    public static function is_configured(): bool {
+        $status = self::get_status();
+        return !empty($status['isconfigured']);
+    }
+
+    /**
+     * Returns the URL to the automatic webservice configuration page.
+     *
+     * @return \moodle_url
+     */
+    public static function get_url(): \moodle_url {
+        global $CFG;
+        return new \moodle_url('/ai/provider/datacurso/admin/webservice_config.php');
     }
 
     /**
