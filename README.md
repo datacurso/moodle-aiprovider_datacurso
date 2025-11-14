@@ -145,14 +145,21 @@ These Moodle security settings directly affect the Datacurso AI Provider and, th
 
 ## Datacurso webservice setup
 
-> ⚠️ **IMPORTANT**: Without completing this setup, the following Datacurso AI plugins will not function correctly in your Moodle site:
-> - Forum AI: https://docs.datacurso.com/index.php?title=Forum_AI
-> - Assign AI: https://docs.datacurso.com/index.php?title=Assign_AI
-> - Tutor AI: See its documentation in the Datacurso docs portal.
->
-> You can find more information about these plugins in their respective documentations.
+### ⚠️IMPORTANT: 
 
-Allows you to automatically configure the Web Service used by Datacurso to fetch contextual information from your platform and improve AI responses.
+Without completing this setup, the following Datacurso AI plugins will not function correctly in your Moodle site:
+
+- Forum AI: [https://docs.datacurso.com/index.php?title=Forum_AI](https://docs.datacurso.com/index.php?title=Forum_AI)
+- Assign AI: [https://docs.datacurso.com/index.php?title=Assign_AI](https://docs.datacurso.com/index.php?title=Assign_AI)
+- Tutor AI: [https://docs.datacurso.com/index.php?title=Tutor_AI](https://docs.datacurso.com/index.php?title=Tutor_AI)
+
+You can find more information about these plugins in their respective documentations.
+
+### Description
+
+This feature allows you to automatically configure the Web Service used by Datacurso to fetch contextual information from your platform and improve AI responses.
+
+### How to use it
 
 To configure the webservice, go to `Site administration > Server > Datacurso webservice setup`.
 
