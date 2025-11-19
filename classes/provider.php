@@ -133,6 +133,7 @@ class provider extends \core_ai\provider {
             ['id' => '/certificate/answer', 'name' => get_string('generate_certificate_answer', 'aiprovider_datacurso')],
             ['id' => '/story/analysis', 'name' => get_string('generate_analysis_story_student', 'aiprovider_datacurso')],
             ['id' => '/smartrules/create-mod', 'name' => get_string('generate_ai_reinforcement_activity', 'aiprovider_datacurso')],
+            ['id' => '/chat/message', 'name' => get_string('generate_chat_message', 'aiprovider_datacurso')],
         ];
     }
 }

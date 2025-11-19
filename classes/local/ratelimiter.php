@@ -180,6 +180,7 @@ class ratelimiter {
             '/story/' => 'report_lifestory',
             '/smartrules/' => 'local_coursedynamicrules',
             '/provider/' => 'aiprovider_datacurso',
+            '/chat/' => 'local_dttutor',
         ];
 
         foreach ($map as $prefix => $service) {

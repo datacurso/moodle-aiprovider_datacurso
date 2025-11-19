@@ -29,6 +29,14 @@ require_once($CFG->libdir . '/filelib.php');
 class datacurso_api_base {
 
     /** @var string $baseurl */
+    /** Services that depend on the local Moodle webservice. */
+    private const SERVICES_REQUIRING_WEBSERVICE = [
+        'local_assign_ai',
+        'local_forum_ai',
+        'local_dttutor',
+    ];
+
+    /** @var string $baseurl The base URL for Datacurso API requests */
     protected $baseurl;
 
     /** @var string|null $licensekey */
@@ -117,15 +125,19 @@ class datacurso_api_base {
         }
 
         // Rate limit.
+        // Enforce per-user, per-service rate limit using cached DB pre-check.
+        // Service could be null if the path is not mapped.
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
+        $this->enforce_webservice_requirements($serviceid);
         $userid = (int)($payload['userid'] ?? $USER->id);
         $ratelimiter = new \aiprovider_datacurso\local\ratelimiter();
 
-        if (!$ratelimiter->is_user_allowed($serviceid, $userid)) {
+        // Validate if user is allowed to make this request.
+        if (!empty($serviceid) && !$ratelimiter->is_user_allowed($serviceid, $userid)) {
             throw new \moodle_exception('notallowed', 'aiprovider_datacurso');
         }
 
-        if (!$ratelimiter->precheck($serviceid, $userid)) {
+        if (!empty($serviceid) && !$ratelimiter->precheck($serviceid, $userid)) {
             $remaining = $ratelimiter->get_time_until_next_window((string)$serviceid, (int)$userid);
             $retrytimestamp = time() + max(0, (int)$remaining);
             $retryat = userdate($retrytimestamp, get_string('strftimedatetime', 'langconfig'));
@@ -220,9 +232,10 @@ class datacurso_api_base {
             throw new \moodle_exception('jsondecodeerror', 'aiprovider_datacurso', '', json_last_error_msg());
         }
 
-        // Sync rate limit windows post-success.
-        $ratelimiter->sync_after_success($serviceid, $userid, $path);
-
+        if (!empty($serviceid)) {
+            // Post-success sync: only after a valid, non-error response.
+            $ratelimiter->sync_after_success($serviceid, $userid, $path);
+        }
         return $decodedresponse;
     }
 
@@ -255,5 +268,23 @@ class datacurso_api_base {
         ]);
 
         return $this->send_request('UPLOAD', $path, $postdata);
+    }
+
+    /**
+     * Ensure the Datacurso webservice is fully configured when required by the service.
+     *
+     * @param string|null $serviceid
+     * @return void
+     */
+    private function enforce_webservice_requirements(?string $serviceid): void {
+        if (empty($serviceid) || !in_array($serviceid, self::SERVICES_REQUIRING_WEBSERVICE, true)) {
+            return;
+        }
+
+        if (!\aiprovider_datacurso\webservice_config::is_configured()) {
+            $setupurl = \aiprovider_datacurso\webservice_config::get_url();
+            $messageparams = (object)['url' => $setupurl->out(false)];
+            throw new \moodle_exception('error_webservice_not_configured', 'aiprovider_datacurso', '', $messageparams);
+        }
     }
 }
