@@ -134,6 +134,13 @@ class get_consumption_history extends \external_api {
                 $actions = \aiprovider_datacurso\provider::get_actions();
                 $actionmap = [];
 
+                $services = \aiprovider_datacurso\provider::get_services();
+                $servicesmap = [];
+
+                foreach ($services as $s) {
+                    $servicesmap[$s['id']] = $s['name'];
+                }
+
                 foreach ($actions as $a) {
                     $actionmap[$a['id']] = $a['name'];
                 }
@@ -143,12 +150,14 @@ class get_consumption_history extends \external_api {
                         foreach ($user['consumos'] as $consumption) {
                             $actionid = $consumption['accion'] ?? '';
                             $actionname = $actionmap[$actionid] ?? $actionid;
+                            $serviceid = $consumption['id_servicio'] ?? '';
+                            $servicename = $servicesmap[$serviceid] ?? $serviceid;
 
                             $consumptions[] = [
                                 'id_consumption' => $consumption['id_consumo'] ?? 0,
                                 'userid' => $consumption['userid'] ?? 0,
                                 'action' => $actionname,
-                                'id_service' => $consumption['id_servicio'] ?? '',
+                                'id_service' => $servicename,
                                 'cant_tokens' => $consumption['cantidad_tokens'] ?? 0,
                                 'balance' => $consumption['saldo_restante'] ?? 0,
                                 'date' => $consumption['created_at'] ?? '',

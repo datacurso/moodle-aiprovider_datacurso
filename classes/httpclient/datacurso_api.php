@@ -41,14 +41,31 @@ class datacurso_api {
      *
      * @throws moodle_exception
      */
-    public function __construct() {
-        $this->baseurl    = 'https://shop.datacurso.com/index.php?m=tokens_manager&api=';
-        $this->licensekey = get_config('aiprovider_datacurso', 'licensekey');
+   public function __construct() {
+    global $DB;
 
-        if (empty($this->licensekey)) {
-            throw new moodle_exception('API baseurl or licensekey not configured');
+    $this->baseurl = 'https://shop.datacurso.com/index.php?m=tokens_manager&api=';
+
+    // Obtener instancia del proveedor registrado.
+    $manager = new \core_ai\manager($DB);
+    $instances = $manager->get_provider_instances();
+    $this->licensekey = null;
+
+    foreach ($instances as $instance) {
+        if ($instance->get_name() === 'aiprovider_datacurso') {
+            $config = $instance->config ?? [];
+
+            if (!empty($config['licensekey'])) {
+                $this->licensekey = $config['licensekey'];
+            }
+            break;
         }
     }
+
+    if (empty($this->licensekey)) {
+        throw new \moodle_exception('licensekey_missing', 'aiprovider_datacurso');
+    }
+}
 
     /**
      * Build the full URL depending on whether the baseurl uses querystring (?api=).

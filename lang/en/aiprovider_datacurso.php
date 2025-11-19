@@ -107,6 +107,7 @@ $string['link_generalreport'] = 'General report';
 $string['link_generalreport_datacurso'] = 'General report Datacurso AI';
 $string['link_listplugings'] = 'Datacurso plugins list';
 $string['link_plugin'] = 'Link';
+$string['link_provider_config'] = 'Provider configuration';
 $string['link_report_statistic'] = 'General statistics report';
 $string['link_webservice_config'] = 'Datacurso webservice setup';
 $string['live_log'] = 'Live log';
@@ -277,3 +278,50 @@ $string['ws_user_lastname'] = 'Service';
 $string['ws_userassigned'] = 'Role assigned to user';
 $string['year'] = 'year';
 $string['years'] = 'Years';
+
+$string['licensekey'] = 'License key';
+$string['licensekey_help'] = 'Enter your Datacurso AI provider license key.';
+
+$string['ratelimit_limit'] = 'Rate limit';
+$string['ratelimit_limit_help'] = 'The maximum number of requests allowed per rate-limit window.';
+
+$string['ratelimit_window_value'] = 'Window value';
+$string['ratelimit_window_unit'] = 'Window unit';
+
+$string['connection'] = 'Connection settings';
+$string['endpointurl'] = 'Endpoint URL';
+$string['endpointurl_help'] = 'Base API endpoint URL of the Datacurso AI Provider. Usually something like https://api.datacurso.ai/v1/.';
+
+// Action: generate text.
+$string['action:generate_text:model'] = 'Model for text generation';
+$string['action:generate_text:model_help'] = 'Select which AI model will be used to generate the text.';
+$string['action:generate_text:systeminstruction'] = 'System instruction';
+$string['action:generate_text:systeminstruction_help'] = 'Instruction or context given to the AI before generating the text. Useful for controlling tone, structure, or purpose of the response.';
+
+// Action: generate image.
+$string['action:generate_image:model'] = 'Model for image generation';
+$string['action:generate_image:model_help'] = 'Select the AI model to generate images.';
+$string['action:generate_image:systeminstruction'] = 'System prompt for image generation';
+$string['action:generate_image:systeminstruction_help'] = 'Additional instructions that guide the AI in generating the desired image.';
+
+// Action: summarise text.
+$string['action:summarise_text:model'] = 'Model for summarisation';
+$string['action:summarise_text:model_help'] = 'Select which AI model will be used to summarise the text.';
+$string['action:summarise_text:systeminstruction'] = 'System instruction for summary';
+$string['action:summarise_text:systeminstruction_help'] = 'Optional context to influence how the summary is generated.';
+
+// Action: explain text.
+$string['action:explain_text:model'] = 'Model for explanation';
+$string['action:explain_text:model_help'] = 'Select the model that will generate explanations.';
+$string['action:explain_text:systeminstruction'] = 'System instruction for explanation';
+$string['action:explain_text:systeminstruction_help'] = 'Provide context to guide the explanation process.';
+
+// Custom model name.
+$string['custom_model_name'] = 'Custom model name';
+$string['custom_model_name_help'] = 'Optional name to identify this specific AI model configuration.';
+
+// AI provider actions (required for core compatibility).
+$string['action:generate_text:endpoint'] = 'Generate text endpoint';
+$string['action:generate_image:endpoint'] = 'Generate image endpoint';
+$string['action:summarise_text:endpoint'] = 'Summarise text endpoint';
+$string['action:explain_text:endpoint'] = 'Explain text endpoint';

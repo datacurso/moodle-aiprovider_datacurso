@@ -25,45 +25,50 @@ require_once($CFG->libdir . '/filelib.php');
  * Base class for interacting with Datacurso APIs.
  *
  * @package    aiprovider_datacurso
- * @copyright  2025 Industria Elearning <info@industriaelearning.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class datacurso_api_base {
-    /** @var string $baseurl The base URL for Datacurso API requests */
+
+    /** @var string $baseurl */
     protected $baseurl;
 
-    /** @var string|null $licensekey The license key obtained from Datacurso SHOP */
+    /** @var string|null $licensekey */
     protected $licensekey;
 
     /**
      * Constructor.
      *
-     * @param string $baseurl The base URL for Datacurso API requests.
-     * @param string|null $licensekey The license key obtained from Datacurso SHOP.
+     * @param string $baseurl
+     * @param string|null $licensekey
      */
     public function __construct(string $baseurl, ?string $licensekey = null) {
-        $this->baseurl = $baseurl;
-        $this->licensekey = $licensekey ?? get_config('aiprovider_datacurso', 'licensekey');
+        global $DB;
+
+        $manager = new \core_ai\manager($DB);
+        $instances = $manager->get_provider_instances();
+        $licensekey = '';
+        foreach ($instances as $instance) {
+            if ($instance->get_name() === 'aiprovider_datacurso') {
+                $config = $instance->config;
+                if(!empty($config['licensekey'])){
+                    $licensekey = $config['licensekey'];
+                    break;
+                }       
+            }
+        }
+
+        $this->baseurl = rtrim($baseurl, '/');
+        $this->licensekey = $licensekey;
     }
 
     /**
      * Returns the base URL for Datacurso API requests.
-     * The URL is trimmed to remove any trailing slashes and a trailing slash is added.
-     *
-     * @return string The base URL for Datacurso API requests.
      */
     public function get_base_url(): string {
-        return rtrim($this->baseurl, '/') . '/';
+        return $this->baseurl . '/';
     }
 
     /**
      * Download a file from Datacurso API.
-     *
-     * @param string $endpoint Relative endpoint (starting with "/").
-     * @param string $filename The name of the file to download.
-     * @param array $filerecord File record options as accepted by create_file_from_url(); defaults to storing in draft user area.
-     * @return \stored_file|null The downloaded file.
-     * @throws \Exception If the file cannot be created.
      */
     public function download_file($endpoint, $filename, $filerecord = []): ?\stored_file {
         global $USER;
@@ -75,9 +80,9 @@ class datacurso_api_base {
         $userid = $USER->id;
         $draftid = file_get_unused_draft_itemid();
 
-        // Store SCORM package in moodledata draft area directly from URL.
         $fs = get_file_storage();
         $context = \context_user::instance($userid);
+
         $fileinfo = [
             'contextid' => $context->id,
             'component' => 'user',
@@ -86,28 +91,22 @@ class datacurso_api_base {
             'filepath' => '/',
             'filename' => $filename,
         ];
+
         $fileinfo = array_merge($fileinfo, $filerecord);
-        $options = [];
+
         $options['headers'] = [
             'License-Key: ' . $this->licensekey,
         ];
 
-        $file = $fs->create_file_from_url($fileinfo, $packageurl, $options, true);
-        return $file;
+        return $fs->create_file_from_url($fileinfo, $packageurl, $options, true);
     }
 
     /**
      * Generic handler for HTTP calls to Datacurso API.
-     *
-     * @param string $method HTTP method (GET, POST, PUT, DELETE, UPLOAD).
-     * @param string $path   Relative endpoint (starting with "/").
-     * @param mixed  $payload Data for request (array, string, or multipart).
-     * @param array  $headers Extra headers if needed.
-     * @return array|null
-     * @throws \Exception
      */
     protected function send_request(string $method, string $path, $payload = [], array $headers = []): ?array {
         global $USER, $CFG;
+
         if (empty($this->licensekey)) {
             debugging('Cannot make this request: invalid license key', DEBUG_DEVELOPER);
             throw new \moodle_exception('invalidlicensekey', 'aiprovider_datacurso');
@@ -117,12 +116,11 @@ class datacurso_api_base {
             $path = '/' . $path;
         }
 
-        // Enforce per-user, per-service rate limit using cached DB pre-check.
+        // Rate limit.
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
         $userid = (int)($payload['userid'] ?? $USER->id);
         $ratelimiter = new \aiprovider_datacurso\local\ratelimiter();
 
-        // Validate if user is allowed to make this request.
         if (!$ratelimiter->is_user_allowed($serviceid, $userid)) {
             throw new \moodle_exception('notallowed', 'aiprovider_datacurso');
         }
@@ -147,33 +145,38 @@ class datacurso_api_base {
         ];
 
         $url = $this->baseurl . $path;
-        $response = null;
 
         $defaultpayload = [
             'site_id' => md5($CFG->wwwroot),
-            'userid' => $payload['userid'] ?? $USER->id,
+            'userid' => $userid,
             'timezone' => \core_date::get_user_timezone(),
             'lang' => $payload['lang'] ?? current_language(),
         ];
+
         switch (strtoupper($method)) {
             case 'GET':
                 $response = $curl->get($url, $payload, $options);
                 break;
+
             case 'POST':
                 $payload = array_merge($payload, $defaultpayload);
                 $response = $curl->post($url, json_encode($payload), $options);
                 break;
+
             case 'PUT':
                 $payload = array_merge($payload, $defaultpayload);
                 $response = $curl->put($url, $payload, $options);
                 break;
+
             case 'DELETE':
                 $response = $curl->delete($url, $payload, $options);
                 break;
+
             case 'UPLOAD':
                 $payload = array_merge($payload, $defaultpayload);
                 $response = $curl->post($url, $payload, $options);
                 break;
+
             default:
                 throw new \coding_exception('Invalid HTTP method: ' . $method);
         }
@@ -189,18 +192,19 @@ class datacurso_api_base {
         }
 
         $httpcode = $curl->get_info()['http_code'] ?? 0;
+
+        // Handle API 403 errors.
         if ($httpcode == 403) {
             $decodedresponse = json_decode($response, true);
-            if ($decodedresponse['detail'] == 'tokens_not_sufficient') {
-                debugging('Not enough tokens to make this request', DEBUG_DEVELOPER);
+
+            if (($decodedresponse['detail'] ?? '') === 'tokens_not_sufficient') {
                 throw new \moodle_exception('notenoughtokens', 'aiprovider_datacurso');
             }
-            if ($decodedresponse['detail'] == 'license_not_allowed') {
-                debugging('License not allowed to make this request', DEBUG_DEVELOPER);
+
+            if (($decodedresponse['detail'] ?? '') === 'license_not_allowed') {
                 throw new \moodle_exception('license_not_allowed', 'aiprovider_datacurso');
             }
 
-            debugging('Unknown error from Datacurso API', DEBUG_DEVELOPER);
             throw new \moodle_exception('forbidden', 'aiprovider_datacurso');
         }
 
@@ -210,12 +214,13 @@ class datacurso_api_base {
         }
 
         $decodedresponse = json_decode($response, true);
+
         if (json_last_error() !== JSON_ERROR_NONE) {
-            debugging('JSON decode error: ' . json_last_error_msg() . '. Response: ' . $response, DEBUG_DEVELOPER);
+            debugging('JSON decode error: ' . json_last_error_msg(), DEBUG_DEVELOPER);
             throw new \moodle_exception('jsondecodeerror', 'aiprovider_datacurso', '', json_last_error_msg());
         }
 
-        // Post-success sync: only after a valid, non-error response.
+        // Sync rate limit windows post-success.
         $ratelimiter->sync_after_success($serviceid, $userid, $path);
 
         return $decodedresponse;
@@ -223,12 +228,6 @@ class datacurso_api_base {
 
     /**
      * Standard JSON API call.
-     *
-     * @param string $method HTTP method (GET, POST, PUT, DELETE, UPLOAD).
-     * @param string $path   Relative endpoint. Example: '/create-course'.
-     * @param array $body Data for request.
-     * @return array|null
-     * @throws \Exception
      */
     public function request(string $method, string $path, array $body = []): ?array {
         $headers = ['Content-Type: application/json'];
@@ -237,14 +236,6 @@ class datacurso_api_base {
 
     /**
      * Upload a file using multipart/form-data.
-     *
-     * @param string $path Relative endpoint. Example: '/upload-file'.
-     * @param string $filepath Absolute path to the file to upload.
-     * @param string|null $mimetype MIME type of the file (falls back to PHP detection when null).
-     * @param string|null $filename Name to use for the uploaded file (defaults to basename of $filepath).
-     * @param array $extraparams Extra POST parameters to include in the upload request.
-     * @return array|null Decoded response from the API.
-     * @throws \Exception If the local file does not exist or the request fails.
      */
     public function upload_file(
         string $path,
@@ -253,6 +244,7 @@ class datacurso_api_base {
         ?string $filename = null,
         array $extraparams = []
     ): ?array {
+
         if (!file_exists($filepath)) {
             $filename = basename($filepath);
             throw new \coding_exception("File not found: {$filename}");

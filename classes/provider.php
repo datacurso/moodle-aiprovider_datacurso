@@ -16,57 +16,33 @@
 
 namespace aiprovider_datacurso;
 
-use core_ai\aiactions;
+use core_ai\form\action_settings_form;
+use Psr\Http\Message\RequestInterface;
 
 /**
- * Provider class for DataCurso AI integration.
+ * Datacurso AI provider for Moodle 5.
+ *
  * @package    aiprovider_datacurso
- * @copyright  2025 Industria Elearning
+ * @copyright  2025
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider extends \core_ai\provider {
-    /** @var mixed License key for Datacurso API. */
-    private mixed $licensekey;
 
     /**
-     * Builder.
-     */
-    public function __construct() {
-        $this->licensekey = get_config('aiprovider_datacurso', 'licensekey');
-    }
-
-    /**
-     * Get the list of AI actions supported by this provider.
+     * Returns the list of AI actions supported by this provider.
      *
      * @return array
      */
-    public function get_action_list(): array {
+    public static function get_action_list(): array {
         return [
             \core_ai\aiactions\generate_text::class,
             \core_ai\aiactions\generate_image::class,
             \core_ai\aiactions\summarise_text::class,
+            \core_ai\aiactions\explain_text::class,
         ];
     }
 
-    /**
-     * Check if the provider is configured properly.
-     *
-     * @return bool
-     */
-    public function is_provider_configured(): bool {
-        return !empty($this->licensekey);
-    }
-
-    /**
-     * Check if a request is allowed for this provider.
-     *
-     * @param aiactions\base $action
-     * @return array|bool
-     */
-    public function is_request_allowed(aiactions\base $action): array|bool {
-        global $USER;
-        return true;
-    }
+    // En aiprovider_datacurso/provider.php (Versión 5.0)
 
     /**
      * Add authentication headers to a request.
@@ -75,41 +51,46 @@ class provider extends \core_ai\provider {
      * @return \Psr\Http\Message\RequestInterface
      */
     public function add_authentication_headers(\Psr\Http\Message\RequestInterface $request): \Psr\Http\Message\RequestInterface {
-        return $request->withAddedHeader('Authorization', "Bearer {$this->licensekey}");
+        return $request->withAddedHeader('Authorization', "Bearer {$this->config['licensekey']}");
     }
 
     /**
-     * Get any admin settings available per AI action.
+     * Returns the form used to configure specific action settings.
      *
-     * @param string $action The action class name.
-     * @param \admin_root $ADMIN The admin root object.
-     * @param string $section The section name.
-     * @param bool $hassiteconfig Whether the current user can configure site settings.
-     * @return array
+     * @param string $action
+     * @param array $customdata
+     * @return action_settings_form|bool
      */
-    public function get_action_settings(
-        string $action,
-        \admin_root $ADMIN,
-        string $section,
-        bool $hassiteconfig
-    ): array {
+    #[\Override]
+    public static function get_action_settings(string $action, array $customdata = []): action_settings_form|bool {
         $actionname = substr($action, (strrpos($action, '\\') + 1));
-        $settings = [];
+        $customdata['actionname'] = $actionname;
+        $customdata['action'] = $action;
 
-        // Settings for generate_text and summarise_text actions.
-        if ($actionname === 'generate_text' || $actionname === 'summarise_text') {
-            $settings[] = new \admin_setting_configtextarea(
-                "aiprovider_datacurso/action_{$actionname}_instruction",
-                new \lang_string("action:{$actionname}:instruction", 'aiprovider_datacurso'),
-                new \lang_string("action:{$actionname}:instruction_desc", 'aiprovider_datacurso'),
-                $action::get_system_instruction(),
-                PARAM_TEXT
-            );
+        if (in_array($actionname, ['generate_text', 'summarise_text', 'explain_text'])) {
+            return new form\action_generate_text_form(customdata: $customdata);
+        } else if ($actionname === 'generate_image') {
+            return false;
         }
 
-        return $settings;
+        return false;
     }
 
+
+    /**
+     * Checks if this provider has the minimal configuration (license key set).
+     *
+     * @return bool
+     */
+    public function is_provider_configured(): bool {
+        return !empty($this->config['licensekey']);
+    }
+
+    public function is_rate_limiting_supported(): bool {
+    // Esto desactiva el Rate Limiting del core y evitará la validación de 0.
+    return false;
+    }
+    
     /**
      * Return all available AI services for this provider.
      *
