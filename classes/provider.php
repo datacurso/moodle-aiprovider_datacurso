@@ -90,7 +90,7 @@ class provider extends \core_ai\provider {
     // Esto desactiva el Rate Limiting del core y evitará la validación de 0.
     return false;
     }
-    
+
     /**
      * Return all available AI services for this provider.
      *

@@ -34,6 +34,7 @@ class hook_listener {
      * @param after_ai_provider_form_hook $hook
      */
     public static function set_form_definition_for_aiprovider_datacurso(after_ai_provider_form_hook $hook): void {
+        global $PAGE;
         if ($hook->plugin !== 'aiprovider_datacurso') {
             return;
         }
@@ -94,7 +95,8 @@ class hook_listener {
         }
 
         $mform->addElement('header', 'connection_header', get_string('connection', 'aiprovider_datacurso'));
-    
+
+        $PAGE->requires->js_call_amd('aiprovider_datacurso/hiden_fields', 'init');
     }
 
     /**
