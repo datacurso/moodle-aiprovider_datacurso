@@ -27,7 +27,6 @@ require_once($CFG->libdir . '/filelib.php');
  * @package    aiprovider_datacurso
  */
 class datacurso_api_base {
-
     /** @var string $baseurl */
     /** Services that depend on the local Moodle webservice. */
     private const SERVICES_REQUIRING_WEBSERVICE = [
@@ -77,6 +76,10 @@ class datacurso_api_base {
 
     /**
      * Download a file from Datacurso API.
+     *
+     * @param string $endpoint The API endpoint for the file download.
+     * @param string $filename The desired name for the downloaded file.
+     * @param array $filerecord Additional file record information.
      */
     public function download_file($endpoint, $filename, $filerecord = []): ?\stored_file {
         global $USER;
@@ -111,6 +114,12 @@ class datacurso_api_base {
 
     /**
      * Generic handler for HTTP calls to Datacurso API.
+     *
+     * @param string $method The HTTP method (GET, POST, etc.).
+     * @param string $path The API path/endpoint.
+     * @param array $payload The request body or GET parameters.
+     * @param array $headers Additional HTTP headers.
+     * @return array|null The decoded JSON response array, or null on failure.
      */
     protected function send_request(string $method, string $path, $payload = [], array $headers = []): ?array {
         global $USER, $CFG;
@@ -241,6 +250,11 @@ class datacurso_api_base {
 
     /**
      * Standard JSON API call.
+     *
+     * @param string $method The HTTP method (GET, POST, etc.).
+     * @param string $path The API path/endpoint.
+     * @param array $body The request body or GET parameters.
+     * @return array|null The decoded JSON response array, or null on failure.
      */
     public function request(string $method, string $path, array $body = []): ?array {
         $headers = ['Content-Type: application/json'];
@@ -249,6 +263,13 @@ class datacurso_api_base {
 
     /**
      * Upload a file using multipart/form-data.
+     *
+     * @param string $path The API path/endpoint for the upload.
+     * @param string $filepath The local path to the file to be uploaded.
+     * @param string|null $mimetype The MIME type of the file.
+     * @param string|null $filename The desired filename for the upload.
+     * @param array $extraparams Additional parameters to send in the form data.
+     * @return array|null The decoded JSON response array, or null on failure.
      */
     public function upload_file(
         string $path,

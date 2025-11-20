@@ -27,7 +27,6 @@ use core_ai\hook\after_ai_action_settings_form_hook;
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class hook_listener {
-
     /**
      * Extend the AI provider configuration form for Datacurso.
      *

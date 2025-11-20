@@ -22,7 +22,7 @@
  */
 
 /**
- * Oculta la sección de configuración de conexión (Rate Limit y Endpoint URL).
+ * Hide section connection settings and fields ratelimit.
  */
 const hideConnectionSettings = () => {
     // Usamos const/let (ES6) y document.getElementById
@@ -33,8 +33,7 @@ const hideConnectionSettings = () => {
 };
 
 /**
- * Función de inicialización requerida por el cargador AMD de Moodle.
- * Esta función es la que llama el PHP en $PAGE->requires->js_call_amd('aiprovider_datacurso/hiden_fields', 'init');
+ * Init function.
  */
 export const init = () => {
     hideConnectionSettings();

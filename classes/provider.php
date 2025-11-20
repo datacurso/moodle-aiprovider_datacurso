@@ -27,7 +27,6 @@ use Psr\Http\Message\RequestInterface;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider extends \core_ai\provider {
-
     /**
      * Returns the list of AI actions supported by this provider.
      *
@@ -84,11 +83,6 @@ class provider extends \core_ai\provider {
      */
     public function is_provider_configured(): bool {
         return !empty($this->config['licensekey']);
-    }
-
-    public function is_rate_limiting_supported(): bool {
-    // Esto desactiva el Rate Limiting del core y evitará la validación de 0.
-    return false;
     }
 
     /**

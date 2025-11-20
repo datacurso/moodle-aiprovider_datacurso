@@ -25,12 +25,11 @@ namespace aiprovider_datacurso\form;
 class action_generate_text_form extends action_form {
     #[\Override]
     protected function definition(): void {
-        // Ejecutar el padre para obtener los elementos comunes (como el botón Save/Cancel).
+        // Execute parent form
         parent::definition(); 
         $mform = $this->_form;
 
         // System Instructions.
-        // Este bloque es el equivalente a tu antiguo admin_setting_configtextarea
         $mform->addElement(
             'textarea',
             'systeminstruction',
@@ -39,7 +38,7 @@ class action_generate_text_form extends action_form {
         );
         $mform->setType('systeminstruction', PARAM_TEXT);
         
-        // Asignar el valor por defecto: usar el valor guardado o el valor por defecto de la acción.
+        // Assign default value.
         $actionconfig = $this->_customdata['actionconfig'] ?? [];
         $actionclass = $this->_customdata['action'];
 
@@ -64,8 +63,8 @@ class action_generate_text_form extends action_form {
     }
     
     /**
-     * Devuelve los valores por defecto del formulario.
-     * Esto es llamado por provider::get_action_setting_defaults().
+     * Return defualt value form.
+     * Call provider::get_action_setting_defaults().
      * @return array
      */
     public function get_defaults(): array {

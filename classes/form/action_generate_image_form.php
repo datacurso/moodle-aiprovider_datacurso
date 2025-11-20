@@ -16,13 +16,11 @@
 
 namespace aiprovider_datacurso\form;
 
-use aiprovider_datacurso\aimodel\datacursoai_base;
-
 /**
  * Generate image action provider settings form.
  *
  * @package    aiprovider_datacurso
- * @copyright  2024 Matt Porritt <matt.porritt@moodle.com>
+ * @copyright  2025 Industria Elearning
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class action_generate_image_form extends action_form {

@@ -46,7 +46,6 @@ class datacurso_api {
 
     $this->baseurl = 'https://shop.datacurso.com/index.php?m=tokens_manager&api=';
 
-    // Obtener instancia del proveedor registrado.
     $manager = new \core_ai\manager($DB);
     $instances = $manager->get_provider_instances();
     $this->licensekey = null;

@@ -22,19 +22,25 @@ use navigation_node;
 use context_system;
 
 /**
- * Hook handlers for report_analytics navigation.
+ * Hook handlers for aiprovider_datacurso navigation.
  *
- * @package     aiprovider_datacurso
+ * @package    aiprovider_datacurso
+ * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class navigation {
     /**
-     * Extend the primary navigation to include a link to the analytics report.
+     * Extend the primary navigation to include a link for Datacurso AI Provider.
      *
      * @param primary_extend_hook $hook
      * @return void
      */
     public static function primary_extend(primary_extend_hook $hook): void {
         $sysctx = context_system::instance();
+
+        // Optional: Only admins should see this navigation entry.
+        if (!has_capability('moodle/site:config', $sysctx)) {
+            return;
+        }
 
         $primary = $hook->get_primaryview();
         $url = new moodle_url('/ai/provider/datacurso/admin/report_sections.php');

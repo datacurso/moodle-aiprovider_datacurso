@@ -34,34 +34,4 @@ if ($hassiteconfig) {
         'moodle/site:config',
         true
     );
-
-    // Settings general.
-    $settings->add(new admin_setting_heading(
-        'aiprovider_datacurso/general',
-        new lang_string('settings', 'core'),
-        ''
-    ));
-
-    // License key.
-    $settings->add(new admin_setting_configpasswordunmask(
-        'aiprovider_datacurso/licensekey',
-        new lang_string('licensekey', 'aiprovider_datacurso'),
-        new lang_string('licensekey_desc', 'aiprovider_datacurso'),
-        ''
-    ));
-
-    $ADMIN->add('reports', new admin_externalpage(
-        'aiprovider_datacurso_reports',
-        get_string('link_generalreport_datacurso', 'aiprovider_datacurso'),
-        new moodle_url('/ai/provider/datacurso/admin/report_sections.php'),
-        'moodle/site:config'
-    ));
-
-    // Web service configuration page for automatic setup and token management.
-    $ADMIN->add('server', new admin_externalpage(
-        'aiprovider_datacurso_webservice',
-        get_string('link_webservice_config', 'aiprovider_datacurso'),
-        new moodle_url('/ai/provider/datacurso/admin/webservice_config.php'),
-        'moodle/site:config'
-    ));
 }

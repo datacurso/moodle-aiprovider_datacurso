@@ -229,6 +229,7 @@ $string['userid'] = 'User';
 $string['userratelimit'] = 'Per-user request limit';
 $string['userratelimit_desc'] = 'Maximum number of requests allowed per hour for each individual user.';
 $string['verified'] = 'Verified';
+$string['warningconfig_instance'] = 'Warning: Only one instance should be created with this provider for proper use.';
 $string['webserviceconfig_current'] = 'Current configuration';
 $string['webserviceconfig_desc'] = 'Automatically configures a dedicated webservice for the Datacurso AI service, enabling it to securely extract platform information such as user basic data, courses, and activities for better AI contextualization. This setup creates a service user, assigns the necessary role, configures the external service, generates a secure token, and enables the REST protocol in one click. Note: The token value is not displayed for security reasons.';
 $string['webserviceconfig_heading'] = 'Automatic webservice setup';
