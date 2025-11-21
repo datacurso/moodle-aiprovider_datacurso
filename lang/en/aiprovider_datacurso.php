@@ -115,6 +115,7 @@ $string['hour'] = 'hour';
 $string['hours'] = 'Hours';
 $string['httperror'] = 'Unexpected error while processing your request (HTTP {$a}). Please try again later. If the problem persists, contact your site administrator.';
 $string['id'] = 'ID';
+$string['instance_disabled'] = 'The Datacurso provider instance is disabled';
 $string['installed'] = 'Installed';
 $string['invalidlicensekey'] = 'License key has expired or is invalid. Please go to <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Manage Credits</a> in the Datacurso Shop to renew or purchase a new license.';
 $string['json_encode_failed'] = 'Json Encode Failed';

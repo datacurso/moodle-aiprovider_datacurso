@@ -50,6 +50,16 @@ class hook_listener {
         $mform->addHelpButton('licensekey', 'licensekey', 'aiprovider_datacurso');
         $mform->addRule('licensekey', get_string('required'), 'required', null, 'client');
 
+        $mform->addElement(
+            'static',
+            'warningconfig_instance',
+            '',
+            \html_writer::div(
+                get_string('warningconfig_instance', 'aiprovider_datacurso'),
+                'alert alert-warning'
+            )
+        );
+
         $services = \aiprovider_datacurso\provider::get_services();
         \core_collator::asort_array_of_arrays_by_key($services, 'name');
 

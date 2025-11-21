@@ -47,15 +47,20 @@ class datacurso_api {
         $manager = new \core_ai\manager($DB);
         $instances = $manager->get_provider_instances();
         $this->licensekey = null;
+        $instanceprovider = null;
 
         foreach ($instances as $instance) {
-            if ($instance->get_name() === 'aiprovider_datacurso') {
+            if ($instance->get_name() === 'aiprovider_datacurso' && $instance->enabled === true) {
+                $instanceprovider = $instance;
                 $config = $instance->config ?? [];
                 if (!empty($config['licensekey'])) {
                     $this->licensekey = $config['licensekey'];
                 }
                 break;
             }
+        }
+        if($instanceprovider == null){
+            throw new \moodle_exception('instance_disabled', 'aiprovider_datacurso');
         }
         if (empty($this->licensekey)) {
             throw new \moodle_exception('licensekey_missing', 'aiprovider_datacurso');
