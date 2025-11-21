@@ -40,10 +40,7 @@ class hook_listener {
 
         $mform = $hook->mform;
 
-        $mform->addElement('passwordunmask', 'licensekey',
-            get_string('licensekey', 'aiprovider_datacurso'),
-            ['size' => 50]
-        );
+        $mform->addElement('passwordunmask', 'licensekey', get_string('licensekey', 'aiprovider_datacurso'), ['size' => 50]);
         $mform->addHelpButton('licensekey', 'licensekey', 'aiprovider_datacurso');
         $mform->addRule('licensekey', get_string('required'), 'required', null, 'client');
 
@@ -55,13 +52,7 @@ class hook_listener {
             $sname = $service['name'];
 
             $mform->addElement('header', "ratelimit_{$sid}_header", format_string($sname));
-
-            $mform->addElement('advcheckbox',
-                "ratelimit_{$sid}_enable",
-                get_string('ratelimit_enable', 'aiprovider_datacurso'),
-                get_string('ratelimit_enable_desc', 'aiprovider_datacurso')
-            );
-
+            $mform->addElement('advcheckbox',"ratelimit_{$sid}_enable", get_string('ratelimit_enable', 'aiprovider_datacurso'), get_string('ratelimit_enable_desc', 'aiprovider_datacurso'));
             $mform->addElement('text',
                 "ratelimit_{$sid}_limit",
                 get_string('ratelimit_limit', 'aiprovider_datacurso'),
@@ -84,17 +75,11 @@ class hook_listener {
             );
             $mform->setType("ratelimit_{$sid}_window_value", PARAM_INT);
 
-            $mform->addElement('select',
-                "ratelimit_{$sid}_window_unit",
-                get_string('ratelimit_window_unit', 'aiprovider_datacurso'),
-                $options
-            );
+            $mform->addElement('select', "ratelimit_{$sid}_window_unit", get_string('ratelimit_window_unit', 'aiprovider_datacurso'), $options);
             $mform->hideIf("ratelimit_{$sid}_window_value", "ratelimit_{$sid}_enable", 'eq', 0);
             $mform->hideIf("ratelimit_{$sid}_window_unit", "ratelimit_{$sid}_enable", 'eq', 0);
         }
-
         $mform->addElement('header', 'connection_header', get_string('connection', 'aiprovider_datacurso'));
-
         $PAGE->requires->js_call_amd('aiprovider_datacurso/hiden_fields', 'init');
     }
 

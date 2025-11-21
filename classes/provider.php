@@ -40,9 +40,7 @@ class provider extends \core_ai\provider {
             \core_ai\aiactions\explain_text::class,
         ];
     }
-
-    // En aiprovider_datacurso/provider.php (Versión 5.0)
-
+    
     /**
      * Add authentication headers to a request.
      *

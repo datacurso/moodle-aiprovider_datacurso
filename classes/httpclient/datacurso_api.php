@@ -41,30 +41,26 @@ class datacurso_api {
      *
      * @throws moodle_exception
      */
-   public function __construct() {
-    global $DB;
+    public function __construct() {
+        global $DB;
+        $this->baseurl = 'https://shop.datacurso.com/index.php?m=tokens_manager&api=';
+        $manager = new \core_ai\manager($DB);
+        $instances = $manager->get_provider_instances();
+        $this->licensekey = null;
 
-    $this->baseurl = 'https://shop.datacurso.com/index.php?m=tokens_manager&api=';
-
-    $manager = new \core_ai\manager($DB);
-    $instances = $manager->get_provider_instances();
-    $this->licensekey = null;
-
-    foreach ($instances as $instance) {
-        if ($instance->get_name() === 'aiprovider_datacurso') {
-            $config = $instance->config ?? [];
-
-            if (!empty($config['licensekey'])) {
-                $this->licensekey = $config['licensekey'];
+        foreach ($instances as $instance) {
+            if ($instance->get_name() === 'aiprovider_datacurso') {
+                $config = $instance->config ?? [];
+                if (!empty($config['licensekey'])) {
+                    $this->licensekey = $config['licensekey'];
+                }
+                break;
             }
-            break;
         }
-    }
-
-    if (empty($this->licensekey)) {
-        throw new \moodle_exception('licensekey_missing', 'aiprovider_datacurso');
-    }
-}
+        if (empty($this->licensekey)) {
+            throw new \moodle_exception('licensekey_missing', 'aiprovider_datacurso');
+        }
+    }   
 
     /**
      * Build the full URL depending on whether the baseurl uses querystring (?api=).

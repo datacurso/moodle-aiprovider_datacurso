@@ -26,16 +26,30 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['action'] = 'Action';
-$string['action:generate_image:endpoint'] = 'API endpoint';
-$string['action:generate_image:endpoint_desc'] = 'There endpoint the generate image';
-$string['action:generate_text:endpoint'] = 'API endpoint';
-$string['action:generate_text:endpoint_desc'] = 'There endpoint the generate text';
+$string['action:explain_text:endpoint'] = 'Explain text endpoint';
+$string['action:explain_text:model'] = 'Model for explanation';
+$string['action:explain_text:model_help'] = 'Select the model that will generate explanations.';
+$string['action:explain_text:systeminstruction'] = 'System instruction for explanation';
+$string['action:explain_text:systeminstruction_help'] = 'Provide context to guide the explanation process.';
+$string['action:generate_image:endpoint'] = 'Generate image endpoint';
+$string['action:generate_image:model'] = 'Model for image generation';
+$string['action:generate_image:model_help'] = 'Select the AI model to generate images.';
+$string['action:generate_image:systeminstruction'] = 'System prompt for image generation';
+$string['action:generate_image:systeminstruction_help'] = 'Additional instructions that guide the AI in generating the desired image.';
+$string['action:generate_text:endpoint'] = 'Generate text endpoint';
 $string['action:generate_text:instruction'] = 'System instruction';
 $string['action:generate_text:instruction_desc'] = 'This instruction is sent to the AI model along with the user\'s prompt. Editing this instruction is not recommended unless absolutely required.';
-$string['action:summarise_text:endpoint'] = 'API endpoint';
-$string['action:summarise_text:endpoint_desc'] = 'There endpoint the generate text';
+$string['action:generate_text:model'] = 'Model for text generation';
+$string['action:generate_text:model_help'] = 'Select which AI model will be used to generate the text.';
+$string['action:generate_text:systeminstruction'] = 'System instruction';
+$string['action:generate_text:systeminstruction_help'] = 'Instruction or context given to the AI before generating the text. Useful for controlling tone, structure, or purpose of the response.';
+$string['action:summarise_text:endpoint'] = 'Summarise text endpoint';
 $string['action:summarise_text:instruction'] = 'System instruction';
 $string['action:summarise_text:instruction_desc'] = 'This instruction is sent to the AI model along with the user\'s prompt. Editing this instruction is not recommended unless absolutely required.';
+$string['action:summarise_text:model'] = 'Model for summarisation';
+$string['action:summarise_text:model_help'] = 'Select which AI model will be used to summarise the text.';
+$string['action:summarise_text:systeminstruction'] = 'System instruction for summary';
+$string['action:summarise_text:systeminstruction_help'] = 'Optional context to influence how the summary is generated.';
 $string['all'] = 'All';
 $string['alt_datacurso_icon'] = 'Datacurso icon';
 $string['apikey'] = 'API key';
@@ -47,10 +61,13 @@ $string['chart_actions'] = 'Credits distribution by service';
 $string['chart_tokens_by_day'] = 'Credits consumption by day';
 $string['chart_tokens_by_month'] = 'Number of credits consumed per month';
 $string['configured'] = 'Configured';
+$string['connection'] = 'Connection settings';
 $string['contextwstoken'] = 'Web service token for course context';
 $string['contextwstoken_desc'] = 'Token used by the AI to retrieve course information (context). Stored securely. Create/manage tokens in Site administration > Server > Web services > Manage tokens.';
 $string['created'] = 'Created';
 $string['curlerror'] = 'Datacurso API cURL error: {$a}';
+$string['custom_model_name'] = 'Custom model name';
+$string['custom_model_name_help'] = 'Optional name to identify this specific AI model configuration.';
 $string['datacurso:configurews'] = 'Configure Datacurso web service';
 $string['datacurso:manage'] = 'Manage AI provider settings';
 $string['datacurso:use'] = 'Use Datacurso AI services';
@@ -67,7 +84,10 @@ $string['enableglobalratelimit'] = 'Enable global limit';
 $string['enableglobalratelimit_desc'] = 'If enabled, a global request limit per hour will be applied for all users.';
 $string['enableuserratelimit'] = 'Enable per-user limit';
 $string['enableuserratelimit_desc'] = 'If enabled, each user will have an hourly request limit.';
+$string['endpointurl'] = 'Endpoint URL';
+$string['endpointurl_help'] = 'Base API endpoint URL of the Datacurso AI Provider. Usually something like https://api.datacurso.ai/v1/.';
 $string['error_ratelimit_exceeded'] = 'The allowed consumption limit has been exceeded. Please try again at {$a}.';
+$string['error_webservice_not_configured'] = 'This action cannot continue because the Datacurso web service that feeds contextual data to the AI is not configured. Complete the automatic setup at <a href="{$a->url}">Datacurso webservice setup</a> and try again. Or contact your administrator for more information.';
 $string['errorgetbalancecredits'] = 'Could not retrieve credits balance from external API';
 $string['errorinitinformation'] = 'Initial information could not be obtained.';
 $string['exists'] = 'Exists';
@@ -103,6 +123,7 @@ $string['last_sent'] = 'Last sent';
 $string['license_not_allowed'] = 'Your license is not allowed to perform this request. Please manage your licenses and credits in <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Manage Credits</a> in the Datacurso Shop.';
 $string['licensekey'] = 'License key';
 $string['licensekey_desc'] = 'Enter the license key from the Datacurso Shop customer area.';
+$string['licensekey_help'] = 'Enter your Datacurso AI provider license key.';
 $string['link_consumptionhistory'] = 'Credits consumption history';
 $string['link_generalreport'] = 'General report';
 $string['link_generalreport_datacurso'] = 'General report Datacurso AI';
@@ -124,7 +145,6 @@ $string['not_assigned'] = 'Not assigned';
 $string['not_configured'] = 'Not configured';
 $string['not_created'] = 'Not created';
 $string['notallowed'] = 'You are not allowed to perform this action. Please contact your administrator for more information.';
-$string['error_webservice_not_configured'] = 'This action cannot continue because the Datacurso web service that feeds contextual data to the AI is not configured. Complete the automatic setup at <a href="{$a->url}">Datacurso webservice setup</a> and try again. Or contact your administrator for more information.';
 $string['notenoughtokens'] = 'Insufficient AI credits. Please visit <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Manage Credits</a> in the Datacurso Shop to allocate or purchase more credits. Or contact your administrator.';
 $string['of'] = 'of';
 $string['orgid'] = 'Organization ID';
@@ -165,8 +185,9 @@ $string['privacy:metadata:aiprovider_datacurso_rlimit:userid'] = 'User ID relate
 $string['privacy:metadata:aiprovider_datacurso_rlimit:windowstart'] = 'Window start timestamp used to compute consumption limits.';
 $string['ratelimit_enable'] = 'Enable rate limit';
 $string['ratelimit_enable_desc'] = 'If enabled, the per-user credit limit will be enforced for this plugin.';
-$string['ratelimit_limit'] = 'Credit limit per window';
-$string['ratelimit_limit_desc'] = 'Maximum number of credits a user can consume within the selected time window. 0 for unlimited.';
+$string['ratelimit_limit'] = 'Rate limit';
+$string['ratelimit_limit_desc'] = 'The maximum number of requests allowed per rate-limit window.';
+$string['ratelimit_limit_help'] = 'The maximum number of requests allowed per rate-limit window.';
 $string['ratelimit_local_assign_ai_allowedusers'] = 'Allowed assignment reviewers (AI)';
 $string['ratelimit_local_assign_ai_allowedusers_desc'] = 'Select the users who are allowed to review assignments with AI when this service is enabled.';
 $string['ratelimit_local_assign_ai_allowedusers_enable'] = 'Limit by allowed users';
@@ -189,6 +210,8 @@ $string['ratelimit_report_lifestory_allowedusers_enable'] = 'Limit by allowed us
 $string['ratelimit_report_lifestory_allowedusers_enable_desc'] = 'If enabled, only the selected users below will be allowed to generate AI feedback in the Life Story report.';
 $string['ratelimit_window'] = 'Time window';
 $string['ratelimit_window_desc'] = 'Select the duration and unit for the rate limit window.';
+$string['ratelimit_window_unit'] = 'Window unit';
+$string['ratelimit_window_value'] = 'Window value';
 $string['ratelimits_heading'] = 'Per-plugin rate limits';
 $string['ratelimits_heading_desc'] = 'Configure per-user rate limits per plugin that uses the Datacurso provider.';
 $string['read_context_course'] = 'Read context for AI course creation';
@@ -282,50 +305,3 @@ $string['ws_user_lastname'] = 'Service';
 $string['ws_userassigned'] = 'Role assigned to user';
 $string['year'] = 'year';
 $string['years'] = 'Years';
-
-$string['licensekey'] = 'License key';
-$string['licensekey_help'] = 'Enter your Datacurso AI provider license key.';
-
-$string['ratelimit_limit'] = 'Rate limit';
-$string['ratelimit_limit_help'] = 'The maximum number of requests allowed per rate-limit window.';
-
-$string['ratelimit_window_value'] = 'Window value';
-$string['ratelimit_window_unit'] = 'Window unit';
-
-$string['connection'] = 'Connection settings';
-$string['endpointurl'] = 'Endpoint URL';
-$string['endpointurl_help'] = 'Base API endpoint URL of the Datacurso AI Provider. Usually something like https://api.datacurso.ai/v1/.';
-
-// Action: generate text.
-$string['action:generate_text:model'] = 'Model for text generation';
-$string['action:generate_text:model_help'] = 'Select which AI model will be used to generate the text.';
-$string['action:generate_text:systeminstruction'] = 'System instruction';
-$string['action:generate_text:systeminstruction_help'] = 'Instruction or context given to the AI before generating the text. Useful for controlling tone, structure, or purpose of the response.';
-
-// Action: generate image.
-$string['action:generate_image:model'] = 'Model for image generation';
-$string['action:generate_image:model_help'] = 'Select the AI model to generate images.';
-$string['action:generate_image:systeminstruction'] = 'System prompt for image generation';
-$string['action:generate_image:systeminstruction_help'] = 'Additional instructions that guide the AI in generating the desired image.';
-
-// Action: summarise text.
-$string['action:summarise_text:model'] = 'Model for summarisation';
-$string['action:summarise_text:model_help'] = 'Select which AI model will be used to summarise the text.';
-$string['action:summarise_text:systeminstruction'] = 'System instruction for summary';
-$string['action:summarise_text:systeminstruction_help'] = 'Optional context to influence how the summary is generated.';
-
-// Action: explain text.
-$string['action:explain_text:model'] = 'Model for explanation';
-$string['action:explain_text:model_help'] = 'Select the model that will generate explanations.';
-$string['action:explain_text:systeminstruction'] = 'System instruction for explanation';
-$string['action:explain_text:systeminstruction_help'] = 'Provide context to guide the explanation process.';
-
-// Custom model name.
-$string['custom_model_name'] = 'Custom model name';
-$string['custom_model_name_help'] = 'Optional name to identify this specific AI model configuration.';
-
-// AI provider actions (required for core compatibility).
-$string['action:generate_text:endpoint'] = 'Generate text endpoint';
-$string['action:generate_image:endpoint'] = 'Generate image endpoint';
-$string['action:summarise_text:endpoint'] = 'Summarise text endpoint';
-$string['action:explain_text:endpoint'] = 'Explain text endpoint';

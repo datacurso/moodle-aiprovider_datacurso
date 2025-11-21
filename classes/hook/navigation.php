@@ -25,7 +25,8 @@ use context_system;
  * Hook handlers for aiprovider_datacurso navigation.
  *
  * @package    aiprovider_datacurso
- * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2025 Industria Elearning
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class navigation {
     /**

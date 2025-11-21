@@ -20,24 +20,23 @@ namespace aiprovider_datacurso\form;
  * Generate text action provider settings form.
  *
  * @package    aiprovider_datacurso
+ * @copyright  2025 Industria Elearning
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class action_generate_text_form extends action_form {
     #[\Override]
     protected function definition(): void {
         // Execute parent form
-        parent::definition(); 
+        parent::definition();
         $mform = $this->_form;
 
         // System Instructions.
-        $mform->addElement(
-            'textarea',
+        $mform->addElement('textarea',
             'systeminstruction',
             get_string("action:{$this->actionname}:systeminstruction", 'aiprovider_datacurso'),
             'wrap="virtual" rows="5" cols="20"',
         );
         $mform->setType('systeminstruction', PARAM_TEXT);
-        
         // Assign default value.
         $actionconfig = $this->_customdata['actionconfig'] ?? [];
         $actionclass = $this->_customdata['action'];
@@ -46,7 +45,6 @@ class action_generate_text_form extends action_form {
             'systeminstruction', 
             $actionconfig['systeminstruction'] ?? $actionclass::get_system_instruction()
         );
-        
         $mform->addHelpButton('systeminstruction', "action:{$this->actionname}:systeminstruction", 'aiprovider_datacurso');
 
         // Add the action class as a hidden field.

@@ -78,7 +78,7 @@ $idprovider = null;
 foreach ($instances as $instance) {
     if ($instance->get_name() === 'aiprovider_datacurso') {
         $idprovider = $instance->id;
-        break;     
+        break;
     }
 }
 
@@ -87,7 +87,7 @@ if ($idprovider) {
         'configprovider',
         new moodle_url('/ai/configure.php', ['id' => $idprovider]),
         get_string('link_provider_config', 'aiprovider_datacurso')
-    ); 
+    );
 }
 
 // Render page header and navigation.
