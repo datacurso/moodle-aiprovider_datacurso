@@ -26,15 +26,23 @@ namespace aiprovider_datacurso\form;
 class action_generate_text_form extends action_form {
     #[\Override]
     protected function definition(): void {
-        // Execute parent form.
         parent::definition();
+
         $mform = $this->_form;
 
         // System Instructions.
-        $mform->addElement('textarea',
-            'systeminstruction', get_string("action:{$this->actionname}:systeminstruction", 'aiprovider_datacurso'),
-            'wrap="virtual" rows="5" cols="20"',);
+        $mform->addElement(
+            'textarea',
+            'systeminstruction',
+            get_string("action:{$this->actionname}:systeminstruction", 'aiprovider_datacurso'),
+            [
+                'wrap' => 'virtual',
+                'rows' => 5,
+                'cols' => 20,
+            ]
+        );
         $mform->setType('systeminstruction', PARAM_TEXT);
+
         // Assign default value.
         $actionconfig = $this->_customdata['actionconfig'] ?? [];
         $actionclass = $this->_customdata['action'];
@@ -43,7 +51,12 @@ class action_generate_text_form extends action_form {
             'systeminstruction',
             $actionconfig['systeminstruction'] ?? $actionclass::get_system_instruction()
         );
-        $mform->addHelpButton('systeminstruction', "action:{$this->actionname}:systeminstruction", 'aiprovider_datacurso');
+
+        $mform->addHelpButton(
+            'systeminstruction',
+            "action:{$this->actionname}:systeminstruction",
+            'aiprovider_datacurso'
+        );
 
         // Add the action class as a hidden field.
         $mform->addElement('hidden', 'action', $this->action);
@@ -59,12 +72,13 @@ class action_generate_text_form extends action_form {
     }
 
     /**
-     * Return defualt value form.
-     * Call provider::get_action_setting_defaults().
+     * Return default values for this form.
+     *
      * @return array
      */
     public function get_defaults(): array {
         $actionclass = $this->_customdata['action'];
+
         return [
             'systeminstruction' => $actionclass::get_system_instruction(),
         ];

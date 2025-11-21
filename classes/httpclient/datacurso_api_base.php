@@ -57,7 +57,7 @@ class datacurso_api_base {
         foreach ($instances as $instance) {
             if ($instance->get_name() === 'aiprovider_datacurso') {
                 $config = $instance->config;
-                if(!empty($config['licensekey'])){
+                if (!empty($config['licensekey'])) {
                     $licensekey = $config['licensekey'];
                     break;
                 }

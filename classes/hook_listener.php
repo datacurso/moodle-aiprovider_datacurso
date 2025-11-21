@@ -34,13 +34,19 @@ class hook_listener {
      */
     public static function set_form_definition_for_aiprovider_datacurso(after_ai_provider_form_hook $hook): void {
         global $PAGE;
+
         if ($hook->plugin !== 'aiprovider_datacurso') {
             return;
         }
 
         $mform = $hook->mform;
 
-        $mform->addElement('passwordunmask', 'licensekey', get_string('licensekey', 'aiprovider_datacurso'), ['size' => 50]);
+        $mform->addElement(
+            'passwordunmask',
+            'licensekey',
+            get_string('licensekey', 'aiprovider_datacurso'),
+            ['size' => 50]
+        );
         $mform->addHelpButton('licensekey', 'licensekey', 'aiprovider_datacurso');
         $mform->addRule('licensekey', get_string('required'), 'required', null, 'client');
 
@@ -51,9 +57,21 @@ class hook_listener {
             $sid = $service['id'];
             $sname = $service['name'];
 
-            $mform->addElement('header', "ratelimit_{$sid}_header", format_string($sname));
-            $mform->addElement('advcheckbox',"ratelimit_{$sid}_enable", get_string('ratelimit_enable', 'aiprovider_datacurso'), get_string('ratelimit_enable_desc', 'aiprovider_datacurso'));
-            $mform->addElement('text',
+            $mform->addElement(
+                'header',
+                "ratelimit_{$sid}_header",
+                format_string($sname)
+            );
+
+            $mform->addElement(
+                'advcheckbox',
+                "ratelimit_{$sid}_enable",
+                get_string('ratelimit_enable', 'aiprovider_datacurso'),
+                get_string('ratelimit_enable_desc', 'aiprovider_datacurso')
+            );
+
+            $mform->addElement(
+                'text',
                 "ratelimit_{$sid}_limit",
                 get_string('ratelimit_limit', 'aiprovider_datacurso'),
                 ['size' => 10]
@@ -68,18 +86,31 @@ class hook_listener {
                 'days' => get_string('days'),
             ];
 
-            $mform->addElement('text',
+            $mform->addElement(
+                'text',
                 "ratelimit_{$sid}_window_value",
                 get_string('ratelimit_window_value', 'aiprovider_datacurso'),
                 ['size' => 5]
             );
             $mform->setType("ratelimit_{$sid}_window_value", PARAM_INT);
 
-            $mform->addElement('select', "ratelimit_{$sid}_window_unit", get_string('ratelimit_window_unit', 'aiprovider_datacurso'), $options);
+            $mform->addElement(
+                'select',
+                "ratelimit_{$sid}_window_unit",
+                get_string('ratelimit_window_unit', 'aiprovider_datacurso'),
+                $options
+            );
+
             $mform->hideIf("ratelimit_{$sid}_window_value", "ratelimit_{$sid}_enable", 'eq', 0);
             $mform->hideIf("ratelimit_{$sid}_window_unit", "ratelimit_{$sid}_enable", 'eq', 0);
         }
-        $mform->addElement('header', 'connection_header', get_string('connection', 'aiprovider_datacurso'));
+
+        $mform->addElement(
+            'header',
+            'connection_header',
+            get_string('connection', 'aiprovider_datacurso')
+        );
+
         $PAGE->requires->js_call_amd('aiprovider_datacurso/hiden_fields', 'init');
     }
 
@@ -97,20 +128,31 @@ class hook_listener {
 
         if (isset($mform->_elementIndex['modeltemplate'])) {
             $model = $mform->getElementValue('modeltemplate');
+
             if (is_array($model)) {
                 $model = $model[0];
             }
 
-            $mform->addElement('header', 'modelsettingsheader', get_string('settings', 'aiprovider_datacurso'));
+            $mform->addElement(
+                'header',
+                'modelsettingsheader',
+                get_string('settings', 'aiprovider_datacurso')
+            );
 
             if ($model === 'custom') {
-                $mform->addElement('textarea', 'modelextraparams',
+                $mform->addElement(
+                    'textarea',
+                    'modelextraparams',
                     get_string('extraparams', 'aiprovider_datacurso'),
-                    ['rows' => 5, 'cols' => 40]
+                    [
+                        'rows' => 5,
+                        'cols' => 40,
+                    ]
                 );
                 $mform->setType('modelextraparams', PARAM_TEXT);
             } else {
                 $targetmodel = helper::get_model_class($model);
+
                 if ($targetmodel && $targetmodel->has_model_settings()) {
                     $targetmodel->add_model_settings($mform);
                 }
