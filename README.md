@@ -134,14 +134,25 @@ These Moodle security settings directly affect the Datacurso AI Provider and, th
    
    ![AI Providers](./_docs/images/aiprovider_datacurso_ai_providers.png)
 
-2. Enable the **Datacurso AI Provider** and click on **Settings**
+2. Click **Create new provider instance**
 
-   ![Enable Datacurso AI Provider](./_docs/images/aiprovider_datacurso_enable_datacurso_ai_provider.png)
+   ![Providers list](./_docs/images/aiprovider_datacurso_5_page-providers.png)
 
-3. Configure the following settings:
+3. Configure the settings to create instance:
    - **License key**: Enter the license key that we copied in the [Obtain License Keys](#obtain-license-keys) section
 
-   ![Config](./_docs/images/aiprovider_datacurso_config.png)
+   ![Config](./_docs/images/aiprovider_datacurso_5_page-provider-create-form-datacurso.png)
+
+4. Enable instance :
+
+   ![Config](./_docs/images/aiprovider_datacurso_5_page-providers-register.png)
+
+
+## Datacurso AI Provider 
+
+In this section we will find global reports and configurations from our provider.
+
+![Config](./_docs/images/aiprovider_datacurso_5_link_section.png)
 
 ## Datacurso webservice setup
 
@@ -161,9 +172,9 @@ This feature allows you to automatically configure the Web Service used by Datac
 
 ### How to use it
 
-To configure the webservice, go to `Site administration > Server > Datacurso webservice setup`.
+To configure the webservice, go to `Datacurso AI Provider >  Datacurso webservice setup`.
 
-![Datacurso Webservice Setup](./_docs/images/aiprovider_datacurso_datacurso_webservice_setup.png)
+![Datacurso Webservice Setup](./_docs/images/aiprovider_datacurso_5_link_webservices.png)
 
 ### What it does:
 - Enables Web services and the **REST** protocol if they are not already active.
@@ -267,11 +278,11 @@ The following functions are added to the `Datacurso web service` external servic
 ### Interface:
 - Shows the current status (web services/REST, user, role, service, token, registration).
   
-  ![Webservice Status](./_docs/images/aiprovider_datacurso_webservice_status.png)
+  ![Webservice Status](./_docs/images/aiprovider_datacurso_5_page-webservices.png)
 
 - Buttons: **Configure webservice** (configure everything), **Retry** (retry registration/send), **Regenerate token** (regenerate token and resend registration).
   
-  ![Webservice Buttons](./_docs/images/aiprovider_datacurso_webservice_buttons.png)
+  ![Webservice Buttons](./_docs/images/aiprovider_datacurso_5_page-webservices-configure.png)
 
 - Includes a live activity log with the steps performed.
 
@@ -291,32 +302,25 @@ From the same configuration page of the **Datacurso AI Provider**, you can enabl
 
 ![Actions](./_docs/images/aiprovider_datacurso_actions.png)
 
-## Reports Datacurso AI Provider
-
-In this section you can monitor credit usage in detail for each action performed in each plugin of the Datacurso suite, including totals, trends, and distribution by service.
-
-To view the reports, go to `Site administration > Reports > General report Datacurso AI`.
-
-![Report Link](./_docs/images/aiprovider_datacurso_page-general-report.png)
 
 ### History Consumption Credits 
 
 Here we can see three sections. The first section shows the credit consumption history for AI usage in plugins that use the Datacurso provider, as well as the predefined AI actions in Moodle.
 
-![History](./_docs/images/aiprovider_datacurso_page-report-history.png)
+![History](./_docs/images/aiprovider_datacurso_5_page-report-history.png)
 
 ### Reports grafics
 
 The second section displays information about credit usage through visual graphs.
 
-![Grafics](./_docs/images/aiprovider_datacurso_page-report-grafics-bar-pai.png)
-![Grafics day](./_docs/images/aiprovider_datacurso_page-report-grafics-day.png)
+![Grafics](./_docs/images/aiprovider_datacurso_5_page-report-grafics-bar-pai.png)
+![Grafics day](./_docs/images/aiprovider_datacurso_5_page-report-grafics-day.png)
 
 ### Datacurso List Plugins
 
 The third section shows the list of Datacurso plugins that are compatible with the Datacurso AI provider.
 
-![List plugins](./_docs/images/aiprovider_datacurso_page-report-listplugins.png)
+![List plugins](./_docs/images/aiprovider_datacurso_5_page-report-listplugins.png)
 
 ## License ##
 
