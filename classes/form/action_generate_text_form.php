@@ -26,23 +26,21 @@ namespace aiprovider_datacurso\form;
 class action_generate_text_form extends action_form {
     #[\Override]
     protected function definition(): void {
-        // Execute parent form
+        // Execute parent form.
         parent::definition();
         $mform = $this->_form;
 
         // System Instructions.
         $mform->addElement('textarea',
-            'systeminstruction',
-            get_string("action:{$this->actionname}:systeminstruction", 'aiprovider_datacurso'),
-            'wrap="virtual" rows="5" cols="20"',
-        );
+            'systeminstruction', get_string("action:{$this->actionname}:systeminstruction", 'aiprovider_datacurso'),
+            'wrap="virtual" rows="5" cols="20"',);
         $mform->setType('systeminstruction', PARAM_TEXT);
         // Assign default value.
         $actionconfig = $this->_customdata['actionconfig'] ?? [];
         $actionclass = $this->_customdata['action'];
 
         $mform->setDefault(
-            'systeminstruction', 
+            'systeminstruction',
             $actionconfig['systeminstruction'] ?? $actionclass::get_system_instruction()
         );
         $mform->addHelpButton('systeminstruction', "action:{$this->actionname}:systeminstruction", 'aiprovider_datacurso');
@@ -59,7 +57,7 @@ class action_generate_text_form extends action_form {
         $mform->addElement('hidden', 'providerid', $this->providerid);
         $mform->setType('providerid', PARAM_INT);
     }
-    
+
     /**
      * Return defualt value form.
      * Call provider::get_action_setting_defaults().

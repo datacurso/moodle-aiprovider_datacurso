@@ -60,7 +60,7 @@ class datacurso_api {
         if (empty($this->licensekey)) {
             throw new \moodle_exception('licensekey_missing', 'aiprovider_datacurso');
         }
-    }   
+    }
 
     /**
      * Build the full URL depending on whether the baseurl uses querystring (?api=).

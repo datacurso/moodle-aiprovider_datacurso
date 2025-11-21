@@ -25,7 +25,6 @@
  * Hide section connection settings and fields ratelimit.
  */
 const hideConnectionSettings = () => {
-    // Usamos const/let (ES6) y document.getElementById
     const connectionSettings = document.getElementById('id_connection_header');
     if (connectionSettings) {
         connectionSettings.style.display = 'none';

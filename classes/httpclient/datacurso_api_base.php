@@ -23,6 +23,7 @@ require_once($CFG->libdir . '/filelib.php');
 /**
  * Class datacurso_api_base
  * Base class for interacting with Datacurso APIs.
+ * @package    aiprovider_datacurso
  * @copyright  2025 Industria Elearning
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

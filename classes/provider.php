@@ -40,7 +40,7 @@ class provider extends \core_ai\provider {
             \core_ai\aiactions\explain_text::class,
         ];
     }
-    
+
     /**
      * Add authentication headers to a request.
      *

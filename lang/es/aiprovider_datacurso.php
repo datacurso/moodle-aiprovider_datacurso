@@ -69,6 +69,7 @@ $string['enableuserratelimit_desc'] = 'Si está habilitado, cada usuario tendrá
 $string['error_ratelimit_exceeded'] = 'Se ha superado el límite de consumos permitidos. Por favor, inténtalo de nuevo a las {$a}.';
 $string['errorgetbalancecredits'] = 'No se pudo recuperar el saldo de créditos de la API externa';
 $string['errorinitinformation'] = 'No se pudo obtener la información inicial.';
+$string['error_webservice_not_configured'] = 'No es posible continuar con esta acción porque el servicio web de Datacurso que proporciona datos contextuales a la IA no está configurado. Complete la configuración automática en <a href="{$a->url}">Configuración de servicio web Datacurso</a> e inténtelo de nuevo. O contacte a su administrador para más información.';
 $string['exists'] = 'Existe';
 $string['forbidden'] = 'No tiene permiso para realizar esta acción con la licencia actual. Por favor, verifique su licencia y créditos disponibles en <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Gestionar Créditos</a> en la Tienda Datacurso.';
 $string['generate_activitie'] = 'Generar actividad o recurso con IA';
@@ -120,7 +121,6 @@ $string['not_assigned'] = 'No asignado';
 $string['not_configured'] = 'No configurado';
 $string['not_created'] = 'No creado';
 $string['notallowed'] = 'No tiene permiso para realizar esta acción. Por favor, contacte a su administrador para más información.';
-$string['error_webservice_not_configured'] = 'No es posible continuar con esta acción porque el servicio web de Datacurso que proporciona datos contextuales a la IA no está configurado. Complete la configuración automática en <a href="{$a->url}">Configuración de servicio web Datacurso</a> e inténtelo de nuevo. O contacte a su administrador para más información.';
 $string['notenoughtokens'] = 'Créditos de IA insuficientes. Por favor, visite <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Gestionar Créditos</a> en la Tienda Datacurso para asignar o comprar más créditos. O contacte a su administrador.';
 $string['of'] = 'de';
 $string['orgid'] = 'ID de organización';
