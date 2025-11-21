@@ -59,7 +59,7 @@ class datacurso_api {
                 break;
             }
         }
-        if($instanceprovider == null){
+        if ($instanceprovider == null) {
             throw new \moodle_exception('instance_disabled', 'aiprovider_datacurso');
         }
         if (empty($this->licensekey)) {

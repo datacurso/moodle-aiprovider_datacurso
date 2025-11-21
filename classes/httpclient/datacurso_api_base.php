@@ -66,7 +66,7 @@ class datacurso_api_base {
                 }
             }
         }
-        if($instanceprovider == null){
+        if ($instanceprovider == null) {
             throw new \moodle_exception('instance_disabled', 'aiprovider_datacurso');
         }
         $this->baseurl = rtrim($baseurl, '/');
