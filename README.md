@@ -143,6 +143,10 @@ These Moodle security settings directly affect the Datacurso AI Provider and, th
 
    ![Config](./_docs/images/aiprovider_datacurso_5_page-provider-create-form-datacurso.png)
 
+### ⚠️IMPORTANT: 
+
+- Only one instance should be created with this provider for proper use.
+
 4. Enable instance :
 
    ![Config](./_docs/images/aiprovider_datacurso_5_page-providers-register.png)
