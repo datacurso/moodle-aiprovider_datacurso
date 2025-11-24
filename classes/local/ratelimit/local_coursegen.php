@@ -8,11 +8,11 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace aiprovider_datacurso\local\ratelimit;
 
@@ -43,8 +43,7 @@ class local_coursegen {
      * @param \moodleform $mform The Moodle form object (ai_provider_form).
      * @param string $serviceid The service identifier, e.g., 'local_coursegen'.
      */
-    public function add_form_elements( $mform, string $serviceid): void {
-
+    public function add_form_elements($mform, string $serviceid): void {
         $configprefix = "ratelimit_{$serviceid}";
         $allowedusersenable_id = "{$configprefix}_allowedusers_enable";
 
@@ -79,13 +78,10 @@ class local_coursegen {
             $attributes
         );
         $mform->setType($coursecreators_id, PARAM_RAW);
-
         // Hide if the master checkbox is not checked (eq, 0).
         $mform->hideIf($coursecreators_id, $allowedusersenable_id, 'notchecked');
-
         // 3. Autocomplete for allowed Activity Creators.
         $activitycreators_id = "{$configprefix}_activitycreators";
-
         $mform->addElement(
             'autocomplete',
             $activitycreators_id,
@@ -94,7 +90,6 @@ class local_coursegen {
             $attributes
         );
         $mform->setType($activitycreators_id, PARAM_RAW);
-
         // Hide if the master checkbox is not checked (eq, 0).
         $mform->hideIf($activitycreators_id, $allowedusersenable_id, 'notchecked');
     }

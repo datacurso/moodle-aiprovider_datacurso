@@ -18,14 +18,13 @@ namespace aiprovider_datacurso;
 
 use core_ai\hook\after_ai_provider_form_hook;
 use core_ai\hook\after_ai_action_settings_form_hook;
-use \moodleform;
 
 /**
  * Hook listener for the Datacurso AI Provider.
  *
  * @package     aiprovider_datacurso
  * @copyright   2025 Industria Elearning
- * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class hook_listener {
     /**
@@ -45,7 +44,7 @@ class hook_listener {
 
         $mform = $hook->mform;
 
-        // --- License Key and Warning (Unchanged from original) ---
+        // License Key and Warning (Unchanged from original).
         $mform->addElement(
             'passwordunmask',
             'licensekey',
@@ -65,7 +64,7 @@ class hook_listener {
             )
         );
 
-        // --- Rate Limit Settings (Per Service) ---
+        // Rate Limit Settings (For Service).
         $services = \aiprovider_datacurso\provider::get_services();
         \core_collator::asort_array_of_arrays_by_key($services, 'name');
 
@@ -73,21 +72,21 @@ class hook_listener {
             $sid = $service['id'];
             $sname = $service['name'];
 
-            // 1. Service Header for Rate Limit section.
+            // Service Header for Rate Limit section.
             $mform->addElement(
                 'header',
                 "ratelimit_{$sid}_header",
                 format_string($sname)
             );
 
-            // 2. Generic Rate Limit fields (Enabled, Limit, Window).
+            // Generic Rate Limit fields (Enabled, Limit, Window).
             $mform->addElement(
                 'advcheckbox',
                 "ratelimit_{$sid}_enable",
                 get_string('ratelimit_enable', 'aiprovider_datacurso'),
                 get_string('ratelimit_enable_desc', 'aiprovider_datacurso')
             );
-            $mform->setType("ratelimit_{$sid}_enable", PARAM_BOOL); // Setting type explicitly for clarity
+            $mform->setType("ratelimit_{$sid}_enable", PARAM_BOOL);
 
             $mform->addElement(
                 'text',
@@ -130,19 +129,16 @@ class hook_listener {
             // --- Dynamic injection of Service-Specific elements ---
             $classname = "\\aiprovider_datacurso\\local\\ratelimit\\{$sid}";
             
-            // Check if a service-specific rate limit configuration class exists (e.g., local_assign_ai).
+            // Check if a service-specific rate limit configuration class exists.
             if (class_exists($classname)) {
                 $ratelimit_service_config = new $classname();
-                
-                // Call the adapted Moodle Form method to add specific fields (e.g., Allowed Users).
+
                 if (method_exists($ratelimit_service_config, 'add_form_elements')) {
-                    // Pass the $mform object and the service ID.
-                    $ratelimit_service_config->add_form_elements($mform, $sid); 
+                    $ratelimit_service_config->add_form_elements($mform, $sid);
                 }
             }
         }
 
-        // --- Connection Header and JS call (Unchanged from original) ---
         $mform->addElement(
             'header',
             'connection_header',
