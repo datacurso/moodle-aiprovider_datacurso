@@ -293,4 +293,15 @@ class datacurso_api_base {
             throw new \moodle_exception('error_webservice_not_configured', 'aiprovider_datacurso', '', $messageparams);
         }
     }
+
+    /**
+     * Check if the license is for European Union.
+     *
+     * @return bool
+     */
+    public function is_for_ue(): bool {
+        $datacursoapi = new datacurso_api();
+        $response = $datacursoapi->get('tokens/saldo');
+        return $response['is_for_eu'];
+    }
 }
