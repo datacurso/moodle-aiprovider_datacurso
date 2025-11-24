@@ -8,62 +8,76 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace aiprovider_datacurso\local\ratelimit;
 
-use admin_settingpage;
-use core_admin\local\settings\autocomplete;
+use core_user\form\element\autocomplete; 
+use \lang_string;
+use aiprovider_datacurso\local\ratelimit\ratelimit_settings;
 
 defined('MOODLE_INTERNAL') || die();
-require_once($CFG->dirroot . '/user/lib.php');
 
 /**
  * Class report_lifestory
  *
- * @package    aiprovider_datacurso
- * @copyright  2025 Wilber Narvaez <https://datacurso.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * This class provides the specific rate limiting settings elements for the 
+ * Life Story report AI feedback generation service.
+ *
+ * @package     aiprovider_datacurso
+ * @copyright   2025 Wilber Narvaez <https://datacurso.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class report_lifestory extends ratelimit_settings {
+class report_lifestory {
     /** @var string Plugin component name. */
     private const PLUGIN = 'aiprovider_datacurso';
 
     /**
-     * Add the rate limit settings related to Life Story report AI feedback generation.
+     * Adds the rate limit form elements specific to Life Story report AI feedback generation.
      *
-     * @param admin_settingpage $settings Settings page to append controls to.
-     * @param string $component Component name used to namespace config keys.
+     * This replaces the old add_settings() method.
+     *
+     * @param \moodleform $mform The Moodle form object (ai_provider_form).
+     * @param string $serviceid The service identifier, e.g., 'report_lifestory'.
      */
-    public function add_settings(admin_settingpage $settings, string $component): void {
-        $configprefix = self::PLUGIN . "/ratelimit_{$component}";
+    public function add_form_elements($mform, string $serviceid): void {
 
-        // Checkbox to enable limiting by allowed users list.
-        $allowedusersenable = new \admin_setting_configcheckbox(
-            "{$configprefix}_allowedusers_enable",
-            new \lang_string('ratelimit_report_lifestory_allowedusers_enable', self::PLUGIN),
-            new \lang_string('ratelimit_report_lifestory_allowedusers_enable_desc', self::PLUGIN),
-            0
+        $configprefix = "ratelimit_{$serviceid}";
+        $allowedusersenable_id = "{$configprefix}_allowedusers_enable";
+
+        // 1. Checkbox to enable limiting by allowed users list.
+        $mform->addElement(
+            'checkbox',
+            $allowedusersenable_id,
+            new lang_string('ratelimit_report_lifestory_allowedusers_enable', self::PLUGIN),
+            new lang_string('ratelimit_report_lifestory_allowedusers_enable_desc', self::PLUGIN)
         );
-        $settings->add($allowedusersenable);
+        $mform->setType($allowedusersenable_id, PARAM_BOOL);
+        $mform->setDefault($allowedusersenable_id, 0);
 
-        $attributes = $this->get_autocomplete_attributes();
-        $choices = $this->get_user_choices([
+        // 2. Autocomplete for allowed users.
+        $attributes = ratelimit_settings::get_autocomplete_attributes();
+        $attributes['multiple'] = true;
+
+        $choices = ratelimit_settings::get_user_choices([
             'report/lifestory:generateaifeedback',
         ]);
 
-        $settings->add(new autocomplete(
-            "{$configprefix}_allowedusers",
-            new \lang_string('ratelimit_report_lifestory_allowedusers', self::PLUGIN),
-            new \lang_string('ratelimit_report_lifestory_allowedusers_desc', self::PLUGIN),
-            [],
+        $allowedusers_id = "{$configprefix}_allowedusers";
+
+        $mform->addElement(
+            'autocomplete',
+            $allowedusers_id,
+            new lang_string('ratelimit_report_lifestory_allowedusers', self::PLUGIN),
             $choices,
             $attributes
-        ));
-        $settings->hide_if("{$configprefix}_allowedusers", "{$configprefix}_allowedusers_enable", 'eq', 0);
+        );
+        $mform->setType($allowedusers_id, PARAM_RAW);
+        // Hide if the master checkbox is not checked.
+        $mform->hideIf($allowedusers_id, $allowedusersenable_id, 'notchecked');
     }
 }

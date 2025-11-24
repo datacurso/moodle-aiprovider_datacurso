@@ -8,16 +8,17 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace aiprovider_datacurso;
 
 use core_ai\hook\after_ai_provider_form_hook;
 use core_ai\hook\after_ai_action_settings_form_hook;
+use \moodleform;
 
 /**
  * Hook listener for the Datacurso AI Provider.
@@ -30,7 +31,10 @@ class hook_listener {
     /**
      * Extend the AI provider configuration form for Datacurso.
      *
-     * @param after_ai_provider_form_hook $hook
+     * This method is triggered by the hook after_ai_provider_form_hook 
+     * to append custom elements, including the Rate Limit configuration.
+     *
+     * @param after_ai_provider_form_hook $hook The hook object containing the form instance.
      */
     public static function set_form_definition_for_aiprovider_datacurso(after_ai_provider_form_hook $hook): void {
         global $PAGE;
@@ -41,6 +45,7 @@ class hook_listener {
 
         $mform = $hook->mform;
 
+        // --- License Key and Warning (Unchanged from original) ---
         $mform->addElement(
             'passwordunmask',
             'licensekey',
@@ -60,6 +65,7 @@ class hook_listener {
             )
         );
 
+        // --- Rate Limit Settings (Per Service) ---
         $services = \aiprovider_datacurso\provider::get_services();
         \core_collator::asort_array_of_arrays_by_key($services, 'name');
 
@@ -67,18 +73,21 @@ class hook_listener {
             $sid = $service['id'];
             $sname = $service['name'];
 
+            // 1. Service Header for Rate Limit section.
             $mform->addElement(
                 'header',
                 "ratelimit_{$sid}_header",
                 format_string($sname)
             );
 
+            // 2. Generic Rate Limit fields (Enabled, Limit, Window).
             $mform->addElement(
                 'advcheckbox',
                 "ratelimit_{$sid}_enable",
                 get_string('ratelimit_enable', 'aiprovider_datacurso'),
                 get_string('ratelimit_enable_desc', 'aiprovider_datacurso')
             );
+            $mform->setType("ratelimit_{$sid}_enable", PARAM_BOOL); // Setting type explicitly for clarity
 
             $mform->addElement(
                 'text',
@@ -91,9 +100,12 @@ class hook_listener {
             $mform->hideIf("ratelimit_{$sid}_limit", "ratelimit_{$sid}_enable", 'eq', 0);
 
             $options = [
+                'seconds' => get_string('seconds'),
                 'minutes' => get_string('minutes'),
                 'hours' => get_string('hours'),
                 'days' => get_string('days'),
+                'months' => get_string('months'),
+                'years' => get_string('years'),
             ];
 
             $mform->addElement(
@@ -110,11 +122,27 @@ class hook_listener {
                 get_string('ratelimit_window_unit', 'aiprovider_datacurso'),
                 $options
             );
+            $mform->setType("ratelimit_{$sid}_window_unit", PARAM_ALPHANUMEXT);
 
             $mform->hideIf("ratelimit_{$sid}_window_value", "ratelimit_{$sid}_enable", 'eq', 0);
             $mform->hideIf("ratelimit_{$sid}_window_unit", "ratelimit_{$sid}_enable", 'eq', 0);
+
+            // --- Dynamic injection of Service-Specific elements ---
+            $classname = "\\aiprovider_datacurso\\local\\ratelimit\\{$sid}";
+            
+            // Check if a service-specific rate limit configuration class exists (e.g., local_assign_ai).
+            if (class_exists($classname)) {
+                $ratelimit_service_config = new $classname();
+                
+                // Call the adapted Moodle Form method to add specific fields (e.g., Allowed Users).
+                if (method_exists($ratelimit_service_config, 'add_form_elements')) {
+                    // Pass the $mform object and the service ID.
+                    $ratelimit_service_config->add_form_elements($mform, $sid); 
+                }
+            }
         }
 
+        // --- Connection Header and JS call (Unchanged from original) ---
         $mform->addElement(
             'header',
             'connection_header',

@@ -8,14 +8,17 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Interface for adding per-service ratelimit admin settings.
+ * Utility class providing common functionality for rate limit form elements.
+ *
+ * The abstract method add_settings is removed as per-service settings are now handled 
+ * via the hook listener calling the add_form_elements method directly on service classes.
  *
  * @package     aiprovider_datacurso
  * @category    admin
@@ -26,28 +29,21 @@
 namespace aiprovider_datacurso\local\ratelimit;
 
 /**
- * Contract to contribute ratelimit settings for a given service id.
+ * Utility class to manage common rate limit configurations.
  */
-abstract class ratelimit_settings {
-    /**
-     * Add ratelimit admin settings to the provider settings page.
-     *
-     * @param \admin_settingpage $settings Settings page to add controls to.
-     * @param string $component Frankenstyle service/component id (e.g. 'local_coursegen').
-     * @return void
-     */
-    abstract public function add_settings(\admin_settingpage $settings, string $component): void;
-
+class ratelimit_settings {
     /**
      * Retrieve the list of selectable users for the autocomplete control.
      *
      * @param array $capabilities Capability names users must have to be selectable.
      * @return array<string,string>
      */
-    protected static function get_user_choices(array $capabilities): array {
-        global $DB;
+    public static function get_user_choices(array $capabilities): array {
+        global $DB, $CFG;
 
         [$insql, $params] = $DB->get_in_or_equal($capabilities, SQL_PARAMS_NAMED);
+
+        $namefields = 'u.id, u.firstname, u.lastname, u.alternatename, u.middlename, u.firstnamephonetic, u.lastnamephonetic'; // <--- CORRECCIÓN CLAVE
 
         $params['deleted'] = 0;
         $params['suspended'] = 0;
@@ -55,7 +51,7 @@ abstract class ratelimit_settings {
         $params['capabilitiescount'] = count($capabilities);
 
         $records = $DB->get_records_sql(
-            "SELECT u.id, u.firstname, u.lastname
+            "SELECT {$namefields}
             FROM
                 {user} u
                 JOIN {role_assignments} ra ON ra.userid = u.id
@@ -66,7 +62,7 @@ abstract class ratelimit_settings {
                 AND u.suspended = :suspended
                 AND rc.capability {$insql}
             GROUP BY
-                u.id
+                u.id, u.firstname, u.lastname, u.alternatename, u.middlename, u.firstnamephonetic, u.lastnamephonetic
             HAVING
                 COUNT(DISTINCT rc.capability) = :capabilitiescount
             ORDER BY u.lastname, u.firstname, u.id",
@@ -90,9 +86,9 @@ abstract class ratelimit_settings {
      *
      * @return array
      */
-    protected static function get_autocomplete_attributes(): array {
+    public static function get_autocomplete_attributes(): array {
         return [
-            'ajax' => 'core_user/form_user_selector',
+            'ajax' => 'core_user\output\user_autocomplete',
             'multiple' => true,
             'showsuggestions' => true,
             'placeholder' => get_string('search'),

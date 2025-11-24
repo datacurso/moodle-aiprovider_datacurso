@@ -8,80 +8,95 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace aiprovider_datacurso\local\ratelimit;
 
-use admin_settingpage;
-use core_admin\local\settings\autocomplete;
+use core_user\form\element\autocomplete; 
+use \lang_string;
+use aiprovider_datacurso\local\ratelimit\ratelimit_settings;
+use core_form\quickform;
 
 defined('MOODLE_INTERNAL') || die();
-require_once($CFG->dirroot . '/user/lib.php');
 
 /**
  * Class local_datacurso_ratings
  *
- * @package    aiprovider_datacurso
- * @copyright  2025 Wilber Narvaez <https://datacurso.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * This class provides the specific rate limiting settings elements for the 
+ * Ratings Analysis AI service.
+ *
+ * @package     aiprovider_datacurso
+ * @copyright   2025 Wilber Narvaez <https://datacurso.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class local_datacurso_ratings extends ratelimit_settings {
+class local_datacurso_ratings {
     /** @var string Plugin component name. */
     private const PLUGIN = 'aiprovider_datacurso';
 
     /**
-     * Add the rate limit settings related to ratings analysis with AI.
+     * Adds the rate limit form elements specific to ratings analysis with AI.
      *
-     * @param admin_settingpage $settings Settings page to append controls to.
-     * @param string $component Component name used to namespace config keys.
+     * @param \moodleform $mform The Moodle form object (ai_provider_form). 
+     * @param string $serviceid The service identifier, e.g., 'local_datacurso_ratings'.
      */
-    public function add_settings(admin_settingpage $settings, string $component): void {
-        $configprefix = self::PLUGIN . "/ratelimit_{$component}";
+    public function add_form_elements($mform, string $serviceid): void {
 
-        // Checkbox to enable limiting by allowed users list.
-        $allowedusersenable = new \admin_setting_configcheckbox(
-            "{$configprefix}_allowedusers_enable",
-            new \lang_string('ratelimit_local_datacurso_ratings_allowedusers_enable', self::PLUGIN),
-            new \lang_string('ratelimit_local_datacurso_ratings_allowedusers_enable_desc', self::PLUGIN),
-            0
+        $configprefix = "ratelimit_{$serviceid}";
+        $allowedusersenable_id = "{$configprefix}_allowedusers_enable";
+
+        // 1. Checkbox to enable limiting by allowed users list.
+        $mform->addElement(
+            'checkbox',
+            $allowedusersenable_id,
+            new lang_string('ratelimit_local_datacurso_ratings_allowedusers_enable', self::PLUGIN),
+            new lang_string('ratelimit_local_datacurso_ratings_allowedusers_enable_desc', self::PLUGIN)
         );
-        $settings->add($allowedusersenable);
+        $mform->setType($allowedusersenable_id, PARAM_BOOL);
+        $mform->setDefault($allowedusersenable_id, 0);
 
-        $attributes = $this->get_autocomplete_attributes();
+        // Define attributes for the Autocomplete element.
+        $attributes = ratelimit_settings::get_autocomplete_attributes();
+        $attributes['multiple'] = true; // Ensure multiple selection is allowed.
 
-        // Course analysis generators.
-        $coursechoices = $this->get_user_choices([
+        // 2. Course analysis generators (Autocomplete field).
+        $coursechoices = ratelimit_settings::get_user_choices([
             'local/datacurso_ratings:generateanalysiscourse',
             'local/datacurso_ratings:generateanalysisactivity',
         ]);
-        $courseanalysts = new autocomplete(
-            "{$configprefix}_courseanalysts",
-            new \lang_string('ratelimit_local_datacurso_ratings_courseanalysts', self::PLUGIN),
-            new \lang_string('ratelimit_local_datacurso_ratings_courseanalysts_desc', self::PLUGIN),
-            [],
+        $courseanalysts_id = "{$configprefix}_courseanalysts";
+
+        $mform->addElement(
+            'autocomplete',
+            $courseanalysts_id,
+            new lang_string('ratelimit_local_datacurso_ratings_courseanalysts', self::PLUGIN),
             $coursechoices,
             $attributes
         );
-        $settings->add($courseanalysts);
-        $settings->hide_if("{$configprefix}_courseanalysts", "{$configprefix}_allowedusers_enable", 'eq', 0);
+        $mform->setType($courseanalysts_id, PARAM_RAW);
 
-        // General analysis generators.
-        $generalchoices = $this->get_user_choices([
+        // Hide if the master checkbox is not checked.
+        $mform->hideIf($courseanalysts_id, $allowedusersenable_id, 'notchecked');
+
+        // 3. General analysis generators (Autocomplete field).
+        $generalchoices = ratelimit_settings::get_user_choices([
             'local/datacurso_ratings:generateanalysisgeneral',
         ]);
-        $generalanalysts = new autocomplete(
-            "{$configprefix}_generalanalysts",
-            new \lang_string('ratelimit_local_datacurso_ratings_generalanalysts', self::PLUGIN),
-            new \lang_string('ratelimit_local_datacurso_ratings_generalanalysts_desc', self::PLUGIN),
-            [],
+        $generalanalysts_id = "{$configprefix}_generalanalysts";
+
+        $mform->addElement(
+            'autocomplete',
+            $generalanalysts_id,
+            new lang_string('ratelimit_local_datacurso_ratings_generalanalysts', self::PLUGIN),
             $generalchoices,
             $attributes
         );
-        $settings->add($generalanalysts);
-        $settings->hide_if("{$configprefix}_generalanalysts", "{$configprefix}_allowedusers_enable", 'eq', 0);
+        $mform->setType($generalanalysts_id, PARAM_RAW);
+
+        // Hide if the master checkbox is not checked.
+        $mform->hideIf($generalanalysts_id, $allowedusersenable_id, 'notchecked');
     }
 }

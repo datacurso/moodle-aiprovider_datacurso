@@ -191,6 +191,7 @@ $string['ratelimit_limit_desc'] = 'The maximum number of requests allowed per ra
 $string['ratelimit_limit_help'] = 'The maximum number of requests allowed per rate-limit window.';
 $string['ratelimit_local_assign_ai_allowedusers'] = 'Allowed assignment reviewers (AI)';
 $string['ratelimit_local_assign_ai_allowedusers_desc'] = 'Select the users who are allowed to review assignments with AI when this service is enabled.';
+$string['ratelimit_local_assign_ai_allowedusers_desc_help'] = 'This setting defines a list of specific users who are exempt from the global rate limit for this AI service, allowing only them to generate AI-based grading or feedback for Moodle assignments.';
 $string['ratelimit_local_assign_ai_allowedusers_enable'] = 'Limit by allowed users';
 $string['ratelimit_local_assign_ai_allowedusers_enable_desc'] = 'If enabled, only the selected users below will be allowed to review assignments with AI.';
 $string['ratelimit_local_coursegen_activitycreators'] = 'Allowed activity creators';

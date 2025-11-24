@@ -8,66 +8,72 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace aiprovider_datacurso\local\ratelimit;
 
-use admin_settingpage;
-use core_admin\local\settings\autocomplete;
-
+use core_user\form\element\autocomplete;
+use \lang_string;
+use aiprovider_datacurso\local\ratelimit\ratelimit_settings;
 defined('MOODLE_INTERNAL') || die();
-require_once($CFG->dirroot . '/user/lib.php');
 
 /**
  * Class local_assign_ai
  *
- * @package    aiprovider_datacurso
- * @copyright  2025 Wilber Narvaez <https://datacurso.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package     aiprovider_datacurso
+ * @copyright   2025 Wilber Narvaez <https://datacurso.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class local_assign_ai extends ratelimit_settings {
+class local_assign_ai {
     /** @var string Plugin component name. */
     private const PLUGIN = 'aiprovider_datacurso';
 
     /**
-     * Add the rate limit settings related to course generation.
+     * Add elements specifics the form settings.
      *
-     * @param admin_settingpage $settings Settings page to append controls to.
-     * @param string $component Component name used to namespace config keys.
+     * @param \moodleform $mform Object form Moodle.
+     * @param string $serviceid ServiceID ('local_assign_ai').
      */
-    public function add_settings(admin_settingpage $settings, string $component): void {
-        $configprefix = self::PLUGIN . "/ratelimit_{$component}";
+    public function add_form_elements($mform, string $serviceid): void {
+        
+        $configprefix = "ratelimit_{$serviceid}";
+        $allowedusersenable_id = "{$configprefix}_allowedusers_enable";
 
-        // Checkbox to enable limiting by allowed users list.
-        $allowedusersenable = new \admin_setting_configcheckbox(
-            "{$configprefix}_allowedusers_enable",
-            new \lang_string('ratelimit_local_assign_ai_allowedusers_enable', self::PLUGIN),
-            new \lang_string('ratelimit_local_assign_ai_allowedusers_enable_desc', self::PLUGIN),
-            0
+        $mform->addElement(
+            'checkbox',
+            $allowedusersenable_id,
+            new lang_string('ratelimit_local_assign_ai_allowedusers_enable', self::PLUGIN),
+            new lang_string('ratelimit_local_assign_ai_allowedusers_enable_desc', self::PLUGIN)
         );
-        $settings->add($allowedusersenable);
+        $mform->setType($allowedusersenable_id, PARAM_BOOL);
+        $mform->setDefault($allowedusersenable_id, 0);
 
-        $attributes = $this->get_autocomplete_attributes();
-        $choices = $this->get_user_choices([
+        $choices = ratelimit_settings::get_user_choices([
             'local/assign_ai:review',
             'local/assign_ai:changestatus',
             'local/assign_ai:viewdetails',
             'mod/assign:submit',
         ]);
-
-        $settings->add(
-            new autocomplete(
-                "{$configprefix}_allowedusers",
-                new \lang_string('ratelimit_local_assign_ai_allowedusers', self::PLUGIN),
-                new \lang_string('ratelimit_local_assign_ai_allowedusers_desc', self::PLUGIN),
-                [],
-                $choices,
-                $attributes
-            )
+        $attributes = ratelimit_settings::get_autocomplete_attributes();
+        $allowedusers_id = "{$configprefix}_allowedusers";
+        $mform->addElement(
+            'autocomplete',
+            $allowedusers_id,
+            new lang_string('ratelimit_local_assign_ai_allowedusers', self::PLUGIN),
+            $choices,
+            $attributes,
         );
+        $mform->addHelpButton(
+            $allowedusers_id,
+            'ratelimit_local_assign_ai_allowedusers_desc',
+            self::PLUGIN
+        );
+        $mform->setType($allowedusers_id, PARAM_RAW);
+
+        $mform->hideIf($allowedusers_id, $allowedusersenable_id, 'notchecked');
     }
 }
