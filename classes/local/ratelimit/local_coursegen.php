@@ -16,7 +16,6 @@
 
 namespace aiprovider_datacurso\local\ratelimit;
 
-use core_user\form\element\autocomplete; 
 use \lang_string;
 use aiprovider_datacurso\local\ratelimit\ratelimit_settings;
 
@@ -45,17 +44,17 @@ class local_coursegen {
      */
     public function add_form_elements($mform, string $serviceid): void {
         $configprefix = "ratelimit_{$serviceid}";
-        $allowedusersenable_id = "{$configprefix}_allowedusers_enable";
+        $allowedusersenableid = "{$configprefix}_allowedusers_enable";
 
         // 1. Checkbox to enable limiting by allowed users list.
         $mform->addElement(
             'checkbox',
-            $allowedusersenable_id,
+            $allowedusersenableid,
             new lang_string('ratelimit_local_coursegen_allowedusers_enable', self::PLUGIN),
             new lang_string('ratelimit_local_coursegen_allowedusers_enable_desc', self::PLUGIN)
         );
-        $mform->setType($allowedusersenable_id, PARAM_BOOL);
-        $mform->setDefault($allowedusersenable_id, 0);
+        $mform->setType($allowedusersenableid, PARAM_BOOL);
+        $mform->setDefault($allowedusersenableid, 0);
 
         // Define the choices (users/capabilities) once, calling the static utility.
         $choices = ratelimit_settings::get_user_choices([
@@ -68,29 +67,29 @@ class local_coursegen {
         $attributes['multiple'] = true;
 
         // 2. Autocomplete for allowed Course Creators.
-        $coursecreators_id = "{$configprefix}_coursecreators";
+        $coursecreatorsid = "{$configprefix}_coursecreators";
         
         $mform->addElement(
             'autocomplete',
-            $coursecreators_id,
+            $coursecreatorsid,
             new lang_string('ratelimit_local_coursegen_coursecreators', self::PLUGIN),
             $choices,
             $attributes
         );
-        $mform->setType($coursecreators_id, PARAM_RAW);
+        $mform->setType($coursecreatorsid, PARAM_RAW);
         // Hide if the master checkbox is not checked (eq, 0).
-        $mform->hideIf($coursecreators_id, $allowedusersenable_id, 'notchecked');
+        $mform->hideIf($coursecreatorsid, $allowedusersenableid, 'notchecked');
         // 3. Autocomplete for allowed Activity Creators.
-        $activitycreators_id = "{$configprefix}_activitycreators";
+        $activitycreatorsid = "{$configprefix}_activitycreators";
         $mform->addElement(
             'autocomplete',
-            $activitycreators_id,
+            $activitycreatorsid,
             new lang_string('ratelimit_local_coursegen_activitycreators', self::PLUGIN),
             $choices,
             $attributes
         );
-        $mform->setType($activitycreators_id, PARAM_RAW);
+        $mform->setType($activitycreatorsid, PARAM_RAW);
         // Hide if the master checkbox is not checked (eq, 0).
-        $mform->hideIf($activitycreators_id, $allowedusersenable_id, 'notchecked');
+        $mform->hideIf($activitycreatorsid, $allowedusersenableid, 'notchecked');
     }
 }

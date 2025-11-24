@@ -47,17 +47,17 @@ class report_lifestory {
     public function add_form_elements($mform, string $serviceid): void {
 
         $configprefix = "ratelimit_{$serviceid}";
-        $allowedusersenable_id = "{$configprefix}_allowedusers_enable";
+        $allowedusersenableid = "{$configprefix}_allowedusers_enable";
 
         // 1. Checkbox to enable limiting by allowed users list.
         $mform->addElement(
             'checkbox',
-            $allowedusersenable_id,
+            $allowedusersenableid,
             new lang_string('ratelimit_report_lifestory_allowedusers_enable', self::PLUGIN),
             new lang_string('ratelimit_report_lifestory_allowedusers_enable_desc', self::PLUGIN)
         );
-        $mform->setType($allowedusersenable_id, PARAM_BOOL);
-        $mform->setDefault($allowedusersenable_id, 0);
+        $mform->setType($allowedusersenableid, PARAM_BOOL);
+        $mform->setDefault($allowedusersenableid, 0);
 
         // 2. Autocomplete for allowed users.
         $attributes = ratelimit_settings::get_autocomplete_attributes();
@@ -67,17 +67,17 @@ class report_lifestory {
             'report/lifestory:generateaifeedback',
         ]);
 
-        $allowedusers_id = "{$configprefix}_allowedusers";
+        $allowedusersid = "{$configprefix}_allowedusers";
 
         $mform->addElement(
             'autocomplete',
-            $allowedusers_id,
+            $allowedusersid,
             new lang_string('ratelimit_report_lifestory_allowedusers', self::PLUGIN),
             $choices,
             $attributes
         );
-        $mform->setType($allowedusers_id, PARAM_RAW);
+        $mform->setType($allowedusersid, PARAM_RAW);
         // Hide if the master checkbox is not checked.
-        $mform->hideIf($allowedusers_id, $allowedusersenable_id, 'notchecked');
+        $mform->hideIf($allowedusersid, $allowedusersenableid, 'notchecked');
     }
 }

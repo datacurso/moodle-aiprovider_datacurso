@@ -41,16 +41,16 @@ class local_assign_ai {
     public function add_form_elements($mform, string $serviceid): void {
         
         $configprefix = "ratelimit_{$serviceid}";
-        $allowedusersenable_id = "{$configprefix}_allowedusers_enable";
+        $allowedusersenableid = "{$configprefix}_allowedusers_enable";
 
         $mform->addElement(
             'checkbox',
-            $allowedusersenable_id,
+            $allowedusersenableid,
             new lang_string('ratelimit_local_assign_ai_allowedusers_enable', self::PLUGIN),
             new lang_string('ratelimit_local_assign_ai_allowedusers_enable_desc', self::PLUGIN)
         );
-        $mform->setType($allowedusersenable_id, PARAM_BOOL);
-        $mform->setDefault($allowedusersenable_id, 0);
+        $mform->setType($allowedusersenableid, PARAM_BOOL);
+        $mform->setDefault($allowedusersenableid, 0);
 
         $choices = ratelimit_settings::get_user_choices([
             'local/assign_ai:review',
@@ -59,21 +59,21 @@ class local_assign_ai {
             'mod/assign:submit',
         ]);
         $attributes = ratelimit_settings::get_autocomplete_attributes();
-        $allowedusers_id = "{$configprefix}_allowedusers";
+        $allowedusersid = "{$configprefix}_allowedusers";
         $mform->addElement(
             'autocomplete',
-            $allowedusers_id,
+            $allowedusersid,
             new lang_string('ratelimit_local_assign_ai_allowedusers', self::PLUGIN),
             $choices,
             $attributes,
         );
         $mform->addHelpButton(
-            $allowedusers_id,
+            $allowedusersid,
             'ratelimit_local_assign_ai_allowedusers_desc',
             self::PLUGIN
         );
-        $mform->setType($allowedusers_id, PARAM_RAW);
+        $mform->setType($allowedusersid, PARAM_RAW);
 
-        $mform->hideIf($allowedusers_id, $allowedusersenable_id, 'notchecked');
+        $mform->hideIf($allowedusersid, $allowedusersenableid, 'notchecked');
     }
 }

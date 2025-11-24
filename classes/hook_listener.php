@@ -131,10 +131,10 @@ class hook_listener {
             
             // Check if a service-specific rate limit configuration class exists.
             if (class_exists($classname)) {
-                $ratelimit_service_config = new $classname();
+                $ratelimitserviceconfig = new $classname();
 
-                if (method_exists($ratelimit_service_config, 'add_form_elements')) {
-                    $ratelimit_service_config->add_form_elements($mform, $sid);
+                if (method_exists($ratelimitserviceconfig, 'add_form_elements')) {
+                    $ratelimitserviceconfig->add_form_elements($mform, $sid);
                 }
             }
         }
