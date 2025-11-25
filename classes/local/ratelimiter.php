@@ -24,6 +24,18 @@ namespace aiprovider_datacurso\local;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class ratelimiter {
+    /** @var object|null $instanceprovider */
+    protected $instanceprovider;
+
+    /**
+     * Constructor.
+     *
+     * @param object|null $instanceprovider The Datacurso AI provider instance
+     */
+    public function __construct($instanceprovider) {
+        $this->instanceprovider = $instanceprovider;
+    }
+
     /**
      * Determine if the given user is allowed to use a service.
      *
@@ -50,10 +62,9 @@ class ratelimiter {
             return true;
         }
 
-        $settings = get_config('aiprovider_datacurso');
-        $coursecreators = $settings->ratelimit_local_coursegen_coursecreators ?? '';
+        $settings = $this->instanceprovider->config ?? [];
+        $coursecreators = $settings['ratelimit_local_coursegen_coursecreators'] ?? [];
 
-        $coursecreators = explode(',', $coursecreators);
         if (empty($coursecreators)) {
             return true;
         }
@@ -199,7 +210,8 @@ class ratelimiter {
      * @return bool True when the rate limit is enabled, false otherwise.
      */
     private function is_rate_limit_enabled(string $serviceid): bool {
-        $value = get_config('aiprovider_datacurso', "ratelimit_{$serviceid}_enable");
+        $config = $this->instanceprovider->config ?? [];
+        $value = $config["ratelimit_{$serviceid}_enable"] ?? 0;
         return (int)$value === 1;
     }
 
@@ -210,7 +222,8 @@ class ratelimiter {
      * @return bool True when the user restriction is enabled, false otherwise.
      */
     private function is_user_restriction_enabled(string $serviceid): bool {
-        $value = get_config('aiprovider_datacurso', "ratelimit_{$serviceid}_allowedusers_enable");
+        $config = $this->instanceprovider->config ?? [];
+        $value = $config["ratelimit_{$serviceid}_allowedusers_enable"] ?? 0;
         return (int)$value === 1;
     }
 
@@ -221,7 +234,8 @@ class ratelimiter {
      * @return int
      */
     private function get_service_limit(string $serviceid): int {
-        $value = get_config('aiprovider_datacurso', "ratelimit_{$serviceid}_limit");
+        $config = $this->instanceprovider->config ?? [];
+        $value = $config["ratelimit_{$serviceid}_limit"] ?? 0;
         return (int)$value;
     }
 
@@ -232,12 +246,11 @@ class ratelimiter {
      * @return int
      */
     private function get_window_length_in_seconds(string $serviceid): int {
-
-        $config = get_config('aiprovider_datacurso');
+        $config = $this->instanceprovider->config ?? [];
         $valuekey = "ratelimit_{$serviceid}_window_value";
         $unitkey = "ratelimit_{$serviceid}_window_unit";
-        $value = (int)($config->$valuekey ?? 1);
-        $unit = (string)($config->$unitkey ?? 'hours');
+        $value = (int)($config[$valuekey] ?? 1);
+        $unit = (string)($config[$unitkey] ?? 'hours');
 
         $value = $value > 0 ? $value : 1;
 
