@@ -88,7 +88,6 @@ class ratelimit_settings {
      */
     public static function get_autocomplete_attributes(): array {
         return [
-            'ajax' => 'core_user\output\user_autocomplete',
             'multiple' => true,
             'showsuggestions' => true,
             'placeholder' => get_string('search'),
