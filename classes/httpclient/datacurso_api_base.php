@@ -42,6 +42,9 @@ class datacurso_api_base {
     /** @var string|null $licensekey */
     protected $licensekey;
 
+    /** @var object|null $instanceprovider */
+    protected $instanceprovider;
+
     /**
      * Constructor.
      *
@@ -53,20 +56,19 @@ class datacurso_api_base {
 
         $manager = new \core_ai\manager($DB);
         $instances = $manager->get_provider_instances();
-        $instanceprovider = null;
         $licensekey = '';
 
         foreach ($instances as $instance) {
             if ($instance->get_name() === 'aiprovider_datacurso' && $instance->enabled === true) {
-                $instanceprovider = $instance;
                 $config = $instance->config;
                 if (!empty($config['licensekey'])) {
+                    $this->instanceprovider = $instance;
                     $licensekey = $config['licensekey'];
                     break;
                 }
             }
         }
-        if ($instanceprovider == null) {
+        if ($this->instanceprovider == null) {
             throw new \moodle_exception('instance_disabled', 'aiprovider_datacurso');
         }
         $this->baseurl = rtrim($baseurl, '/');
@@ -145,7 +147,7 @@ class datacurso_api_base {
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
         $this->enforce_webservice_requirements($serviceid);
         $userid = (string)($payload['userid'] ?? $USER->id);
-        $ratelimiter = new \aiprovider_datacurso\local\ratelimiter();
+        $ratelimiter = new \aiprovider_datacurso\local\ratelimiter($this->instanceprovider);
 
         // Validate if user is allowed to make this request.
         if (!empty($serviceid) && !$ratelimiter->is_user_allowed($serviceid, $userid)) {
