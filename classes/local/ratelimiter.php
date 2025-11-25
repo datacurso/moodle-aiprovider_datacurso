@@ -232,25 +232,24 @@ class ratelimiter {
      * @return int
      */
     private function get_window_length_in_seconds(string $serviceid): int {
-        $json = (string)get_config('aiprovider_datacurso', "ratelimit_{$serviceid}_window");
 
-        $data = json_decode($json, true);
-        if (!is_array($data)) {
-            $data = [];
-        }
+        $config = get_config('aiprovider_datacurso');
+        $valuekey = "ratelimit_{$serviceid}_window_value";
+        $unitkey = "ratelimit_{$serviceid}_window_unit";
+        $value = (int)($config->$valuekey ?? 1); 
+        $unit = (string)($config->$unitkey ?? 'hours'); 
 
-        $value = (int)($data['value'] ?? 1);
         $value = $value > 0 ? $value : 1;
 
-        $unit = (string)($data['unit'] ?? 'hours');
         $multiplier = match ($unit) {
             'seconds' => 1,
             'minutes' => MINSECS,
             'hours' => HOURSECS,
             'days' => DAYSECS,
+            'months' => DAYSECS * 30,
+            'years' => DAYSECS * 365,
             default => HOURSECS,
         };
-
         return $value * $multiplier;
     }
 
