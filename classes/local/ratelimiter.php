@@ -236,8 +236,8 @@ class ratelimiter {
         $config = get_config('aiprovider_datacurso');
         $valuekey = "ratelimit_{$serviceid}_window_value";
         $unitkey = "ratelimit_{$serviceid}_window_unit";
-        $value = (int)($config->$valuekey ?? 1); 
-        $unit = (string)($config->$unitkey ?? 'hours'); 
+        $value = (int)($config->$valuekey ?? 1);
+        $unit = (string)($config->$unitkey ?? 'hours');
 
         $value = $value > 0 ? $value : 1;
 
