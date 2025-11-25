@@ -144,7 +144,7 @@ class datacurso_api_base {
         // Service could be null if the path is not mapped.
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
         $this->enforce_webservice_requirements($serviceid);
-        $userid = (int)($payload['userid'] ?? $USER->id);
+        $userid = (string)($payload['userid'] ?? $USER->id);
         $ratelimiter = new \aiprovider_datacurso\local\ratelimiter();
 
         // Validate if user is allowed to make this request.
@@ -188,6 +188,8 @@ class datacurso_api_base {
             case 'POST':
                 $payload = array_merge($payload, $defaultpayload);
                 $response = $curl->post($url, json_encode($payload), $options);
+                // store response in log file in moodledata/temp/datacurso_api.log
+                file_put_contents($CFG->dataroot . '/temp/datacurso_api.log', $response, FILE_APPEND);
                 break;
 
             case 'PUT':
@@ -237,6 +239,7 @@ class datacurso_api_base {
 
         if ($httpcode >= 400) {
             debugging("HTTP error {$httpcode} from Datacurso API: {$response}", DEBUG_DEVELOPER);
+            debugging("PAYLOAD: {$payload}", DEBUG_DEVELOPER);
             throw new \moodle_exception('httperror', 'aiprovider_datacurso', '', $httpcode);
         }
 
