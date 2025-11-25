@@ -40,6 +40,7 @@ require_capability('aiprovider/datacurso:viewreports', $context);
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/ai/provider/datacurso/admin/report_sections.php'));
 $PAGE->set_pagelayout('report');
+$PAGE->set_title(get_string('pluginname', 'aiprovider_datacurso'));
 
 // Get the current tab parameter.
 $tab = optional_param('tab', 'consumption', PARAM_ALPHAEXT);
@@ -63,6 +64,32 @@ $tabs[] = new tabobject(
     new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'pluginslist']),
     get_string('link_listplugings', 'aiprovider_datacurso')
 );
+
+$tabs[] = new tabobject(
+    'configwebservice',
+    new moodle_url('/ai/provider/datacurso/admin/webservice_config.php'),
+    get_string('link_webservice_config', 'aiprovider_datacurso')
+);
+
+global $DB;
+
+$manager = new \core_ai\manager($DB);
+$instances = $manager->get_provider_instances();
+$idprovider = null;
+foreach ($instances as $instance) {
+    if ($instance->get_name() === 'aiprovider_datacurso') {
+        $idprovider = $instance->id;
+        break;
+    }
+}
+
+if ($idprovider) {
+    $tabs[] = new tabobject(
+        'configprovider',
+        new moodle_url('/ai/configure.php', ['id' => $idprovider]),
+        get_string('link_provider_config', 'aiprovider_datacurso')
+    );
+}
 
 // Render page header and navigation.
 echo $OUTPUT->header();

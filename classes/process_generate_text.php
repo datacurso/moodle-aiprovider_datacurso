@@ -39,7 +39,11 @@ class process_generate_text extends abstract_processor {
 
     #[\Override]
     protected function get_system_instruction(): string {
-        return get_config('aiprovider_datacurso', 'action_generate_text_systeminstruction');
+        $instruction = $this->action->get_configuration('systeminstruction') ?? '';
+        if (empty($instruction)) {
+            return $this->action::get_system_instruction();
+        }
+        return $instruction;
     }
 
     /**
@@ -84,7 +88,7 @@ class process_generate_text extends abstract_processor {
     protected function create_request_object(string $userid): RequestInterface {
         $body = json_encode($this->build_request_body($userid));
 
-        $licensekey = get_config('aiprovider_datacurso', 'licensekey');
+        $licensekey = $this->provider->config['licensekey'] ?? null;
 
         return new Request(
             'POST',

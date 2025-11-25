@@ -16,54 +16,67 @@
 
 namespace aiprovider_datacurso\local\ratelimit;
 
-use admin_settingpage;
-use core_admin\local\settings\autocomplete;
+use lang_string;
+use aiprovider_datacurso\local\ratelimit\ratelimit_settings;
 
 defined('MOODLE_INTERNAL') || die();
-require_once($CFG->dirroot . '/user/lib.php');
 
 /**
  * Class report_lifestory
  *
- * @package    aiprovider_datacurso
- * @copyright  2025 Wilber Narvaez <https://datacurso.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * This class provides the specific rate limiting settings elements for the
+ * Life Story report AI feedback generation service.
+ *
+ * @package     aiprovider_datacurso
+ * @copyright   2025 Wilber Narvaez <https://datacurso.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class report_lifestory extends ratelimit_settings {
+class report_lifestory {
     /** @var string Plugin component name. */
     private const PLUGIN = 'aiprovider_datacurso';
 
     /**
-     * Add the rate limit settings related to Life Story report AI feedback generation.
+     * Adds the rate limit form elements specific to Life Story report AI feedback generation.
      *
-     * @param admin_settingpage $settings Settings page to append controls to.
-     * @param string $component Component name used to namespace config keys.
+     * This replaces the old add_settings() method.
+     *
+     * @param \MoodleQuickForm $mform The Moodle form object (ai_provider_form).
+     * @param string $serviceid The service identifier, e.g., 'report_lifestory'.
      */
-    public function add_settings(admin_settingpage $settings, string $component): void {
-        $configprefix = self::PLUGIN . "/ratelimit_{$component}";
+    public function add_form_elements(\MoodleQuickForm $mform, string $serviceid): void {
 
-        // Checkbox to enable limiting by allowed users list.
-        $allowedusersenable = new \admin_setting_configcheckbox(
-            "{$configprefix}_allowedusers_enable",
-            new \lang_string('ratelimit_report_lifestory_allowedusers_enable', self::PLUGIN),
-            new \lang_string('ratelimit_report_lifestory_allowedusers_enable_desc', self::PLUGIN),
-            0
+        $configprefix = "ratelimit_{$serviceid}";
+        $allowedusersenableid = "{$configprefix}_allowedusers_enable";
+
+        // 1. Checkbox to enable limiting by allowed users list.
+        $mform->addElement(
+            'checkbox',
+            $allowedusersenableid,
+            new lang_string('ratelimit_report_lifestory_allowedusers_enable', self::PLUGIN),
+            new lang_string('ratelimit_report_lifestory_allowedusers_enable_desc', self::PLUGIN)
         );
-        $settings->add($allowedusersenable);
+        $mform->setType($allowedusersenableid, PARAM_BOOL);
+        $mform->setDefault($allowedusersenableid, 0);
 
-        $attributes = $this->get_autocomplete_attributes();
-        $choices = $this->get_user_choices([
+        // 2. Autocomplete for allowed users.
+        $attributes = ratelimit_settings::get_autocomplete_attributes();
+        $attributes['multiple'] = true;
+
+        $choices = ratelimit_settings::get_user_choices([
             'report/lifestory:generateaifeedback',
         ]);
 
-        $settings->add(new autocomplete(
-            "{$configprefix}_allowedusers",
-            new \lang_string('ratelimit_report_lifestory_allowedusers', self::PLUGIN),
-            new \lang_string('ratelimit_report_lifestory_allowedusers_desc', self::PLUGIN),
-            [],
+        $allowedusersid = "{$configprefix}_allowedusers";
+
+        $mform->addElement(
+            'autocomplete',
+            $allowedusersid,
+            new lang_string('ratelimit_report_lifestory_allowedusers', self::PLUGIN),
             $choices,
             $attributes
-        ));
-        $settings->hide_if("{$configprefix}_allowedusers", "{$configprefix}_allowedusers_enable", 'eq', 0);
+        );
+        $mform->setType($allowedusersid, PARAM_RAW);
+        // Hide if the master checkbox is not checked.
+        $mform->hideIf($allowedusersid, $allowedusersenableid, 'notchecked');
     }
 }

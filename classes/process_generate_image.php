@@ -113,7 +113,7 @@ class process_generate_image extends abstract_processor {
         // Debug: Log the request body for development purposes.
         debugging('Image generation request body: ' . $body, DEBUG_DEVELOPER);
 
-        $licensekey = get_config('aiprovider_datacurso', 'licensekey');
+        $licensekey = $this->provider->config['licensekey'] ?? null;
 
         return new Request(
             'POST',

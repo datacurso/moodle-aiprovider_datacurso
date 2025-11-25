@@ -16,99 +16,86 @@
 
 namespace aiprovider_datacurso\local\ratelimit;
 
-use admin_settingpage;
-use core_admin\local\settings\autocomplete;
+use lang_string;
+use aiprovider_datacurso\local\ratelimit\ratelimit_settings;
 
 defined('MOODLE_INTERNAL') || die();
-require_once($CFG->dirroot . '/user/lib.php');
 
 /**
  * Class local_coursegen
  *
- * @package    aiprovider_datacurso
- * @copyright  2025 Wilber Narvaez <https://datacurso.com>
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * This class provides the specific rate limiting settings elements for the Course Generation AI service.
+ *
+ * @package     aiprovider_datacurso
+ * @copyright   2025 Wilber Narvaez <https://datacurso.com>
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class local_coursegen extends ratelimit_settings {
+class local_coursegen {
     /** @var string Plugin component name. */
     private const PLUGIN = 'aiprovider_datacurso';
 
     /**
-     * Add the rate limit settings related to course generation.
+     * Adds the rate limit form elements specific to course generation.
      *
-     * @param admin_settingpage $settings Settings page to append controls to.
-     * @param string $component Component name used to namespace config keys.
+     * This replaces the old add_settings() method.
+     *
+     * @param \MoodleQuickForm $mform The Moodle form object (ai_provider_form).
+     * @param string $serviceid The service identifier, e.g., 'local_coursegen'.
      */
-    public function add_settings(admin_settingpage $settings, string $component): void {
-        $configprefix = self::PLUGIN . "/ratelimit_{$component}";
+    public function add_form_elements(\MoodleQuickForm $mform, string $serviceid): void {
+        $configprefix = "ratelimit_{$serviceid}";
+        $allowedusersenableid = "{$configprefix}_allowedusers_enable";
 
-        // Checkbox to enable limiting by allowed users list.
-        $allowedusersenable = new \admin_setting_configcheckbox(
-            "{$configprefix}_allowedusers_enable",
-            new \lang_string('ratelimit_local_coursegen_allowedusers_enable', self::PLUGIN),
-            new \lang_string('ratelimit_local_coursegen_allowedusers_enable_desc', self::PLUGIN),
-            0
+        // 1. Checkbox to enable limiting by allowed users list.
+        $mform->addElement(
+            'checkbox',
+            $allowedusersenableid,
+            new lang_string('ratelimit_local_coursegen_allowedusers_enable', self::PLUGIN),
+            new lang_string('ratelimit_local_coursegen_allowedusers_enable_desc', self::PLUGIN)
         );
-        $settings->add($allowedusersenable);
+        $mform->setType($allowedusersenableid, PARAM_BOOL);
+        $mform->setDefault($allowedusersenableid, 0);
 
-        $attributes = $this->get_autocomplete_attributes();
-        $choices = $this->get_user_choices([
+        // Define the choices (users/capabilities) once, calling the static utility.
+        $choices = ratelimit_settings::get_user_choices([
             'moodle/course:create',
             'local/coursegen:createcoursewithai',
         ]);
 
-        $coursecreators = new autocomplete(
-            "{$configprefix}_coursecreators",
-            new \lang_string('ratelimit_local_coursegen_coursecreators', self::PLUGIN),
-            new \lang_string('ratelimit_local_coursegen_coursecreators_desc', self::PLUGIN),
-            [],
+        // Get attributes needed for the Moodle Form Autocomplete element, calling the static utility.
+        $attributes = ratelimit_settings::get_autocomplete_attributes();
+        $attributes['multiple'] = true;
+
+        // 2. Autocomplete for allowed Course Creators.
+        $coursecreatorsid = "{$configprefix}_coursecreators";
+
+        $mform->addElement(
+            'autocomplete',
+            $coursecreatorsid,
+            new lang_string('ratelimit_local_coursegen_coursecreators', self::PLUGIN),
             $choices,
             $attributes
         );
-        $settings->add($coursecreators);
-        $settings->hide_if("{$configprefix}_coursecreators", "{$configprefix}_allowedusers_enable", 'eq', 0);
+        $mform->setType($coursecreatorsid, PARAM_RAW);
+        // Hide if the master checkbox is not checked (eq, 0).
+        $mform->hideIf($coursecreatorsid, $allowedusersenableid, 'notchecked');
 
-        $activitycreators = new autocomplete(
-            "{$configprefix}_activitycreators",
-            new \lang_string('ratelimit_local_coursegen_activitycreators', self::PLUGIN),
-            new \lang_string('ratelimit_local_coursegen_activitycreators_desc', self::PLUGIN),
-            [],
-            $choices,
-            $attributes
-        );
-        $settings->add($activitycreators);
-        $settings->hide_if("{$configprefix}_activitycreators", "{$configprefix}_allowedusers_enable", 'eq', 0);
-    }
-
-    /**
-     * Build the autocomplete admin setting for a user selection.
-     *
-     * @param string $settingname Full admin setting name (including plugin prefix).
-     * @param string $labelkey Language string key for the setting label.
-     * @param string $desckey Language string key for the setting description.
-     * @return autocomplete
-     */
-    private function create_user_setting(string $settingname, string $labelkey, string $desckey): autocomplete {
-        $attributes = [
-            'ajax' => 'core_user/form_user_selector',
-            'multiple' => true,
-            'showsuggestions' => true,
-            'placeholder' => get_string('search'),
-            'noselectionstring' => get_string('noselection', 'form'),
-        ];
-
-        $choices = $this->get_user_choices([
-            'moodle/course:create',
-            'local/coursegen:createcoursewithai',
+        // 3. Autocomplete for allowed Activity Creators.
+        $choices = ratelimit_settings::get_user_choices([
+            'moodle/course:manageactivities',
+            'local/coursegen:createactivitywithai',
         ]);
 
-        return new autocomplete(
-            $settingname,
-            new \lang_string($labelkey, self::PLUGIN),
-            new \lang_string($desckey, self::PLUGIN),
-            [],
+        $activitycreatorsid = "{$configprefix}_activitycreators";
+        $mform->addElement(
+            'autocomplete',
+            $activitycreatorsid,
+            new lang_string('ratelimit_local_coursegen_activitycreators', self::PLUGIN),
             $choices,
             $attributes
         );
+        $mform->setType($activitycreatorsid, PARAM_RAW);
+        // Hide if the master checkbox is not checked (eq, 0).
+        $mform->hideIf($activitycreatorsid, $allowedusersenableid, 'notchecked');
     }
 }

@@ -212,12 +212,22 @@ export const init = async () => {
 
     await renderTable([], { loading: true });
 
-    const response = await getConsumptionHistory(args);
+    let pagination = 0;
 
-    const consumptions = response?.consumption || [];
-    await renderTable(consumptions);
+    try{
+      const response = await getConsumptionHistory(args);
+      const consumptions = response?.consumption || [];
+      await renderTable(consumptions);
+      pagination = response?.pagination;
+    }
+    catch (error) {
+      let msg = error.message;
+      Notification.addNotification({
+        message: msg,
+        type: 'error'
+      });
+    }
 
-    const pagination = response?.pagination;
     if (pagination) {
       const { current_page, total_pages, total } = pagination;
       const pageInfoText = await getString("pageinfo", "aiprovider_datacurso", {

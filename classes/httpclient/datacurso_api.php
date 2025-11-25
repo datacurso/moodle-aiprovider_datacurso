@@ -42,11 +42,28 @@ class datacurso_api {
      * @throws moodle_exception
      */
     public function __construct() {
-        $this->baseurl    = 'https://shop.datacurso.com/index.php?m=tokens_manager&api=';
-        $this->licensekey = get_config('aiprovider_datacurso', 'licensekey');
+        global $DB;
+        $this->baseurl = 'https://shop.datacurso.com/index.php?m=tokens_manager&api=';
+        $manager = new \core_ai\manager($DB);
+        $instances = $manager->get_provider_instances();
+        $this->licensekey = null;
+        $instanceprovider = null;
 
+        foreach ($instances as $instance) {
+            if ($instance->get_name() === 'aiprovider_datacurso' && $instance->enabled === true) {
+                $instanceprovider = $instance;
+                $config = $instance->config ?? [];
+                if (!empty($config['licensekey'])) {
+                    $this->licensekey = $config['licensekey'];
+                }
+                break;
+            }
+        }
+        if ($instanceprovider == null) {
+            throw new \moodle_exception('instance_disabled', 'aiprovider_datacurso');
+        }
         if (empty($this->licensekey)) {
-            throw new moodle_exception('API baseurl or licensekey not configured');
+            throw new \moodle_exception('licensekey_missing', 'aiprovider_datacurso');
         }
     }
 

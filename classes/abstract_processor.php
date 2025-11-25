@@ -85,7 +85,7 @@ abstract class abstract_processor extends process_base {
     protected function query_ai_api(): array {
         global $USER;
 
-        $licensekey = get_config('aiprovider_datacurso', 'licensekey');
+        $licensekey = $this->provider->config['licensekey'] ?? null;
         $userid = $this->action->get_configuration('userid') ?? $USER->id;
 
         $client = \core\di::get(http_client::class);
