@@ -68,6 +68,10 @@ class local_coursegen extends ratelimit_settings {
         $settings->add($coursecreators);
         $settings->hide_if("{$configprefix}_coursecreators", "{$configprefix}_allowedusers_enable", 'eq', 0);
 
+        $choices = ratelimit_settings::get_user_choices([
+            'moodle/course:manageactivities',
+            'local/coursegen:createactivitywithai',
+        ]);
         $activitycreators = new autocomplete(
             "{$configprefix}_activitycreators",
             new \lang_string('ratelimit_local_coursegen_activitycreators', self::PLUGIN),
@@ -78,37 +82,5 @@ class local_coursegen extends ratelimit_settings {
         );
         $settings->add($activitycreators);
         $settings->hide_if("{$configprefix}_activitycreators", "{$configprefix}_allowedusers_enable", 'eq', 0);
-    }
-
-    /**
-     * Build the autocomplete admin setting for a user selection.
-     *
-     * @param string $settingname Full admin setting name (including plugin prefix).
-     * @param string $labelkey Language string key for the setting label.
-     * @param string $desckey Language string key for the setting description.
-     * @return autocomplete
-     */
-    private function create_user_setting(string $settingname, string $labelkey, string $desckey): autocomplete {
-        $attributes = [
-            'ajax' => 'core_user/form_user_selector',
-            'multiple' => true,
-            'showsuggestions' => true,
-            'placeholder' => get_string('search'),
-            'noselectionstring' => get_string('noselection', 'form'),
-        ];
-
-        $choices = $this->get_user_choices([
-            'moodle/course:create',
-            'local/coursegen:createcoursewithai',
-        ]);
-
-        return new autocomplete(
-            $settingname,
-            new \lang_string($labelkey, self::PLUGIN),
-            new \lang_string($desckey, self::PLUGIN),
-            [],
-            $choices,
-            $attributes
-        );
     }
 }
