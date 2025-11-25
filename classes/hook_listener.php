@@ -8,11 +8,11 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace aiprovider_datacurso;
 
@@ -30,7 +30,7 @@ class hook_listener {
     /**
      * Extend the AI provider configuration form for Datacurso.
      *
-     * This method is triggered by the hook after_ai_provider_form_hook 
+     * This method is triggered by the hook after_ai_provider_form_hook
      * to append custom elements, including the Rate Limit configuration.
      *
      * @param after_ai_provider_form_hook $hook The hook object containing the form instance.
@@ -128,7 +128,7 @@ class hook_listener {
 
             // --- Dynamic injection of Service-Specific elements ---
             $classname = "\\aiprovider_datacurso\\local\\ratelimit\\{$sid}";
-            
+
             // Check if a service-specific rate limit configuration class exists.
             if (class_exists($classname)) {
                 $ratelimitserviceconfig = new $classname();

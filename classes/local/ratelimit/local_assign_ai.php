@@ -17,7 +17,7 @@
 namespace aiprovider_datacurso\local\ratelimit;
 
 use core_user\form\element\autocomplete;
-use \lang_string;
+use lang_string;
 use aiprovider_datacurso\local\ratelimit\ratelimit_settings;
 defined('MOODLE_INTERNAL') || die();
 
@@ -39,7 +39,7 @@ class local_assign_ai {
      * @param string $serviceid ServiceID ('local_assign_ai').
      */
     public function add_form_elements($mform, string $serviceid): void {
-        
+
         $configprefix = "ratelimit_{$serviceid}";
         $allowedusersenableid = "{$configprefix}_allowedusers_enable";
 

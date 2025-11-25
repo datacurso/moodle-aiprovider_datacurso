@@ -16,7 +16,7 @@
 
 namespace aiprovider_datacurso\local\ratelimit;
 
-use \lang_string;
+use lang_string;
 use aiprovider_datacurso\local\ratelimit\ratelimit_settings;
 
 defined('MOODLE_INTERNAL') || die();
@@ -24,7 +24,7 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Class local_datacurso_ratings
  *
- * This class provides the specific rate limiting settings elements for the 
+ * This class provides the specific rate limiting settings elements for the
  * Ratings Analysis AI service.
  *
  * @package     aiprovider_datacurso
@@ -38,7 +38,7 @@ class local_datacurso_ratings {
     /**
      * Adds the rate limit form elements specific to ratings analysis with AI.
      *
-     * @param \moodleform $mform The Moodle form object (ai_provider_form). 
+     * @param \moodleform $mform The Moodle form object (ai_provider_form).
      * @param string $serviceid The service identifier, e.g., 'local_datacurso_ratings'.
      */
     public function add_form_elements($mform, string $serviceid): void {

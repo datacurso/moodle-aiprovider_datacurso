@@ -8,16 +8,15 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace aiprovider_datacurso\local\ratelimit;
 
-use core_user\form\element\autocomplete; 
-use \lang_string;
+use lang_string;
 use aiprovider_datacurso\local\ratelimit\ratelimit_settings;
 
 defined('MOODLE_INTERNAL') || die();
@@ -25,7 +24,7 @@ defined('MOODLE_INTERNAL') || die();
 /**
  * Class report_lifestory
  *
- * This class provides the specific rate limiting settings elements for the 
+ * This class provides the specific rate limiting settings elements for the
  * Life Story report AI feedback generation service.
  *
  * @package     aiprovider_datacurso

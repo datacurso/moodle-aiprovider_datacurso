@@ -16,7 +16,7 @@
 
 namespace aiprovider_datacurso\local\ratelimit;
 
-use \lang_string;
+use lang_string;
 use aiprovider_datacurso\local\ratelimit\ratelimit_settings;
 
 defined('MOODLE_INTERNAL') || die();
@@ -68,7 +68,7 @@ class local_coursegen {
 
         // 2. Autocomplete for allowed Course Creators.
         $coursecreatorsid = "{$configprefix}_coursecreators";
-        
+
         $mform->addElement(
             'autocomplete',
             $coursecreatorsid,
