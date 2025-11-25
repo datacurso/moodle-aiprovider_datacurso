@@ -16,7 +16,7 @@
 /**
  * Hide fields
  *
- * @module     aiprovider_datacurso/hide_fields
+ * @module     aiprovider_datacurso/hiden_fields
  * @copyright  2025 Industria Elearning
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */

@@ -117,6 +117,7 @@ $string['httperror'] = 'Unexpected error while processing your request (HTTP {$a
 $string['id'] = 'ID';
 $string['instance_disabled'] = 'The Datacurso provider instance is disabled';
 $string['installed'] = 'Installed';
+$string['invalidjson'] = 'JSON Invalid';
 $string['invalidlicensekey'] = 'License key has expired or is invalid. Please go to <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Manage Credits</a> in the Datacurso Shop to renew or purchase a new license.';
 $string['json_encode_failed'] = 'Json Encode Failed';
 $string['jsondecodeerror'] = 'Error processing response from Datacurso API: {$a}';
@@ -125,6 +126,7 @@ $string['license_not_allowed'] = 'Your license is not allowed to perform this re
 $string['licensekey'] = 'License key';
 $string['licensekey_desc'] = 'Enter the license key from the Datacurso Shop customer area.';
 $string['licensekey_help'] = 'Enter your Datacurso AI provider license key.';
+$string['licensekey_missing'] = 'The license key is not configured';
 $string['link_consumptionhistory'] = 'Credits consumption history';
 $string['link_generalreport'] = 'General report';
 $string['link_generalreport_datacurso'] = 'General report Datacurso AI';

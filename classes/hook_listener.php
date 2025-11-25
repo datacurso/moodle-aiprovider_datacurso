@@ -126,7 +126,7 @@ class hook_listener {
             $mform->hideIf("ratelimit_{$sid}_window_value", "ratelimit_{$sid}_enable", 'eq', 0);
             $mform->hideIf("ratelimit_{$sid}_window_unit", "ratelimit_{$sid}_enable", 'eq', 0);
 
-            // --- Dynamic injection of Service-Specific elements ---
+            // Dynamic injection of Service-Specific elements.
             $classname = "\\aiprovider_datacurso\\local\\ratelimit\\{$sid}";
 
             // Check if a service-specific rate limit configuration class exists.
@@ -165,31 +165,6 @@ class hook_listener {
 
             if (is_array($model)) {
                 $model = $model[0];
-            }
-
-            $mform->addElement(
-                'header',
-                'modelsettingsheader',
-                get_string('settings', 'aiprovider_datacurso')
-            );
-
-            if ($model === 'custom') {
-                $mform->addElement(
-                    'textarea',
-                    'modelextraparams',
-                    get_string('extraparams', 'aiprovider_datacurso'),
-                    [
-                        'rows' => 5,
-                        'cols' => 40,
-                    ]
-                );
-                $mform->setType('modelextraparams', PARAM_TEXT);
-            } else {
-                $targetmodel = helper::get_model_class($model);
-
-                if ($targetmodel && $targetmodel->has_model_settings()) {
-                    $targetmodel->add_model_settings($mform);
-                }
             }
         }
     }

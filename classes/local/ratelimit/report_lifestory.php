@@ -40,10 +40,10 @@ class report_lifestory {
      *
      * This replaces the old add_settings() method.
      *
-     * @param \moodleform $mform The Moodle form object (ai_provider_form).
+     * @param \MoodleQuickForm $mform The Moodle form object (ai_provider_form).
      * @param string $serviceid The service identifier, e.g., 'report_lifestory'.
      */
-    public function add_form_elements($mform, string $serviceid): void {
+    public function add_form_elements(\MoodleQuickForm $mform, string $serviceid): void {
 
         $configprefix = "ratelimit_{$serviceid}";
         $allowedusersenableid = "{$configprefix}_allowedusers_enable";

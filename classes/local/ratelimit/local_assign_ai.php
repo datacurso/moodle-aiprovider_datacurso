@@ -35,10 +35,10 @@ class local_assign_ai {
     /**
      * Add elements specifics the form settings.
      *
-     * @param \moodleform $mform Object form Moodle.
+     * @param \MoodleQuickForm $mform Object form Moodle.
      * @param string $serviceid ServiceID ('local_assign_ai').
      */
-    public function add_form_elements($mform, string $serviceid): void {
+    public function add_form_elements(\MoodleQuickForm $mform, string $serviceid): void {
 
         $configprefix = "ratelimit_{$serviceid}";
         $allowedusersenableid = "{$configprefix}_allowedusers_enable";

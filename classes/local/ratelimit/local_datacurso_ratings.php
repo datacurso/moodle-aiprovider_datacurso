@@ -38,10 +38,10 @@ class local_datacurso_ratings {
     /**
      * Adds the rate limit form elements specific to ratings analysis with AI.
      *
-     * @param \moodleform $mform The Moodle form object (ai_provider_form).
+     * @param \MoodleQuickForm $mform The Moodle form object (ai_provider_form).
      * @param string $serviceid The service identifier, e.g., 'local_datacurso_ratings'.
      */
-    public function add_form_elements($mform, string $serviceid): void {
+    public function add_form_elements(\MoodleQuickForm $mform, string $serviceid): void {
 
         $configprefix = "ratelimit_{$serviceid}";
         $allowedusersenableid = "{$configprefix}_allowedusers_enable";
