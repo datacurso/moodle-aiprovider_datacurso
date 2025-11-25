@@ -39,10 +39,10 @@ class local_coursegen {
      *
      * This replaces the old add_settings() method.
      *
-     * @param \moodleform $mform The Moodle form object (ai_provider_form).
+     * @param \MoodleQuickForm $mform The Moodle form object (ai_provider_form).
      * @param string $serviceid The service identifier, e.g., 'local_coursegen'.
      */
-    public function add_form_elements($mform, string $serviceid): void {
+    public function add_form_elements(\MoodleQuickForm $mform, string $serviceid): void {
         $configprefix = "ratelimit_{$serviceid}";
         $allowedusersenableid = "{$configprefix}_allowedusers_enable";
 
@@ -63,7 +63,7 @@ class local_coursegen {
         ]);
 
         // Get attributes needed for the Moodle Form Autocomplete element, calling the static utility.
-        $attributes = ratelimit_settings::get_autocomplete_attributes(); // 3. CORREGIDO: Llamada estática
+        $attributes = ratelimit_settings::get_autocomplete_attributes();
         $attributes['multiple'] = true;
 
         // 2. Autocomplete for allowed Course Creators.
@@ -79,7 +79,13 @@ class local_coursegen {
         $mform->setType($coursecreatorsid, PARAM_RAW);
         // Hide if the master checkbox is not checked (eq, 0).
         $mform->hideIf($coursecreatorsid, $allowedusersenableid, 'notchecked');
+
         // 3. Autocomplete for allowed Activity Creators.
+        $choices = ratelimit_settings::get_user_choices([
+            'moodle/course:manageactivities',
+            'local/coursegen:createactivitywithai',
+        ]);
+
         $activitycreatorsid = "{$configprefix}_activitycreators";
         $mform->addElement(
             'autocomplete',
