@@ -706,11 +706,11 @@ class ratelimiter {
      * Extract the number of tokens consumed in the entry.
      *
      * @param array $consumption
-     * @return int
+     * @return float
      */
-    private function extract_token_amount(array $consumption): int {
+    private function extract_token_amount(array $consumption): float {
         $raw = $consumption['cantidad_tokens'] ?? 0;
-        return (int)$raw;
+        return (float)$raw;
     }
 
     /**

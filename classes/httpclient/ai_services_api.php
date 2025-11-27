@@ -34,7 +34,12 @@ class ai_services_api extends datacurso_api_base {
      * @param string|null $licensekey The license key obtained from Datacurso SHOP.
      */
     public function __construct(?string $licensekey = null) {
-        parent::__construct('https://plugins-ai.datacurso.com', $licensekey);
+        global $CFG;
+        if ($this->is_for_ue()) {
+            parent::__construct('https://eu.plugins-ai.datacurso.com', $licensekey);
+        } else {
+            parent::__construct('https://plugins-ai.datacurso.com', $licensekey);
+        }
     }
 
     /**
@@ -46,6 +51,7 @@ class ai_services_api extends datacurso_api_base {
     public function get_streaming_url_for_session(string $sessionid): string {
         // Build streaming URL with session ID.
         $baseurl = rtrim($this->baseurl, '/');
+
         return $baseurl . '/chat/stream?session_id=' . urlencode($sessionid);
     }
 }
