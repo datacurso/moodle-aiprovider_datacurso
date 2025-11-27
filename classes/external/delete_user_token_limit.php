@@ -53,18 +53,15 @@ class delete_user_token_limit extends external_api {
      * @return array
      */
     public static function execute(int $id): array {
-        global $PAGE;
-
         $params = self::validate_parameters(self::execute_parameters(), ['id' => $id]);
-        require_login();
+        $id = $params['id'];
 
         $context = \context_system::instance();
         self::validate_context($context);
         require_capability('aiprovider/datacurso:managetokenlimits', $context);
-        $PAGE->set_context($context);
 
-        if ($params['id'] > 0) {
-            user_token_limit_manager::delete($params['id']);
+        if ($id > 0) {
+            user_token_limit_manager::delete($id);
             return [
                 'success' => true,
                 'message' => get_string('usertokenlimit_deleted', 'aiprovider_datacurso'),
