@@ -144,8 +144,8 @@ class get_all_consumption extends external_api {
                     'action' => $translatedaction,
                     'id_service' => (string)($item['id_servicio'] ?? ''),
                     'userid' => isset($item['userid']) ? (int)$item['userid'] : null,
-                    'cant_tokens' => (int)($item['cantidad_tokens'] ?? 0),
-                    'balance' => (int)($item['saldo_restante'] ?? 0),
+                    'cant_tokens' => $item['cantidad_tokens'] ?? 0,
+                    'balance' => $item['saldo_restante'] ?? 0,
                     'date' => (string)($item['fecha'] ?? ''),
                     'created_at' => (string)($item['created_at'] ?? ''),
                 ];
@@ -174,8 +174,8 @@ class get_all_consumption extends external_api {
                     'action' => new external_value(PARAM_TEXT, 'Performed action'),
                     'id_service' => new external_value(PARAM_TEXT, 'Used service'),
                     'userid' => new external_value(PARAM_INT, 'Moodle user ID', VALUE_OPTIONAL),
-                    'cant_tokens' => new external_value(PARAM_INT, 'Number of tokens consumed'),
-                    'balance' => new external_value(PARAM_INT, 'Remaining token balance'),
+                    'cant_tokens' => new external_value(PARAM_FLOAT, 'Number of tokens consumed'),
+                    'balance' => new external_value(PARAM_FLOAT, 'Remaining token balance'),
                     'date' => new external_value(PARAM_RAW, 'Consumption date (YYYY-MM-DD)'),
                     'created_at' => new external_value(PARAM_RAW, 'Record creation date in the API'),
                 ])

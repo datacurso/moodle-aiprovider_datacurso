@@ -210,8 +210,8 @@ class get_consumption_history extends \external_api {
                     'userid' => new external_value(PARAM_INT, 'User ID'),
                     'action' => new external_value(PARAM_TEXT, 'Action performed'),
                     'id_service' => new external_value(PARAM_TEXT, 'Service identifier'),
-                    'cant_tokens' => new external_value(PARAM_INT, 'Tokens used'),
-                    'balance' => new external_value(PARAM_INT, 'Remaining balance'),
+                    'cant_tokens' => new external_value(PARAM_FLOAT, 'Tokens used'),
+                    'balance' => new external_value(PARAM_FLOAT, 'Remaining balance'),
                     'date' => new external_value(PARAM_TEXT, 'Consumption date'),
                 ])
             ),
