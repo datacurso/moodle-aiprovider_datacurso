@@ -13,13 +13,89 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-// AMD module to handle delete confirmation in the user token limits page.
-// @package    aiprovider_datacurso
-// @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+/**
+ * TODO describe module user_token_limits
+ *
+ * @module     aiprovider_datacurso/user_token_limits
+ * @copyright  2025 Wilber Narvaez <https://datacurso.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 
 import Notification from "core/notification";
-import * as Str from "core/str";
-import { deleteUserTokenLimit } from "aiprovider_datacurso/repository";
+import {get_strings as getStrings, get_string as getString} from "core/str";
+import {createUserTokenLimitModal} from "aiprovider_datacurso/modals";
+import {deleteUserTokenLimit, resetUserTokenUsage} from "aiprovider_datacurso/repository";
+
+
+/**
+ * Confirm helper.
+ * @param {string} title
+ * @param {string} message
+ * @param {Function} onYes
+ */
+const confirmAction = async (title, message, onYes) => {
+    const [yes, no] = await getStrings([
+        {key: "yes"},
+        {key: "no"}
+    ]);
+    Notification.confirm(title, message, yes, no, onYes);
+};
+
+/**
+ * Handle delete link click.
+ * @param {HTMLElement} link
+ */
+const handleDelete = async (link) => {
+    const id = link.dataset.id;
+    const username = link.dataset.username || "";
+    const [title, message] = await getStrings([
+        {key: "confirm_delete_title", component: "aiprovider_datacurso"},
+        {key: "confirm_delete_message", component: "aiprovider_datacurso", param: username}
+    ]);
+
+    await confirmAction(title, message, async () => {
+        try {
+            const result = await deleteUserTokenLimit(id);
+            if (result && result.success) {
+                window.location.reload();
+                return;
+            }
+            const err = await getString("usertokenlimit_delete_failed", "aiprovider_datacurso");
+            Notification.alert(title, result && result.message ? result.message : err);
+        } catch (ex) {
+            const err = await getString("usertokenlimit_delete_failed", "aiprovider_datacurso");
+            Notification.alert(title, err);
+        }
+    });
+};
+
+/**
+ * Handle reset usage link click.
+ * @param {HTMLElement} link
+ */
+const handleReset = async (link) => {
+    const id = link.dataset.id;
+    const username = link.dataset.username || "";
+    const [title, message] = await getStrings([
+        {key: "usertokenlimit_reset_usage", component: "aiprovider_datacurso"},
+        {key: "confirm_reset_usage_message", component: "aiprovider_datacurso", param: username}
+    ]);
+
+    await confirmAction(title, message, async () => {
+        try {
+            const result = await resetUserTokenUsage(id);
+            if (result && result.success) {
+                window.location.reload();
+                return;
+            }
+            const err = await getString("usertokenlimit_reset_failed", "aiprovider_datacurso");
+            Notification.alert(title, result && result.message ? result.message : err);
+        } catch (ex) {
+            const err = await getString("usertokenlimit_reset_failed", "aiprovider_datacurso");
+            Notification.alert(title, err);
+        }
+    });
+};
 
 export const init = () => {
     const root = document.querySelector('[data-region="aiprovider-datacurso-userlimits"]');
@@ -28,47 +104,57 @@ export const init = () => {
     }
 
     root.addEventListener("click", async (e) => {
-        const link = e.target.closest('[data-action="delete"]');
-        if (!link) {
+        const deleteLink = e.target.closest('[data-action="delete"]');
+        if (deleteLink) {
+            e.preventDefault();
+            await handleDelete(deleteLink);
             return;
         }
-        e.preventDefault();
-        const id = link.dataset.id;
-        const username = link.dataset.username || "";
 
-        const [title, message, yes, no] = await Str.get_strings([
-            { key: "confirm_delete_title", component: "aiprovider_datacurso" },
-            {
-                key: "confirm_delete_message",
-                component: "aiprovider_datacurso",
-                param: username,
-            },
-            { key: "yes" },
-            { key: "no" },
-        ]);
+        const resetLink = e.target.closest('[data-action="resetusage"]');
+        if (resetLink) {
+            e.preventDefault();
+            await handleReset(resetLink);
+        }
 
-        Notification.confirm(title, message, yes, no, async () => {
-            try {
-                const result = await deleteUserTokenLimit(id);
-                if (result && result.success) {
-                    window.location.reload();
-                    return;
+        const addLink = e.target.closest('[data-action="openadd"]');
+        if (addLink) {
+            e.preventDefault();
+            const returnurl = window.location.pathname + window.location.search;
+            const modal = createUserTokenLimitModal(
+                addLink,
+                getString("usertokenlimit_add_title", "aiprovider_datacurso"),
+                0,
+                returnurl
+            );
+            modal.addEventListener(modal.events.FORM_SUBMITTED, (event) => {
+                if (event && event.detail) {
+                    window.location.href = event.detail;
                 }
-                const err = await Str.get_string(
-                    "usertokenlimit_delete_failed",
-                    "aiprovider_datacurso"
-                );
-                Notification.alert(
-                    title,
-                    result && result.message ? result.message : err
-                );
-            } catch (ex) {
-                const err = await Str.get_string(
-                    "usertokenlimit_delete_failed",
-                    "aiprovider_datacurso"
-                );
-                Notification.alert(title, err);
-            }
-        });
+            });
+            modal.show();
+            return;
+        }
+
+        const editLink = e.target.closest('[data-action="openedit"]');
+        if (editLink) {
+            e.preventDefault();
+            const id = parseInt(editLink.dataset.id, 10) || 0;
+            const username = editLink.dataset.username || "";
+            const returnurl = window.location.pathname + window.location.search;
+            const modal = createUserTokenLimitModal(
+                editLink,
+                getString("usertokenlimit_edit_title", "aiprovider_datacurso", username),
+                id,
+                returnurl,
+                username
+            );
+            modal.addEventListener(modal.events.FORM_SUBMITTED, (event) => {
+                if (event && event.detail) {
+                    window.location.href = event.detail;
+                }
+            });
+            modal.show();
+        }
     });
 };
