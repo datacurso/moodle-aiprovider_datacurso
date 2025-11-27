@@ -136,6 +136,16 @@ class datacurso_api_base {
             throw new \moodle_exception('notallowed', 'aiprovider_datacurso');
         }
 
+        // Enforce user global quota (across services) first.
+        if (!$ratelimiter->precheck_user_quota($userid)) {
+            $snapshot = $ratelimiter->get_user_quota_snapshot($userid);
+            $details = '';
+            if (is_array($snapshot) && ($snapshot['limit'] ?? 0) > 0) {
+                $details = $snapshot['used'] . '/' . $snapshot['limit'];
+            }
+            throw new \moodle_exception('error_usertokenlimit_exceeded', 'aiprovider_datacurso', '', $details);
+        }
+
         if (!empty($serviceid) && !$ratelimiter->precheck($serviceid, $userid)) {
             $remaining = $ratelimiter->get_time_until_next_window((string)$serviceid, (int)$userid);
             $retrytimestamp = time() + max(0, (int)$remaining);
@@ -224,10 +234,11 @@ class datacurso_api_base {
             throw new \moodle_exception('jsondecodeerror', 'aiprovider_datacurso', '', json_last_error_msg());
         }
 
+        // Post-success syncs: only after a valid, non-error response.
         if (!empty($serviceid)) {
-            // Post-success sync: only after a valid, non-error response.
             $ratelimiter->sync_after_success($serviceid, $userid, $path);
         }
+        $ratelimiter->sync_user_quota_after_success($userid, $path);
 
         return $decodedresponse;
     }

@@ -1,0 +1,56 @@
+<div class="aiprovider-datacurso-userlimits" data-region="aiprovider-datacurso-userlimits">
+    <h2>{{heading}}</h2>
+
+    <div class="mb-3">
+        <a href="{{addurl}}" class="btn btn-primary">{{addlabel}}</a>
+    </div>
+
+    <form method="get" action="{{searchaction}}" class="form-inline mb-3">
+        <label for="id_search" class="sr-only">{{#str}} search {{/str}}</label>
+        <input type="text" id="id_search" name="search" value="{{searchvalue}}" class="form-control" placeholder="{{#str}} search {{/str}}">
+        <input type="hidden" name="sort" value="{{sort}}">
+        <input type="hidden" name="dir" value="{{dir}}">
+        <input type="hidden" name="perpage" value="{{perpage}}">
+        <button type="submit" class="btn btn-secondary ml-2">{{#str}} search {{/str}}</button>
+    </form>
+
+    <table class="generaltable">
+        <thead>
+            <tr>
+                {{#columns}}
+                    <th>
+                        {{#sorturl}}<a href="{{sorturl}}">{{label}}</a>{{/sorturl}}
+                        {{^sorturl}}{{label}}{{/sorturl}}
+                    </th>
+                {{/columns}}
+            </tr>
+        </thead>
+        <tbody>
+            {{#empty}}
+                <tr><td colspan="5">{{nothingtodisplay}}</td></tr>
+            {{/empty}}
+            {{^empty}}
+                {{#rows}}
+                    <tr>
+                        <td>{{fullname}}</td>
+                        <td>{{email}}</td>
+                        <td>{{tokenlimit}}</td>
+                        <td>{{tokensused}}</td>
+                        <td>
+                            <a href="{{editurl}}" class="action-icon" title="{{#str}} edit {{/str}}">
+                                {{#pix}} t/edit, core, {{#str}} edit {{/str}} {{/pix}}
+                            </a>
+                            <a href="#" class="action-icon ml-1" data-action="delete" data-id="{{id}}" data-username="{{fullname}}" title="{{#str}} delete {{/str}}">
+                                {{#pix}} t/delete, core, {{#str}} delete {{/str}} {{/pix}}
+                            </a>
+                        </td>
+                    </tr>
+                {{/rows}}
+            {{/empty}}
+        </tbody>
+    </table>
+
+    <div class="paging">
+        {{{pagingbar}}}
+    </div>
+</div>
