@@ -120,5 +120,6 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         }
         upgrade_plugin_savepoint(true, 2025112705, 'aiprovider', 'datacurso');
     }
+
     return true;
 }
