@@ -556,6 +556,7 @@ class webservice_config {
     private static function get_web_service_functions(): array {
         return [
             'core_course_get_contents',
+            'core_course_get_courses_by_field',
             'mod_assign_get_submissions',
             'mod_forum_get_forum_discussions',
             'mod_forum_get_discussion_posts',
