@@ -74,3 +74,15 @@ export function getConsumptionHistory(args) {
         args: args
     }])[0];
 }
+
+/**
+ * Reset usage counters for a user token limit record by id.
+ * @param {number} id
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
+export function resetUserTokenUsage(id) {
+    return Ajax.call([{
+        methodname: 'aiprovider_datacurso_reset_user_token_usage',
+        args: {id: Number(id)}
+    }])[0];
+}
