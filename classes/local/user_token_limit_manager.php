@@ -43,6 +43,29 @@ class user_token_limit_manager {
     }
 
     /**
+     * Reset usage counters for a user limit record.
+     *
+     * @param int $id Record ID
+     * @return bool
+     */
+    public static function reset_usage(int $id): bool {
+        global $DB, $USER;
+        if (!$DB->record_exists('aiprovider_datacurso_userlimit', ['id' => $id])) {
+            return false;
+        }
+        $now = time();
+        $record = (object) [
+            'id' => $id,
+            'tokensused' => 0,
+            'countfrom' => $now,
+            'usermodified' => $USER->id,
+            'timemodified' => $now,
+        ];
+        $DB->update_record('aiprovider_datacurso_userlimit', $record);
+        return true;
+    }
+
+    /**
      * Get paginated records with user data.
      *
      * @param string $search
@@ -94,24 +117,19 @@ class user_token_limit_manager {
      * @param int $userid
      * @param int $tokenlimit
      * @param int|null $id existing id to update
-     * @param bool $resetusage if true, reset tokensused and countfrom to now
      * @return int record id
      */
-    public static function save(int $userid, int $tokenlimit, ?int $id = null, bool $resetusage = false): int {
+    public static function save(int $userid, int $tokenlimit, ?int $id = null): int {
         global $DB, $USER;
         $now = time();
 
         if ($id) {
             $record = $DB->get_record('aiprovider_datacurso_userlimit', ['id' => $id], '*', MUST_EXIST);
             $record->tokenlimit = $tokenlimit;
-            if ($resetusage) {
-                $record->tokensused = 0;
-                $record->countfrom = $now;
-            }
             $record->usermodified = $USER->id;
             $record->timemodified = $now;
             $DB->update_record('aiprovider_datacurso_userlimit', $record);
-            return (int)$record->id;
+            return $record->id;
         }
 
         // Check if a record already exists for this user.
