@@ -49,7 +49,7 @@ admin_externalpage_setup('aiprovider_datacurso_userlimits', '', null, $pageurl);
 
 $heading = get_string('link_usertokenlimits', 'aiprovider_datacurso');
 $PAGE->set_title($heading);
-$PAGE->set_heading($heading);
+$PAGE->set_heading($SITE->fullname);
 
 if ($action === 'delete' && $id) {
     require_sesskey();
@@ -83,6 +83,12 @@ $headers = [
 $columns = [];
 foreach (['fullname', 'email', 'tokenlimit', 'tokensused', 'actions'] as $col) {
     $coldata = ['key' => $col, 'label' => $headers[$col]];
+    $iscurrent = ($sort === $col);
+    if ($iscurrent) {
+        $coldata['current'] = true;
+        $coldata['dirasc'] = ($dir === 'ASC');
+        $coldata['dirdesc'] = ($dir === 'DESC');
+    }
     if ($col !== 'actions') {
         $nextdir = ($sort === $col && $dir === 'ASC') ? 'DESC' : 'ASC';
         $coldata['sorturl'] = (new moodle_url($PAGE->url, [
@@ -103,16 +109,18 @@ foreach ($records as $record) {
         'firstname' => $record->firstname,
         'lastname' => $record->lastname,
     ]);
+    $editurl = new moodle_url($editbase, [
+        'id' => $record->id,
+        'returnurl' => $PAGE->url->out_as_local_url(false),
+    ]);
     $rows[] = [
         'id' => (int)$record->id,
         'fullname' => $fullname,
         'email' => $record->email,
         'tokenlimit' => (int)$record->tokenlimit,
         'tokensused' => (int)$record->tokensused,
-        'editurl' => (new moodle_url($editbase, [
-            'id' => $record->id,
-            'returnurl' => $PAGE->url->out_as_local_url(false),
-        ]))->out(false),
+        'canreset' => $record->tokensused > 0,
+        'editurl' => $editurl->out(false),
     ];
 }
 
@@ -124,9 +132,7 @@ $base = new moodle_url('/ai/provider/datacurso/admin/user_token_limits.php', [
 ]);
 
 $templatadata = [
-    'heading' => $heading,
     'addurl' => $addurl->out(false),
-    'addlabel' => get_string('add'),
     'searchaction' => (new moodle_url('/ai/provider/datacurso/admin/user_token_limits.php'))->out(false),
     'searchvalue' => $search,
     'sort' => $sort,
@@ -143,5 +149,6 @@ $templatadata = [
 $PAGE->requires->js_call_amd('aiprovider_datacurso/user_token_limits', 'init');
 
 echo $OUTPUT->header();
+echo $OUTPUT->heading($heading);
 echo $OUTPUT->render_from_template('aiprovider_datacurso/user_token_limits', $templatadata);
 echo $OUTPUT->footer();
