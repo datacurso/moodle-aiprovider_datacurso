@@ -80,7 +80,6 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
     }
 
     if ($oldversion < 2025112700) {
-
         // Define table aiprovider_datacurso_userlimit to be created.
         $table = new xmldb_table('aiprovider_datacurso_userlimit');
 
