@@ -313,24 +313,5 @@ $string['ws_user'] = 'Service user';
 $string['ws_user_firstname'] = 'Datacurso';
 $string['ws_user_lastname'] = 'Service';
 $string['ws_userassigned'] = 'Role assigned to user';
-
-// User token limits management strings (sorted approximately by key).
-$string['confirm_delete_message'] = 'Do you really want to delete the credit limit for "{$a}"?';
-$string['confirm_delete_title'] = 'Delete credit limit';
-$string['error_usertokenlimit_exceeded'] = 'Allowed credits exceeded ({$a}).';
-$string['error_usertokenlimit_exists'] = 'A credit limit for the selected user already exists.';
-$string['error_usertokenlimit_notfound'] = 'User credit limit not found.';
-$string['link_usertokenlimits'] = 'Per-user credits limits';
-$string['usertokenlimit_add_title'] = 'Add user credit limit';
-$string['usertokenlimit_edit_title'] = 'Edit limit: {$a}';
-$string['usertokenlimit_limit'] = 'Credit limit';
-$string['usertokenlimit_limit_invalid'] = 'The limit must be zero or a positive number.';
-$string['usertokenlimit_reset'] = 'Reset usage counter';
-$string['usertokenlimit_saved'] = 'User credit limit saved';
-$string['usertokenlimit_delete_failed'] = 'Could not delete user credit limit.';
-$string['usertokenlimit_deleted'] = 'User credit limit deleted.';
-$string['usertokenlimit_used'] = 'Credits used';
-$string['usertokenlimit_user'] = 'User';
-
 $string['year'] = 'year';
 $string['years'] = 'Years';
