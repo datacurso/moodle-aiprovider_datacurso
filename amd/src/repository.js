@@ -33,6 +33,18 @@ export function webserviceSetup() {
 }
 
 /**
+ * Delete a user token limit by id.
+ * @param {number} id
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
+export function deleteUserTokenLimit(id) {
+    return Ajax.call([{
+        methodname: 'aiprovider_datacurso_delete_user_token_limit',
+        args: {id: Number(id)}
+    }])[0];
+}
+
+/**
  * Regenerate the webservice token for Datacurso.
  */
 export function webserviceRegenerateToken() {
@@ -60,5 +72,17 @@ export function getConsumptionHistory(args) {
     return Ajax.call([{
         methodname: 'aiprovider_datacurso_get_consumption_history',
         args: args
+    }])[0];
+}
+
+/**
+ * Reset usage counters for a user token limit record by id.
+ * @param {number} id
+ * @returns {Promise<{success: boolean, message: string}>}
+ */
+export function resetUserTokenUsage(id) {
+    return Ajax.call([{
+        methodname: 'aiprovider_datacurso_reset_user_token_usage',
+        args: {id: Number(id)}
     }])[0];
 }

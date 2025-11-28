@@ -102,4 +102,22 @@ $functions = [
         'capabilities' => 'aiprovider/datacurso:viewreports',
 
     ],
+    'aiprovider_datacurso_delete_user_token_limit' => [
+        'classname'   => 'aiprovider_datacurso\\external\\delete_user_token_limit',
+        'methodname'  => 'execute',
+        'classpath'   => '',
+        'description' => 'Delete a user token limit record by id.',
+        'type'        => 'write',
+        'ajax'        => true,
+        'capabilities' => 'aiprovider/datacurso:managetokenlimits',
+    ],
+    'aiprovider_datacurso_reset_user_token_usage' => [
+        'classname'   => 'aiprovider_datacurso\\external\\reset_user_token_usage',
+        'methodname'  => 'execute',
+        'classpath'   => '',
+        'description' => 'Reset usage counters for a user token limit record by id.',
+        'type'        => 'write',
+        'ajax'        => true,
+        'capabilities' => 'aiprovider/datacurso:managetokenlimits',
+    ],
 ];
