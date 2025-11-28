@@ -180,7 +180,7 @@ class datacurso_api_base {
                 break;
             case 'POST':
                 $payload = array_merge($payload, $defaultpayload);
-                $response = $curl->post($url, json_encode($payload), $options);
+                $response = $curl->post($url, json_encode($payload, JSON_UNESCAPED_UNICODE), $options);
                 break;
             case 'PUT':
                 $payload = array_merge($payload, $defaultpayload);
