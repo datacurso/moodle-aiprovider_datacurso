@@ -217,7 +217,8 @@ The following capabilities are configured for the `Datacurso web service` role:
 The following functions are added to the `Datacurso web service` external service:
 
 - `core_course_get_contents`
-- `mod_assign_get_submissions`
+- `core_course_get_courses_by_field`
+- `mod_forum_get_forums_by_courses`
 - `mod_forum_get_forum_discussions`
 - `mod_forum_get_discussion_posts`
 - `mod_wiki_get_wikis_by_courses`

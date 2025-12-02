@@ -451,7 +451,9 @@ class webservice_config {
      */
     private static function get_capabilities(): array {
         return [
+            // Web services.
             'webservice/rest:use',
+            // Core.
             'moodle/category:viewhiddencategories',
             'moodle/course:enrolreview',
             'moodle/course:view',
@@ -459,31 +461,46 @@ class webservice_config {
             'moodle/course:viewhiddensections',
             'moodle/course:viewparticipants',
             'moodle/course:viewhiddenactivities',
-            'moodle/course:view',
-            'moodle/course:viewhiddencourses',
+            // Forum.
             'mod/forum:viewdiscussion',
             'mod/forum:viewqandawithoutposting',
+            // Wiki.
             'mod/wiki:viewpage',
+            // Glossary.
             'mod/glossary:view',
+            // Book.
             'mod/book:read',
+            // Lesson.
             'mod/lesson:view',
+            // Choice.
             'mod/choice:choose',
             'mod/choice:readresponses',
+            // Feedback.
             'mod/feedback:view',
             'mod/feedback:viewanalysepage',
+            // SCORM.
             'mod/scorm:viewreport',
             'mod/scorm:viewscores',
+            // H5P Activity.
             'mod/h5pactivity:view',
             'mod/h5pactivity:reviewattempts',
+            // Resource.
             'mod/resource:view',
+            // Page.
             'mod/page:view',
+            // Assignment.
             'mod/assign:view',
             'mod/assign:viewgrades',
+            // Database.
             'mod/data:viewentry',
             'mod/data:view',
+            // Folder.
             'mod/folder:view',
+            // Label.
             'mod/label:view',
+            // URL.
             'mod/url:view',
+            // Workshop.
             'mod/workshop:view',
         ];
     }
@@ -555,51 +572,71 @@ class webservice_config {
      */
     private static function get_web_service_functions(): array {
         return [
+            // Core.
             'core_course_get_contents',
             'core_course_get_courses_by_field',
-            'mod_assign_get_submissions',
+
+            // Forum.
+            'mod_forum_get_forums_by_courses',
             'mod_forum_get_forum_discussions',
             'mod_forum_get_discussion_posts',
+            // Wiki.
             'mod_wiki_get_wikis_by_courses',
             'mod_wiki_get_subwikis',
             'mod_wiki_get_subwiki_pages',
             'mod_wiki_get_page_contents',
             'mod_wiki_get_subwiki_files',
+            // Glossary.
             'mod_glossary_get_glossaries_by_courses',
             'mod_glossary_get_entries_by_search',
             'mod_glossary_get_entry_by_id',
+            // Book.
             'mod_book_get_books_by_courses',
+            // Lesson.
             'mod_lesson_get_lessons_by_courses',
             'mod_lesson_get_pages',
             'mod_lesson_get_page_data',
+            // Choice.
             'mod_choice_get_choices_by_courses',
             'mod_choice_get_choice_options',
             'mod_choice_get_choice_results',
+            // Feedback.
             'mod_feedback_get_feedbacks_by_courses',
             'mod_feedback_get_items',
             'mod_feedback_get_finished_responses',
             'mod_feedback_get_analysis',
+            // SCORM.
             'mod_scorm_get_scorms_by_courses',
             'mod_scorm_get_scorm_scoes',
             'mod_scorm_get_scorm_user_data',
             'mod_scorm_get_scorm_sco_tracks',
+            // H5P Activity.
             'mod_h5pactivity_get_h5pactivities_by_courses',
             'mod_h5pactivity_get_attempts',
             'mod_h5pactivity_get_results',
+            // Resource.
             'mod_resource_get_resources_by_courses',
             'mod_resource_view_resource',
+            // Page.
             'mod_page_get_pages_by_courses',
+            // Assignment.
             'mod_assign_get_assignments',
             'mod_assign_view_assign',
+            'mod_assign_get_submissions',
             'mod_assign_get_submission_status',
+            // Database.
             'mod_data_get_databases_by_courses',
             'mod_data_get_entries',
             'mod_data_get_fields',
+            // Folder.
             'mod_folder_get_folders_by_courses',
             'mod_folder_view_folder',
+            // Label.
             'mod_label_get_labels_by_courses',
+            // URL.
             'mod_url_get_urls_by_courses',
             'mod_url_view_url',
+            // Workshop.
             'mod_workshop_get_workshops_by_courses',
             'mod_workshop_view_workshop',
             'mod_workshop_get_submissions',
