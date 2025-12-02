@@ -120,7 +120,7 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025112705, 'aiprovider', 'datacurso');
     }
 
-    if ($oldversion < 2025120200) {
+    if ($oldversion < 2025120201) {
         try {
             \aiprovider_datacurso\webservice_config::upgrade_sync_ws_and_capabilities();
         } catch (\Exception $e) {
@@ -129,7 +129,7 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
                 \core\output\notification::NOTIFY_ERROR
             );
         }
-        upgrade_plugin_savepoint(true, 2025120200, 'aiprovider', 'datacurso');
+        upgrade_plugin_savepoint(true, 2025120201, 'aiprovider', 'datacurso');
     }
     return true;
 }
