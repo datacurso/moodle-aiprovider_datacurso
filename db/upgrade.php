@@ -79,7 +79,31 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025110600, 'aiprovider', 'datacurso');
     }
 
-    if ($oldversion < 2025112700) {
+    if ($oldversion < 2025112705) {
+        try {
+            \aiprovider_datacurso\webservice_config::upgrade_sync_ws_and_capabilities();
+        } catch (\Exception $e) {
+            \core\notification::add(
+                get_string('upgrade_sync_error', 'aiprovider_datacurso', $e->getMessage()),
+                \core\output\notification::NOTIFY_ERROR
+            );
+        }
+        upgrade_plugin_savepoint(true, 2025112705, 'aiprovider', 'datacurso');
+    }
+
+    if ($oldversion < 2025120201) {
+        try {
+            \aiprovider_datacurso\webservice_config::upgrade_sync_ws_and_capabilities();
+        } catch (\Exception $e) {
+            \core\notification::add(
+                get_string('upgrade_sync_error', 'aiprovider_datacurso', $e->getMessage()),
+                \core\output\notification::NOTIFY_ERROR
+            );
+        }
+        upgrade_plugin_savepoint(true, 2025120201, 'aiprovider', 'datacurso');
+    }
+
+    if ($oldversion < 2025120301) {
         // Define table aiprovider_datacurso_userlimit to be created.
         $table = new xmldb_table('aiprovider_datacurso_userlimit');
 
@@ -105,20 +129,7 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         }
 
         // Datacurso savepoint reached.
-        upgrade_plugin_savepoint(true, 2025112700, 'aiprovider', 'datacurso');
+        upgrade_plugin_savepoint(true, 2025120301, 'aiprovider', 'datacurso');
     }
-
-    if ($oldversion < 2025112705) {
-        try {
-            \aiprovider_datacurso\webservice_config::upgrade_sync_ws_and_capabilities();
-        } catch (\Exception $e) {
-            \core\notification::add(
-                get_string('upgrade_sync_error', 'aiprovider_datacurso', $e->getMessage()),
-                \core\output\notification::NOTIFY_ERROR
-            );
-        }
-        upgrade_plugin_savepoint(true, 2025112705, 'aiprovider', 'datacurso');
-    }
-
     return true;
 }
