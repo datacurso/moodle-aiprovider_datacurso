@@ -27,6 +27,7 @@ use aiprovider_datacurso\local\user_token_limit_manager;
 
 // Define context for capability check and page setup.
 $context = context_system::instance();
+require_login();
 require_capability('aiprovider/datacurso:managetokenlimits', $context);
 
 // Fetch URL parameters for filtering and sorting.
