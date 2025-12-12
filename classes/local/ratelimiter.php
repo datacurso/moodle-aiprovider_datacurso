@@ -801,7 +801,7 @@ class ratelimiter {
         $lowercase = \core_text::strtolower($value);
         return trim($lowercase);
     }
-    
+
     /**
      * Check if the user has remaining quota in the aiprovider_datacurso_userlimit table.
      * Missing record or non-positive limit means unlimited (allowed).

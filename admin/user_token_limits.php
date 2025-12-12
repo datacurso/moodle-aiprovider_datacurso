@@ -8,11 +8,11 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle. If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * Admin page to manage per-user token limits for the DataCurso AI provider.
@@ -49,19 +49,18 @@ $pageurl = new moodle_url('/ai/provider/datacurso/admin/user_token_limits.php', 
 
 // Set up page context, title, and layout.
 $heading = get_string('link_usertokenlimits', 'aiprovider_datacurso');
-$PAGE->set_context($context); // Set context as the working file did
+$PAGE->set_context($context);
 $PAGE->set_url($pageurl);
-$PAGE->set_pagelayout('admin'); // Using 'admin' layout as this is an admin report.
+$PAGE->set_pagelayout('admin');
 $PAGE->set_title($heading);
-$PAGE->set_heading($SITE->fullname); // Use $SITE->fullname or $heading, based on preference.
+$PAGE->set_heading($SITE->fullname);
 
 
 // Handle delete action (needs to run before fetching data).
 if ($action === 'delete' && $id) {
     require_sesskey();
     user_token_limit_manager::delete($id);
-    // Redirect without any parameters after deletion to refresh the list.
-    redirect(new moodle_url('/ai/provider/datacurso/admin/user_token_limits.php')); 
+    redirect(new moodle_url('/ai/provider/datacurso/admin/user_token_limits.php'));
 }
 
 // Data validation and fetching logic.
@@ -115,20 +114,17 @@ foreach (['fullname', 'email', 'tokenlimit', 'tokensused', 'actions'] as $col) {
 $rows = [];
 $editbase = new moodle_url('/ai/provider/datacurso/admin/user_token_limit_edit.php');
 foreach ($records as $record) {
-    // FIX para Moodle 5.0+: La función fullname() en Moodle moderno espera más campos en el objeto de usuario.
-    // Creamos un objeto que incluye los campos necesarios para evitar el error E_USER_NOTICE.
     $userobject = (object)[
         'firstname' => $record->firstname,
         'lastname' => $record->lastname,
-        // Incluimos los campos que espera fullname(), inicializados a vacío.
         'firstnamephonetic' => '',
         'lastnamephonetic' => '',
         'middlename' => '',
         'alternatename' => '',
     ];
-    
+
     $fullname = fullname($userobject);
-    
+
     $editurl = new moodle_url($editbase, [
         'id' => $record->id,
         'returnurl' => $PAGE->url->out_as_local_url(false),
