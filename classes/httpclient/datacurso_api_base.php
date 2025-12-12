@@ -200,7 +200,7 @@ class datacurso_api_base {
             case 'POST':
                 $payload = array_merge($payload, $defaultpayload);
                 $response = $curl->post($url, json_encode($payload), $options);
-                // store response in log file in moodledata/temp/datacurso_api.log
+                // Store response in log file in moodledata/temp/datacurso_api.log.
                 file_put_contents($CFG->dataroot . '/temp/datacurso_api.log', $response, FILE_APPEND);
                 break;
 
