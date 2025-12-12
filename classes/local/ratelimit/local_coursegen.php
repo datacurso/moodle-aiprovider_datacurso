@@ -19,8 +19,6 @@ namespace aiprovider_datacurso\local\ratelimit;
 use lang_string;
 use aiprovider_datacurso\local\ratelimit\ratelimit_settings;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Class local_coursegen
  *

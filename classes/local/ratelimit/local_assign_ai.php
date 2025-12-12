@@ -16,11 +16,8 @@
 
 namespace aiprovider_datacurso\local\ratelimit;
 
-use core_user\form\element\autocomplete;
 use lang_string;
 use aiprovider_datacurso\local\ratelimit\ratelimit_settings;
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Class local_assign_ai
  *
