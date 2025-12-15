@@ -760,6 +760,11 @@ class ratelimiter {
      * @return bool
      */
     private function consumption_matches_service(string $serviceid, ?string $servicename, array $consumption): bool {
+        // When no specific service is requested, accept all entries.
+        if (empty($serviceid)) {
+            return true;
+        }
+
         if (isset($consumption['id_servicio']) && is_string($consumption['id_servicio'])) {
             if ($consumption['id_servicio'] === $serviceid) {
                 return true;
@@ -795,5 +800,148 @@ class ratelimiter {
     private function normalise_string(string $value): string {
         $lowercase = \core_text::strtolower($value);
         return trim($lowercase);
+    }
+
+    /**
+     * Check if the user has remaining quota in the aiprovider_datacurso_userlimit table.
+     * Missing record or non-positive limit means unlimited (allowed).
+     *
+     * @param int $userid
+     * @return bool
+     */
+    public function precheck_user_quota(int $userid): bool {
+        global $DB;
+
+        $record = $DB->get_record('aiprovider_datacurso_userlimit', ['userid' => $userid]);
+        if (!$record) {
+            return true;
+        }
+
+        $limit = (int)($record->tokenlimit ?? 0);
+        if ($limit <= 0) {
+            return true;
+        }
+
+        $used = (int)($record->tokensused ?? 0);
+        return $used < $limit;
+    }
+
+    /**
+     * Get a snapshot of the user quota values.
+     *
+     * @param int $userid
+     * @return array{limit:int,used:int,remaining:int}|null Null when no record exists.
+     */
+    public function get_user_quota_snapshot(int $userid): ?array {
+        global $DB;
+        $record = $DB->get_record('aiprovider_datacurso_userlimit', ['userid' => $userid]);
+        if (!$record) {
+            return null;
+        }
+        $limit = (int)($record->tokenlimit ?? 0);
+        $used = (int)($record->tokensused ?? 0);
+        $remaining = $limit > 0 ? max(0, $limit - $used) : PHP_INT_MAX;
+        return [
+            'limit' => $limit,
+            'used' => $used,
+            'remaining' => $remaining,
+        ];
+    }
+
+    /**
+     * After a successful request, refresh the user quota usage by summing remote consumptions
+     * from the configured countfrom timestamp up to now (all services/actions).
+     *
+     * @param int $userid
+     * @param string|null $actionpath Optional action path to help remote filtering (not required).
+     * @return void
+     */
+    public function sync_user_quota_after_success(int $userid, ?string $actionpath = null): void {
+        global $DB;
+
+        $record = $DB->get_record('aiprovider_datacurso_userlimit', ['userid' => $userid]);
+        if (!$record) {
+            return; // No quota set; nothing to sync.
+        }
+
+        $limit = (int)($record->tokenlimit ?? 0);
+        if ($limit <= 0) {
+            return; // Unlimited.
+        }
+
+        $from = (int)($record->countfrom ?? 0);
+        $now = time();
+
+        $tokensused = $this->get_user_tokens_since($userid, $from > 0 ? $from : 0, $now, $actionpath);
+
+        $record->tokensused = $tokensused;
+        $record->lastsync = $now;
+        $record->timemodified = $now;
+        $DB->update_record('aiprovider_datacurso_userlimit', $record);
+    }
+
+    /**
+     * Sum total tokens consumed by the user between two timestamps across all services.
+     *
+     * @param int $userid
+     * @param int $from
+     * @param int $to
+     * @param string|null $actionpath
+     * @return int
+     */
+    private function get_user_tokens_since(int $userid, int $from, int $to, ?string $actionpath = null): int {
+        $client = new \aiprovider_datacurso\httpclient\datacurso_api();
+
+        $page = 1;
+        $limit = 100;
+        $tokens = 0;
+
+        while (true) {
+            $response = $this->request_consumption_page(
+                $client,
+                $userid,
+                '', // No service filter: all services.
+                $actionpath,
+                $from,
+                $to,
+                $page,
+                $limit
+            );
+
+            if (!$this->is_success_response($response)) {
+                break;
+            }
+
+            $users = $this->extract_users_from_response($response);
+            if (empty($users)) {
+                break;
+            }
+
+            // API is filtered by userid; take the first entry.
+            $user = $users[0];
+            $consumptions = $this->extract_consumptions_from_user($user);
+            if (!empty($consumptions)) {
+                // Pass empty service to include all.
+                $summary = $this->sum_tokens_from_consumptions(
+                    $consumptions,
+                    '',
+                    null,
+                    $from,
+                    $to
+                );
+                $tokens += $summary['tokens'];
+                if ($summary['stop']) {
+                    break;
+                }
+            }
+
+            if (!$this->response_has_more_pages($response, $page)) {
+                break;
+            }
+
+            $page++;
+        }
+
+        return $tokens;
     }
 }

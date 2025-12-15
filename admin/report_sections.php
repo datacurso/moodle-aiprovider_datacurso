@@ -71,6 +71,12 @@ $tabs[] = new tabobject(
     get_string('link_webservice_config', 'aiprovider_datacurso')
 );
 
+$tabs[] = new tabobject(
+    'usertokenlimits',
+    new moodle_url('/ai/provider/datacurso/admin/user_token_limits.php'),
+    get_string('link_usertokenlimits', 'aiprovider_datacurso')
+);
+
 global $DB;
 
 $manager = new \core_ai\manager($DB);
