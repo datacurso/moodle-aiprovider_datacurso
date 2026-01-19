@@ -339,6 +339,6 @@ class datacurso_api_base {
     public function is_for_ue(): bool {
         $datacursoapi = new datacurso_api();
         $response = $datacursoapi->get('tokens/saldo');
-        return $response['is_for_eu'];
+        return $response['is_for_eu'] == true;
     }
 }
