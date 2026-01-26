@@ -1,3 +1,24 @@
+## 1.0.7
+
+**Released on:** 2026-01-26
+
+**Compatibility note:** This version is compatible **from Moodle 4.5 to Moodle 5.1**.
+
+## Added
+- **Configurable base URLs for DataCurso AI services**  
+  Added support for configurable base URLs for both the **standard** and **EU-hosted** DataCurso AI services, allowing greater flexibility across environments.
+- **Optional base URL parameters in constructors**  
+  Updated service constructors to accept optional base URL parameters, enabling explicit overrides when needed.
+
+## Changed
+- **Centralized base URL resolution via instance method**  
+  Refactored base URL access to ensure the correct instance method is used when resolving the active base URL, improving consistency and maintainability.
+- **Service initialization flow updated**  
+  Adjusted internal initialization logic so all API requests correctly respect the configured base URL (standard or EU-hosted).
+- **Version bump**  
+  Release version bumped to **1.0.7**.
+
+
 ## 1.0.6
 
 **Released on:** 2026-01-19
