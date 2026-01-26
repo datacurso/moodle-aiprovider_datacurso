@@ -28,7 +28,6 @@ require_once($CFG->libdir . '/filelib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class ai_services_api extends datacurso_api_base {
-
     /** Default base URL for the standard DataCurso AI service. */
     private const DEFAULT_BASE_URL = 'https://plugins-ai.datacurso.com';
 

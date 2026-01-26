@@ -26,7 +26,6 @@ namespace aiprovider_datacurso\httpclient;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class ai_course_api extends datacurso_api_base {
-
     /** Default base URL for the standard DataCurso course AI service. */
     private const DEFAULT_BASE_URL = 'https://course-ai.datacurso.com';
 
