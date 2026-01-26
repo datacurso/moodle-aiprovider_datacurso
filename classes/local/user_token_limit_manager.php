@@ -16,8 +16,6 @@
 
 namespace aiprovider_datacurso\local;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Manager for CRUD operations over aiprovider_datacurso_userlimit.
  *
