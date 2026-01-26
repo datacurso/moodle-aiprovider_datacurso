@@ -92,8 +92,7 @@ class datacurso_api_base {
     public function download_file($endpoint, $filename, $filerecord = []): ?\stored_file {
         global $USER;
 
-        $client = new ai_course_api();
-        $baseurl = $client->get_base_url();
+        $baseurl = $this->get_base_url();
         $packageurl = $baseurl . ltrim($endpoint, '/');
 
         $userid = $USER->id;
