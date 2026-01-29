@@ -42,7 +42,6 @@ class ratelimit_settings {
         global $DB, $CFG;
 
         [$insql, $params] = $DB->get_in_or_equal($capabilities, SQL_PARAMS_NAMED);
-        $namefields = 'u.id, u.firstname, u.lastname, u.alternatename, u.middlename, u.firstnamephonetic, u.lastnamephonetic';
 
         $params['deleted'] = 0;
         $params['suspended'] = 0;
@@ -50,7 +49,14 @@ class ratelimit_settings {
         $params['capabilitiescount'] = count($capabilities);
 
         $records = $DB->get_records_sql(
-            "SELECT {$namefields}
+            "SELECT
+                u.id,
+                u.firstname,
+                u.lastname,
+                u.firstnamephonetic,
+                u.lastnamephonetic,
+                u.middlename,
+                u.alternatename
             FROM
                 {user} u
                 JOIN {role_assignments} ra ON ra.userid = u.id
