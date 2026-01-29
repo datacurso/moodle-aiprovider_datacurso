@@ -55,7 +55,14 @@ abstract class ratelimit_settings {
         $params['capabilitiescount'] = count($capabilities);
 
         $records = $DB->get_records_sql(
-            "SELECT u.id, u.firstname, u.lastname
+            "SELECT
+                u.id,
+                u.firstname,
+                u.lastname,
+                u.firstnamephonetic,
+                u.lastnamephonetic,
+                u.middlename,
+                u.alternatename
             FROM
                 {user} u
                 JOIN {role_assignments} ra ON ra.userid = u.id
