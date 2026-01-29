@@ -1,3 +1,14 @@
+## 2.0.4
+
+**Released on:** 2026-01-29
+
+**Compatibility note:** This version is compatible **from Moodle 5.0 to Moodle 5.1**.
+
+## Fixed
+- **Suppress developer debug warning when listing rate-limited users**  
+  Updated the rate-limit user selector query to load all required name fields (`firstnamephonetic`, `lastnamephonetic`, `middlename`, `alternatename`) so that `fullname()` no longer triggers the developer `debugging()` warning when building the allowed users lists.
+
+
 ## 2.0.3
 
 **Released on:** 2026-01-26
