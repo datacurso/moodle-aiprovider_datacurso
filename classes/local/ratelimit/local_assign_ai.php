@@ -70,4 +70,38 @@ class local_assign_ai extends ratelimit_settings {
             )
         );
     }
+
+    /**
+     * Get the allowed user ids for local_assign_ai.
+     *
+     * Currently all actions for this service use the same
+     * "allowedusers" field.
+     *
+     * @param string $serviceid Service id, expected "local_assign_ai".
+     * @param string|null $actionpath HTTP path for the remote call.
+     * @return int[]
+     */
+    public static function get_allowed_service_user_ids(string $serviceid, ?string $actionpath): array {
+        if ($serviceid !== 'local_assign_ai') {
+            return [];
+        }
+
+        if (empty($actionpath)) {
+            return [];
+        }
+
+        $mapping = [
+            '/assign/' => 'ratelimit_local_assign_ai_allowedusers',
+        ];
+
+        $configkey = self::resolve_config_key_for_action($actionpath, $mapping);
+        if ($configkey === null) {
+            return [];
+        }
+
+        $config = get_config(self::PLUGIN);
+        $raw = $config->{$configkey} ?? '';
+
+        return self::extract_user_ids($raw);
+    }
 }

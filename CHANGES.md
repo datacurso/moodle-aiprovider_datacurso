@@ -1,3 +1,31 @@
+## 1.0.9
+
+**Released on:** 2026-02-10
+
+**Compatibility note:** This version is compatible **with Moodle 4.5 only**.
+
+## Fixed
+- **Fatal error when only course generation allowlist was considered**  
+  Corrected the rate limit user check that previously only evaluated the
+  `local_coursegen` course creator list, which could cause incorrect
+  access validation or fatal errors when other services or actions were
+  configured.
+
+## Added
+- **Service/action-specific allowlist handling**  
+  Extended the rate limiter so each AI-enabled service can declare its own
+  user allowlist per HTTP action path (for example, `/course/v2/start` vs
+  `/resources/create-mod`), keeping the access rules for different actions
+  completely independent.
+
+## Changed
+- **Centralised helpers and internal clean-up**  
+  Introduced small internal helpers to map paths to configuration keys and
+  to extract user ids from configuration, reducing duplication and making
+  future changes easier to maintain.
+- **Version bump**  
+  Release version bumped to **1.0.9**.
+
 ## 1.0.8
 
 **Released on:** 2026-01-29

@@ -131,7 +131,7 @@ class datacurso_api_base {
         $ratelimiter = new \aiprovider_datacurso\local\ratelimiter();
 
         // Validate if user is allowed to make this request.
-        if (!empty($serviceid) && !$ratelimiter->is_user_allowed($serviceid, $userid)) {
+        if (!empty($serviceid) && !$ratelimiter->is_user_allowed($serviceid, $userid, $path)) {
             throw new \moodle_exception('notallowed', 'aiprovider_datacurso');
         }
 
