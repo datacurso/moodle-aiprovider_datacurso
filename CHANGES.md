@@ -1,3 +1,24 @@
+## 1.0.10
+
+**Released on:** 2026-02-10
+
+**Compatibility note:** This version is compatible **with Moodle 4.5 only**.
+
+## Fixed
+- **Abstract ratelimit_settings caused fatal error**  
+  Resolved a fatal error triggered when `ratelimit_settings` was treated as
+  an abstract class while service-specific rate limit classes no longer
+  extended it.
+
+## Changed
+- **Relaxed service binding for allowlist resolution**  
+  Updated `ratelimit_settings::get_allowed_users_for_service()` to call the
+  static `get_allowed_service_user_ids()` method only when it exists on the
+  target service class, removing the hard requirement for inheritance and
+  keeping services decoupled from the base helper.
+- **Version bump**  
+  Release version bumped to **1.0.10**.
+
 ## 1.0.9
 
 **Released on:** 2026-02-10
