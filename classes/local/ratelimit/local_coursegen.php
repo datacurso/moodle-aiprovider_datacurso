@@ -96,4 +96,42 @@ class local_coursegen {
         // Hide if the master checkbox is not checked (eq, 0).
         $mform->hideIf($activitycreatorsid, $allowedusersenableid, 'notchecked');
     }
+
+    /**
+     * Get the allowed user ids for local_coursegen, separated by action path.
+     *
+     * - Course creation actions ("/course/") use the "coursecreators" field.
+     * - Activity creation actions ("/resources/create-mod") use
+     *   the "activitycreators" field.
+     * - Other actions for this service have no specific restriction.
+     *
+     * @param string $serviceid Service id, expected "local_coursegen".
+     * @param string|null $actionpath HTTP path for the remote call.
+     * @return int[]
+     */
+    public static function get_allowed_service_user_ids(string $serviceid, ?string $actionpath): array {
+        if ($serviceid !== 'local_coursegen') {
+            return [];
+        }
+
+        if (empty($actionpath)) {
+            return [];
+        }
+
+        $mapping = [
+            '/course/v2/start' => 'ratelimit_local_coursegen_coursecreators',
+            '/course/start' => 'ratelimit_local_coursegen_coursecreators',
+            '/resources/create-mod' => 'ratelimit_local_coursegen_activitycreators',
+        ];
+
+        $configkey = self::resolve_config_key_for_action($actionpath, $mapping);
+        if ($configkey === null) {
+            return [];
+        }
+
+        $config = get_config(self::PLUGIN);
+        $raw = $config->{$configkey} ?? '';
+
+        return self::extract_user_ids($raw);
+    }
 }

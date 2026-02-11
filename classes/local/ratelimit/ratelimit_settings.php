@@ -33,6 +33,96 @@ namespace aiprovider_datacurso\local\ratelimit;
  */
 class ratelimit_settings {
     /**
+     * Return the list of allowed user ids for a given service/action pair.
+     *
+     * Implementing classes may provide a service-specific version of this
+     * method. The base implementation returns an empty array meaning that
+     * there is no per-user restriction for the given service/action pair.
+     *
+     * @param string $serviceid Frankenstyle service/component id (e.g. 'local_coursegen').
+     * @param string|null $actionpath Optional HTTP path used to route to the correct list.
+     * @return int[] List of allowed user ids for this service/action only.
+     */
+    public static function get_allowed_service_user_ids(string $serviceid, ?string $actionpath): array {
+        return [];
+    }
+
+    /**
+     * Resolve and delegate to the concrete ratelimit settings class for a service.
+     *
+     * This uses the convention that the service id matches the class name in this
+     * namespace (for example serviceid "local_coursegen" -> class
+     * aiprovider_datacurso\local\ratelimit\local_coursegen).
+     *
+     * @param string $serviceid Frankenstyle service/component id.
+     * @param string|null $actionpath Optional HTTP path used to route to the correct list.
+     * @return int[] List of allowed user ids for this service/action only.
+     */
+    public static function get_allowed_users_for_service(string $serviceid, ?string $actionpath): array {
+        $classname = "aiprovider_datacurso\\local\\ratelimit\\" . $serviceid;
+
+        if (!class_exists($classname)) {
+            return [];
+        }
+
+        // Only call the method when the target class exposes the expected
+        // static API. This keeps service classes decoupled from inheritance
+        // while still allowing them to provide their own allowlist logic.
+        if (!method_exists($classname, 'get_allowed_service_user_ids')) {
+            return [];
+        }
+
+        return $classname::get_allowed_service_user_ids($serviceid, $actionpath);
+    }
+
+    /**
+     * Resolve a configuration key for a given action path using a
+     * prefix-to-config mapping.
+     *
+     * @param string|null $actionpath HTTP path for the remote call.
+     * @param array $mapping Array in the form prefix => configname.
+     * @return string|null Config key name or null when no prefix matches.
+     */
+    protected static function resolve_config_key_for_action(?string $actionpath, array $mapping): ?string {
+        if (empty($actionpath)) {
+            return null;
+        }
+
+        foreach ($mapping as $prefix => $configname) {
+            if (str_starts_with($actionpath, $prefix)) {
+                return $configname;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract user ids from a comma-separated configuration value.
+     *
+     * @param string $value Raw configuration value.
+     * @return int[]
+     */
+    protected static function extract_user_ids(string $value): array {
+        if ($value === '') {
+            return [];
+        }
+
+        $parts = explode(',', $value);
+        $ids = [];
+
+        foreach ($parts as $part) {
+            $part = trim($part);
+            if ($part === '') {
+                continue;
+            }
+            $ids[] = (int)$part;
+        }
+
+        return $ids;
+    }
+
+    /**
      * Retrieve the list of selectable users for the autocomplete control.
      *
      * @param array $capabilities Capability names users must have to be selectable.
