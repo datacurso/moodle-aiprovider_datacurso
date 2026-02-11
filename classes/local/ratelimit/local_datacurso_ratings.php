@@ -84,4 +84,40 @@ class local_datacurso_ratings extends ratelimit_settings {
         $settings->add($generalanalysts);
         $settings->hide_if("{$configprefix}_generalanalysts", "{$configprefix}_allowedusers_enable", 'eq', 0);
     }
+
+    /**
+     * Get the allowed user ids for local_datacurso_ratings, by action.
+     *
+     * - "/rating/course" and "/rating/query" use the "courseanalysts" field.
+     * - "/rating/general" uses the "generalanalysts" field.
+     *
+     * @param string $serviceid Service id, expected "local_datacurso_ratings".
+     * @param string|null $actionpath HTTP path for the remote call.
+     * @return int[]
+     */
+    public static function get_allowed_service_user_ids(string $serviceid, ?string $actionpath): array {
+        if ($serviceid !== 'local_datacurso_ratings') {
+            return [];
+        }
+
+        if (empty($actionpath)) {
+            return [];
+        }
+
+        $mapping = [
+            '/rating/course' => 'ratelimit_local_datacurso_ratings_courseanalysts',
+            '/rating/query' => 'ratelimit_local_datacurso_ratings_courseanalysts',
+            '/rating/general' => 'ratelimit_local_datacurso_ratings_generalanalysts',
+        ];
+
+        $configkey = self::resolve_config_key_for_action($actionpath, $mapping);
+        if ($configkey === null) {
+            return [];
+        }
+
+        $config = get_config(self::PLUGIN);
+        $raw = $config->{$configkey} ?? '';
+
+        return self::extract_user_ids($raw);
+    }
 }
