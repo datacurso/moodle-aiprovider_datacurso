@@ -41,19 +41,17 @@ abstract class ratelimit_settings {
     /**
      * Return the list of allowed user ids for a given service/action pair.
      *
-     * Each subclass should implement this method and restrict the result to the
-     * specific config fields that correspond to the given action path, without
-     * mezclar usuarios de distintas acciones.
-     *
-     * When no specific restriction applies, subclasses should return an empty
-     * array to indicate that there is no per-user restriction for that
-     * service/action pair.
+     * Implementing classes may provide a service-specific version of this
+     * method. The base implementation returns an empty array meaning that
+     * there is no per-user restriction for the given service/action pair.
      *
      * @param string $serviceid Frankenstyle service/component id (e.g. 'local_coursegen').
      * @param string|null $actionpath Optional HTTP path used to route to the correct list.
      * @return int[] List of allowed user ids for this service/action only.
      */
-    abstract public static function get_allowed_service_user_ids(string $serviceid, ?string $actionpath): array;
+    public static function get_allowed_service_user_ids(string $serviceid, ?string $actionpath): array {
+        return [];
+    }
 
     /**
      * Resolve and delegate to the concrete ratelimit settings class for a service.
@@ -73,7 +71,10 @@ abstract class ratelimit_settings {
             return [];
         }
 
-        if (!is_subclass_of($classname, self::class)) {
+        // Only call the method when the target class exposes the expected
+        // static API. This keeps service classes decoupled from inheritance
+        // while still allowing them to provide their own allowlist logic.
+        if (!method_exists($classname, 'get_allowed_service_user_ids')) {
             return [];
         }
 
