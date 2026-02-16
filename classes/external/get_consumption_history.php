@@ -127,6 +127,7 @@ class get_consumption_history extends \external_api {
             $response = $client->get('/tokens/historial-consumos', $queryparams);
 
             if (isset($response['status']) && $response['status'] === 'success') {
+                global $DB;
                 $users = $response['usuarios'] ?? [];
                 $consumptions = [];
 
@@ -145,6 +146,26 @@ class get_consumption_history extends \external_api {
                     $actionmap[$a['id']] = $a['name'];
                 }
 
+                // Collect all userids to fetch user data in batch.
+                $userids = [];
+                foreach ($users as $user) {
+                    if (!empty($user['consumos'])) {
+                        foreach ($user['consumos'] as $consumption) {
+                            $userid = $consumption['userid'] ?? 0;
+                            if ($userid > 0) {
+                                $userids[$userid] = $userid;
+                            }
+                        }
+                    }
+                }
+
+                // Fetch all user records at once for better performance.
+                $moodleusers = [];
+                if (!empty($userids)) {
+                    list($insql, $inparams) = $DB->get_in_or_equal(array_values($userids));
+                    $moodleusers = $DB->get_records_select('user', "id $insql", $inparams, '', 'id, firstname, lastname');
+                }
+
                 foreach ($users as $user) {
                     if (!empty($user['consumos'])) {
                         foreach ($user['consumos'] as $consumption) {
@@ -152,10 +173,19 @@ class get_consumption_history extends \external_api {
                             $actionname = $actionmap[$actionid] ?? $actionid;
                             $serviceid = $consumption['id_servicio'] ?? '';
                             $servicename = $servicesmap[$serviceid] ?? $serviceid;
+                            $userid = $consumption['userid'] ?? 0;
+
+                            // Get user's full name from Moodle.
+                            $username = '-';
+                            if ($userid > 0 && isset($moodleusers[$userid])) {
+                                $userobj = $moodleusers[$userid];
+                                $username = fullname($userobj);
+                            }
 
                             $consumptions[] = [
                                 'id_consumption' => $consumption['id_consumo'] ?? 0,
-                                'userid' => $consumption['userid'] ?? 0,
+                                'userid' => $userid,
+                                'username' => $username,
                                 'action' => $actionname,
                                 'id_service' => $servicename,
                                 'cant_tokens' => $consumption['cantidad_tokens'] ?? 0,
@@ -208,6 +238,7 @@ class get_consumption_history extends \external_api {
                 new external_single_structure([
                     'id_consumption' => new external_value(PARAM_INT, 'Consumption ID'),
                     'userid' => new external_value(PARAM_INT, 'User ID'),
+                    'username' => new external_value(PARAM_TEXT, 'User full name'),
                     'action' => new external_value(PARAM_TEXT, 'Action performed'),
                     'id_service' => new external_value(PARAM_TEXT, 'Service identifier'),
                     'cant_tokens' => new external_value(PARAM_FLOAT, 'Tokens used'),

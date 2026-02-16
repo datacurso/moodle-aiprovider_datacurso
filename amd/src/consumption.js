@@ -29,6 +29,7 @@ import { getConsumptionHistory } from "aiprovider_datacurso/repository";
 
 export const init = async () => {
   // Elements DOM
+  const filterUser = document.getElementById("filter-user");
   const filterService = document.getElementById("filter-service");
   const filterAction = document.getElementById("filter-action");
   const filterFrom = document.getElementById("filter-date-from");
@@ -102,6 +103,29 @@ export const init = async () => {
       });
 
     updateSortIndicators();
+  };
+
+  // Load users for filter
+  const loadUsers = async () => {
+    try {
+      const response = await Ajax.call([
+        {
+          methodname: "aiprovider_datacurso_get_users",
+          args: {},
+        },
+      ])[0];
+
+      if (response.status === "success" && response.users) {
+        response.users.forEach((user) => {
+          const option = document.createElement("option");
+          option.value = user.id;
+          option.textContent = user.fullname;
+          filterUser.appendChild(option);
+        });
+      }
+    } catch (error) {
+      Notification.exception(error);
+    }
   };
 
   const loadServices = async () => {
@@ -193,12 +217,14 @@ export const init = async () => {
   const fetchData = async () => {
     const serviceValue = filterService.value;
     const actionValue = filterAction.value;
+    const userValue = filterUser.value;
     const fromValue = filterFrom.value;
     const toValue = filterTo.value;
 
     const args = {
       page: currentPage,
       limit: currentLimit,
+      userid: userValue !== "" ? parseInt(userValue) : 0,
       service: serviceValue !== "all" ? serviceValue : "",
       action: actionValue !== "all" ? actionValue : "",
       fromdate: fromValue || "",
@@ -239,7 +265,7 @@ export const init = async () => {
   };
 
   // Event listeners for filters
-  [filterService, filterAction, filterFrom, filterTo].forEach((el) => {
+  [filterUser, filterService, filterAction, filterFrom, filterTo].forEach((el) => {
     el.addEventListener("change", () => {
       currentPage = 1;
       savePage(currentPage);
@@ -284,9 +310,10 @@ export const init = async () => {
   }
 
   // Initial load
-  Promise.all([loadServices(), loadActions()])
-    .then(() => fetchData())
-    .catch(Notification.exception);
+  await loadUsers();
+  await loadServices();
+  await loadActions();
+  await fetchData();
 
   bindSortingHandlers();
 };
