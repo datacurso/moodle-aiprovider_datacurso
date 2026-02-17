@@ -21,22 +21,23 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import Ajax from "core/ajax";
-import { get_string as getString } from "core/str";
-import Templates from "core/templates";
-import Notification from "core/notification";
-import { getConsumptionHistory } from "aiprovider_datacurso/repository";
+import Ajax from 'core/ajax';
+import { get_string as getString } from 'core/str';
+import Templates from 'core/templates';
+import Notification from 'core/notification';
+import AutoComplete from 'core/form-autocomplete';
+import { getConsumptionHistory } from 'aiprovider_datacurso/repository';
 
 export const init = async () => {
   // Elements DOM
-  const filterUser = document.getElementById("filter-user");
-  const filterService = document.getElementById("filter-service");
-  const filterAction = document.getElementById("filter-action");
-  const filterFrom = document.getElementById("filter-date-from");
-  const filterTo = document.getElementById("filter-date-to");
-  const prevPageBtn = document.getElementById("prev-page");
-  const nextPageBtn = document.getElementById("next-page");
-  const pageInfo = document.getElementById("page-info");
+  const filterUser = document.getElementById('filter-user');
+  const filterService = document.getElementById('filter-service');
+  const filterAction = document.getElementById('filter-action');
+  const filterFrom = document.getElementById('filter-date-from');
+  const filterTo = document.getElementById('filter-date-to');
+  const prevPageBtn = document.getElementById('prev-page');
+  const nextPageBtn = document.getElementById('next-page');
+  const pageInfo = document.getElementById('page-info');
   const tableRegionSelector =
     '[data-region="aiprovider_datacurso/consumption-table"]';
 
@@ -106,23 +107,21 @@ export const init = async () => {
   };
 
   // Load users for filter
-  const loadUsers = async () => {
+  // Setup user autocomplete with AJAX.
+  const setupUserAutocomplete = async () => {
     try {
-      const response = await Ajax.call([
-        {
-          methodname: "aiprovider_datacurso_get_users",
-          args: {},
-        },
-      ])[0];
-
-      if (response.status === "success" && response.users) {
-        response.users.forEach((user) => {
-          const option = document.createElement("option");
-          option.value = user.id;
-          option.textContent = user.fullname;
-          filterUser.appendChild(option);
-        });
-      }
+      const placeholder = await getString('search', 'core');
+      AutoComplete.enhance(
+        '#filter-user',
+        false,
+        'aiprovider_datacurso/repository',
+        placeholder,
+        false,
+        true,
+        '',
+        false,
+        1
+      );
     } catch (error) {
       Notification.exception(error);
     }
@@ -246,7 +245,7 @@ export const init = async () => {
     const pagination = response?.pagination;
     if (pagination) {
       const { current_page, total_pages, total } = pagination;
-      const pageInfoText = await getString("pageinfo", "aiprovider_datacurso", {
+      const pageInfoText = await getString('pageinfo', 'aiprovider_datacurso', {
         current: current_page,
         totalpages: total_pages,
         total: total,
@@ -310,7 +309,7 @@ export const init = async () => {
   }
 
   // Initial load
-  await loadUsers();
+  await setupUserAutocomplete();
   await loadServices();
   await loadActions();
   await fetchData();

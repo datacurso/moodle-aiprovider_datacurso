@@ -40,15 +40,18 @@ class get_users extends external_api {
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
-        return new external_function_parameters([]);
+        return new external_function_parameters([
+            'search' => new external_value(PARAM_TEXT, 'Search query', VALUE_DEFAULT, ''),
+        ]);
     }
 
     /**
      * Get users.
      *
+     * @param string $search Search query.
      * @return array
      */
-    public static function execute(): array {
+    public static function execute(string $search = ''): array {
         global $DB;
 
         // Validate context.
@@ -59,15 +62,30 @@ class get_users extends external_api {
         require_capability('aiprovider/datacurso:viewreports', $context);
 
         try {
+            $params = self::validate_parameters(self::execute_parameters(), [
+                'search' => $search,
+            ]);
+
             // Get all active users (not deleted, not suspended).
+            $where = "u.deleted = 0 AND u.suspended = 0 AND u.id > 1";
+            $sqlparams = [];
+
+            if (!empty($params['search'])) {
+                $searchsql = $DB->sql_like('u.firstname', ':search1', false, false) . ' OR ' .
+                             $DB->sql_like('u.lastname', ':search2', false, false) . ' OR ' .
+                             $DB->sql_like($DB->sql_fullname('u.firstname', 'u.lastname'), ':search3', false, false);
+                $where .= " AND ($searchsql)";
+                $sqlparams['search1'] = '%' . $params['search'] . '%';
+                $sqlparams['search2'] = '%' . $params['search'] . '%';
+                $sqlparams['search3'] = '%' . $params['search'] . '%';
+            }
+
             $sql = "SELECT DISTINCT u.id, u.firstname, u.lastname
                     FROM {user} u
-                    WHERE u.deleted = 0
-                      AND u.suspended = 0
-                      AND u.id > 1
+                    WHERE $where
                     ORDER BY u.firstname ASC, u.lastname ASC";
 
-            $users = $DB->get_records_sql($sql);
+            $users = $DB->get_records_sql($sql, $sqlparams, 0, 20); // Limit to 20 for autocomplete.
 
             $result = [];
             foreach ($users as $user) {

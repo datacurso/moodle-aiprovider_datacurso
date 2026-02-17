@@ -25,6 +25,7 @@ import Ajax from 'core/ajax';
 import Chart from 'core/chartjs';
 import { get_string as getString } from 'core/str';
 import Notification from 'core/notification';
+import AutoComplete from 'core/form-autocomplete';
 
 export const init = async () => {
 
@@ -43,21 +44,19 @@ export const init = async () => {
     Promise.all([
         Ajax.call([{ methodname: 'aiprovider_datacurso_get_credits_balance', args: {} }])[0],
         Ajax.call([{ methodname: 'aiprovider_datacurso_get_services', args: {} }])[0],
-        Ajax.call([{ methodname: 'aiprovider_datacurso_get_users', args: {} }])[0],
         Ajax.call([{ methodname: 'aiprovider_datacurso_get_all_consumption', args: {} }])[0],
     ])
-        .then(([balanceResponse, servicesResponse, usersResponse, consumptionResponse]) => {
+        .then(([balanceResponse, servicesResponse, consumptionResponse]) => {
             const balance = balanceResponse?.balance || 0;
             tokensAvailable.textContent = balance;
             const services = servicesResponse?.services || [];
-            const users = usersResponse?.users || [];
             cachedData = consumptionResponse?.consumption || [];
-            initCharts(services, users);
+            initCharts(services);
         })
         .catch(Notification.exception);
 
-    // init grafic
-    const initCharts = (services, users) => {
+    // Init graphs.
+    const initCharts = async (services) => {
         const filterBar = document.getElementById('filter-service-bar');
         const filterPie = document.getElementById('filter-service-pie');
         const filterUser = document.getElementById('filter-user-charts');
@@ -77,12 +76,20 @@ export const init = async () => {
 
         fillSelect(filterBar, services);
         fillSelect(filterPie, services);
-        fillSelect(filterUser, users);
 
-        // Auto-select first user if available and requested by user
-        if (users.length > 0) {
-            filterUser.value = users[0].id;
-        }
+        // Enhance with Autocomplete for User Chart (AJAX)
+        const placeholder = await getString('search', 'core');
+        AutoComplete.enhance(
+            '#filter-user-charts',
+            false,
+            'aiprovider_datacurso/repository',
+            placeholder,
+            false,
+            true,
+            '',
+            false,
+            1
+        );
 
         // Render init used cachedData for others, but specific user data for UserChart
         renderBarChart(cachedData);
