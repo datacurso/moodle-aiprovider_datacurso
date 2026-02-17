@@ -35,53 +35,70 @@ export const init = async () => {
 
     const tokensAvailable = document.getElementById('tokens-available');
     const tokensConsumed = document.getElementById('tokens-consumed');
+    const userTokensConsumed = document.getElementById('user-tokens-consumed');
 
-    let chartBar, chartPie, chartDay;
+    let chartBar, chartPie, chartDay, chartUser;
     let cachedData = [];
 
     Promise.all([
         Ajax.call([{ methodname: 'aiprovider_datacurso_get_credits_balance', args: {} }])[0],
         Ajax.call([{ methodname: 'aiprovider_datacurso_get_services', args: {} }])[0],
+        Ajax.call([{ methodname: 'aiprovider_datacurso_get_users', args: {} }])[0],
         Ajax.call([{ methodname: 'aiprovider_datacurso_get_all_consumption', args: {} }])[0],
     ])
-        .then(([balanceResponse, servicesResponse, consumptionResponse]) => {
+        .then(([balanceResponse, servicesResponse, usersResponse, consumptionResponse]) => {
             const balance = balanceResponse?.balance || 0;
             tokensAvailable.textContent = balance;
             const services = servicesResponse?.services || [];
+            const users = usersResponse?.users || [];
             cachedData = consumptionResponse?.consumption || [];
-            initCharts(services);
+            initCharts(services, users);
         })
         .catch(Notification.exception);
 
     // init grafic
-    const initCharts = (services) => {
+    const initCharts = (services, users) => {
         const filterBar = document.getElementById('filter-service-bar');
         const filterPie = document.getElementById('filter-service-pie');
+        const filterUser = document.getElementById('filter-user-charts');
         const filterStart = document.getElementById('filter-start-date');
         const filterEnd = document.getElementById('filter-end-date');
 
-        const fillSelect = (select) => {
-            if (services?.length) {
-                services.forEach(s => {
+        const fillSelect = (select, items) => {
+            if (items?.length) {
+                items.forEach(item => {
                     const opt = document.createElement('option');
-                    opt.value = s.id;
-                    opt.textContent = s.name;
+                    opt.value = item.id;
+                    opt.textContent = item.name || item.fullname;
                     select.appendChild(opt);
                 });
             }
         };
 
-        fillSelect(filterBar);
-        fillSelect(filterPie);
+        fillSelect(filterBar, services);
+        fillSelect(filterPie, services);
+        fillSelect(filterUser, users);
 
-        // Render init used cachedData
+        // Auto-select first user if available and requested by user
+        if (users.length > 0) {
+            filterUser.value = users[0].id;
+        }
+
+        // Render init used cachedData for others, but specific user data for UserChart
         renderBarChart(cachedData);
         renderPieChart(cachedData);
         renderDayChart(cachedData);
 
+        if (filterUser.value) {
+            updateUserChart();
+        } else {
+            renderUserChart([]); // Empty chart if no user
+        }
+
         // Listeners filters
         filterBar.addEventListener('change', () => updateBarChart());
         filterPie.addEventListener('change', () => updatePieChart());
+        filterUser.addEventListener('change', () => updateUserChart());
         filterStart.addEventListener('change', () => updateDayChart());
         filterEnd.addEventListener('change', () => updateDayChart());
     };
@@ -91,6 +108,7 @@ export const init = async () => {
         const defaults = {
             service: "",
             action: "",
+            userid: 0,
             fromdate: "",
             todate: ""
         };
@@ -257,5 +275,58 @@ export const init = async () => {
 
         const data = await fetchConsumptionData({ fromdate, todate });
         renderDayChart(data);
+    };
+
+    // grafic user per service
+    const renderUserChart = (data) => {
+        const byService = {};
+        let total = 0;
+
+        // Group by service ID and sum tokens
+        data.forEach(c => {
+            const serviceName = c.service || c.id_service;
+            byService[serviceName] = (byService[serviceName] || 0) + (c.cant_tokens || 0);
+            total += (c.cant_tokens || 0);
+        });
+
+        if (userTokensConsumed) {
+            userTokensConsumed.textContent = total.toFixed(2);
+        }
+
+        const ctx = document.getElementById('chart-user-consumption');
+        if (!ctx) {
+            return;
+        }
+
+        if (chartUser) {
+            chartUser.destroy();
+        }
+
+        chartUser = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(byService),
+                datasets: [{
+                    label: creditsConsumed,
+                    data: Object.values(byService),
+                    backgroundColor: '#6c757d',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+            }
+        });
+    };
+
+    const updateUserChart = async () => {
+        const userId = document.getElementById('filter-user-charts').value;
+        if (!userId) {
+            return renderUserChart(cachedData);
+        }
+
+        const data = await fetchConsumptionData({ userid: userId });
+        renderUserChart(data);
     };
 };
