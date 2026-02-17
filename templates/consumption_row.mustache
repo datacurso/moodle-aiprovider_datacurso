@@ -28,7 +28,7 @@
     <thead>
         <tr>
             <th>{{#str}}id, aiprovider_datacurso{{/str}}</th>
-            <th>{{#str}}userid, aiprovider_datacurso{{/str}}</th>
+            <th>{{#str}}user, core{{/str}}</th>
             <th>{{#str}}action, aiprovider_datacurso{{/str}}</th>
             <th>{{#str}}service, aiprovider_datacurso{{/str}}</th>
             <th class="sortable" data-sort="cantidad_tokens" style="cursor:pointer;">
@@ -54,7 +54,7 @@
             {{#consumptions}}
                 <tr>
                     <td>{{id_consumption}}</td>
-                    <td>{{#userid}}{{userid}}{{/userid}}{{^userid}}-{{/userid}}</td>
+                    <td>{{#username}}{{username}}{{/username}}{{^username}}-{{/username}}</td>
                     <td>{{action}}</td>
                     <td>{{id_service}}</td>
                     <td>{{cant_tokens}}</td>

@@ -40,7 +40,7 @@ export function webserviceSetup() {
 export function deleteUserTokenLimit(id) {
     return Ajax.call([{
         methodname: 'aiprovider_datacurso_delete_user_token_limit',
-        args: {id: Number(id)}
+        args: { id: Number(id) }
     }])[0];
 }
 
@@ -76,6 +76,48 @@ export function getConsumptionHistory(args) {
 }
 
 /**
+ * Get users for filtering.
+ * @param {string} search - Search query.
+ */
+export function getUsers(search = '') {
+    return Ajax.call([{
+        methodname: 'aiprovider_datacurso_get_users',
+        args: { search: search }
+    }])[0];
+}
+
+/**
+ * Autocomplete transport for users.
+ * @param {string} selector
+ * @param {string} query
+ * @param {function} success
+ * @param {function} failure
+ */
+export function transport(selector, query, success, failure) {
+    getUsers(query).then(success).catch(failure);
+}
+
+/**
+ * Autocomplete process results for users.
+ * @param {string} selector
+ * @param {Object|Array} response
+ * @returns {Array}
+ */
+export function processResults(selector, response) {
+    let users = [];
+    if (Array.isArray(response)) {
+        users = response;
+    } else if (response && response.status === 'success' && response.users) {
+        users = response.users;
+    }
+
+    return users.map(user => ({
+        value: user.id,
+        label: user.fullname
+    }));
+}
+
+/**
  * Reset usage counters for a user token limit record by id.
  * @param {number} id
  * @returns {Promise<{success: boolean, message: string}>}
@@ -83,6 +125,6 @@ export function getConsumptionHistory(args) {
 export function resetUserTokenUsage(id) {
     return Ajax.call([{
         methodname: 'aiprovider_datacurso_reset_user_token_usage',
-        args: {id: Number(id)}
+        args: { id: Number(id) }
     }])[0];
 }
