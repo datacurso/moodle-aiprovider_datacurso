@@ -81,9 +81,7 @@ class get_users extends external_api {
                 'status' => 'success',
                 'users' => $result,
             ];
-
-        } 
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             return [
                 'status' => 'error',
                 'message' => $e->getMessage(),
