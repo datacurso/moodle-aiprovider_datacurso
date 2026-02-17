@@ -162,7 +162,7 @@ class get_consumption_history extends \external_api {
                 // Fetch all user records at once for better performance.
                 $moodleusers = [];
                 if (!empty($userids)) {
-                    list($insql, $inparams) = $DB->get_in_or_equal(array_values($userids));
+                    list($insql, $inparams) = $DB->get_in_or_equal( array_values($userids));
                     $moodleusers = $DB->get_records_select('user', "id $insql", $inparams, '', 'id, firstname, lastname');
                 }
 

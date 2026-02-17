@@ -34,7 +34,6 @@ use core_external\external_multiple_structure;
  * Get users available in the system.
  */
 class get_users extends external_api {
-
     /**
      * Returns description of method parameters.
      *
@@ -63,7 +62,7 @@ class get_users extends external_api {
             // Get all active users (not deleted, not suspended).
             $sql = "SELECT DISTINCT u.id, u.firstname, u.lastname
                     FROM {user} u
-                    WHERE u.deleted = 0 
+                    WHERE u.deleted = 0
                       AND u.suspended = 0
                       AND u.id > 1
                     ORDER BY u.firstname ASC, u.lastname ASC";
@@ -83,7 +82,8 @@ class get_users extends external_api {
                 'users' => $result,
             ];
 
-        } catch (\Exception $e) {
+        } 
+        catch (\Exception $e) {
             return [
                 'status' => 'error',
                 'message' => $e->getMessage(),
