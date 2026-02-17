@@ -55,6 +55,7 @@ class get_all_consumption extends external_api {
      *
      * @param string|null $service Service filter.
      * @param string|null $action Action filter.
+     * @param int|null $userid User filter.
      * @param string|null $fromdate Start date (YYYY-MM-DD).
      * @param string|null $todate End date (YYYY-MM-DD).
      * @return array Returns the status, total, and list of consumption records.
