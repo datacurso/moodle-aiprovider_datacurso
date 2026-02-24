@@ -59,8 +59,6 @@ if ($hassiteconfig) {
 
     $services = \aiprovider_datacurso\provider::get_services();
 
-    // Order services by name.
-    \core_collator::asort_array_of_arrays_by_key($services, 'name');
     foreach ($services as $service) {
         $sid = $service['id'];
         $sname = $service['name'];
