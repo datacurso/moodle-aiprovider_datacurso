@@ -59,15 +59,19 @@ class local_assign_ai extends ratelimit_settings {
             'mod/assign:submit',
         ]);
 
-        $settings->add(
-            new autocomplete(
-                "{$configprefix}_allowedusers",
-                new \lang_string('ratelimit_local_assign_ai_allowedusers', self::PLUGIN),
-                new \lang_string('ratelimit_local_assign_ai_allowedusers_desc', self::PLUGIN),
-                [],
-                $choices,
-                $attributes
-            )
+        $allowedusers = new autocomplete(
+            "{$configprefix}_allowedusers",
+            new \lang_string('ratelimit_local_assign_ai_allowedusers', self::PLUGIN),
+            new \lang_string('ratelimit_local_assign_ai_allowedusers_desc', self::PLUGIN),
+            [],
+            $choices,
+            $attributes
+        );
+        $settings->add($allowedusers);
+        $settings->hide_if(
+            "{$configprefix}_allowedusers",
+            "{$configprefix}_allowedusers_enable",
+            'notchecked'
         );
     }
 
