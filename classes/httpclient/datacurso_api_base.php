@@ -178,18 +178,18 @@ class datacurso_api_base {
                 $response = $curl->get($url, $payload, $options);
                 break;
             case 'POST':
-                $payload = array_merge($payload, $defaultpayload);
+                $payload = array_merge($defaultpayload, $payload);
                 $response = $curl->post($url, json_encode($payload, JSON_UNESCAPED_UNICODE), $options);
                 break;
             case 'PUT':
-                $payload = array_merge($payload, $defaultpayload);
+                $payload = array_merge($defaultpayload, $payload);
                 $response = $curl->put($url, $payload, $options);
                 break;
             case 'DELETE':
                 $response = $curl->delete($url, $payload, $options);
                 break;
             case 'UPLOAD':
-                $payload = array_merge($payload, $defaultpayload);
+                $payload = array_merge($defaultpayload, $payload);
                 $response = $curl->post($url, $payload, $options);
                 break;
             default:
