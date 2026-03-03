@@ -62,6 +62,19 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             'tokensused' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:tokensused', 'aiprovider_datacurso'),
             'countfrom' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:countfrom', 'aiprovider_datacurso'),
             'lastsync' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:lastsync', 'aiprovider_datacurso'),
+            'recurringintervalenabled' => get_string(
+                'privacy:metadata:aiprovider_datacurso_userlimit:recurringintervalenabled',
+                'aiprovider_datacurso'
+            ),
+            'recurringintervalunit' => get_string(
+                'privacy:metadata:aiprovider_datacurso_userlimit:recurringintervalunit',
+                'aiprovider_datacurso'
+            ),
+            'recurringintervalvalue' => get_string(
+                'privacy:metadata:aiprovider_datacurso_userlimit:recurringintervalvalue',
+                'aiprovider_datacurso'
+            ),
+            'nextresetat' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:nextresetat', 'aiprovider_datacurso'),
             'timecreated' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:timecreated', 'aiprovider_datacurso'),
             'timemodified' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:timemodified', 'aiprovider_datacurso'),
         ];

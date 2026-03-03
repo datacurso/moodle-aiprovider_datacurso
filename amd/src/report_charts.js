@@ -34,19 +34,28 @@ export const init = async () => {
     const creditsConsumed = await getString('tokensconsumed', 'aiprovider_datacurso');
 
     const tokensAvailable = document.getElementById('tokens-available');
+    const tokensToAssign = document.getElementById('tokens-to-assign');
     const tokensConsumed = document.getElementById('tokens-consumed');
 
     let chartBar, chartPie, chartDay;
     let cachedData = [];
 
+    // Load balance independently to avoid waiting for heavy chart data.
+    Ajax.call([{ methodname: 'aiprovider_datacurso_get_credits_balance', args: {} }])[0]
+        .then((balanceResponse) => {
+            const balance = balanceResponse?.balance || 0;
+            const availableToAssign = balanceResponse?.availabletoassign || 0;
+            tokensAvailable.textContent = balance;
+            tokensToAssign.textContent = availableToAssign;
+        })
+        .catch(Notification.exception);
+
+    // Load chart dependencies separately.
     Promise.all([
-        Ajax.call([{ methodname: 'aiprovider_datacurso_get_credits_balance', args: {} }])[0],
         Ajax.call([{ methodname: 'aiprovider_datacurso_get_services', args: {} }])[0],
         Ajax.call([{ methodname: 'aiprovider_datacurso_get_all_consumption', args: {} }])[0],
     ])
-        .then(([balanceResponse, servicesResponse, consumptionResponse]) => {
-            const balance = balanceResponse?.balance || 0;
-            tokensAvailable.textContent = balance;
+        .then(([servicesResponse, consumptionResponse]) => {
             const services = servicesResponse?.services || [];
             cachedData = consumptionResponse?.consumption || [];
             initCharts(services);

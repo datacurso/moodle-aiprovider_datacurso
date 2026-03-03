@@ -23,10 +23,10 @@ use external_api;
 use external_function_parameters;
 use external_single_structure;
 use external_value;
-use aiprovider_datacurso\httpclient\datacurso_api;
+use aiprovider_datacurso\local\user_token_limit_manager;
 
 /**
- * Web service to get the credits balance.
+ * Web service to get the available credits balance for assignment.
  *
  * @package    aiprovider_datacurso
  * @copyright  2025 Industria Elearning
@@ -41,29 +41,29 @@ class get_credits_balance extends external_api {
     }
 
     /**
-     * WS logic: makes the call to the external API and returns the array.
+     * WS logic: returns currently available credits to assign.
      */
     public static function execute() {
         $params = self::validate_parameters(self::execute_parameters(), []);
         $context = \context_system::instance();
         self::validate_context($context);
         require_capability('aiprovider/datacurso:viewreports', $context);
-        $client = new datacurso_api();
 
-        $response = $client->get('/tokens/saldo');
-
-        if (empty($response) || !isset($response['status'])) {
+        $pool = user_token_limit_manager::get_license_pool();
+        if (($pool['status'] ?? 'error') !== 'success') {
             return [
                 'status' => 'error',
                 'balance' => 0,
+                'availabletoassign' => 0,
                 'message' => get_string('errorgetbalancecredits', 'aiprovider_datacurso'),
             ];
         }
 
         return [
-            'status' => $response['status'] ?? 'error',
-            'balance' => (int) ($response['saldo_actual'] ?? 0),
-            'message' => $response['message'] ?? '',
+            'status' => 'success',
+            'balance' => (int)($pool['licensebalance'] ?? 0),
+            'availabletoassign' => (int)($pool['availabletoassign'] ?? 0),
+            'message' => '',
         ];
     }
 
@@ -73,7 +73,8 @@ class get_credits_balance extends external_api {
     public static function execute_returns() {
         return new external_single_structure([
             'status' => new external_value(PARAM_TEXT, 'Request status (success/error)'),
-            'balance' => new external_value(PARAM_INT, 'Current credits balance'),
+            'balance' => new external_value(PARAM_INT, 'Current total credits balance'),
+            'availabletoassign' => new external_value(PARAM_INT, 'Current available credits balance to assign'),
             'message' => new external_value(PARAM_RAW, 'Additional API message or error'),
         ]);
     }

@@ -36,6 +36,13 @@ use aiprovider_datacurso\httpclient\datacurso_api;
  */
 class get_all_consumption extends external_api {
     /**
+     * Number of records requested per API page.
+     *
+     * Higher value reduces the number of round-trips to the remote API.
+     */
+    private const LIMIT_PER_PAGE = 500;
+
+    /**
      * Defines input parameters.
      *
      * @return external_function_parameters
@@ -77,10 +84,10 @@ class get_all_consumption extends external_api {
 
         $client = new datacurso_api();
 
-        // Step 1. Lightweight request to get pagination info only.
+        // Step 1. First request includes real page size to avoid an extra request.
         $queryparams = [
             'page' => 1,
-            'limit' => 1, // Only to retrieve total count, not full dataset.
+            'limit' => self::LIMIT_PER_PAGE,
         ];
 
         // Apply filters only if needed.
@@ -106,16 +113,41 @@ class get_all_consumption extends external_api {
             ];
         }
 
-        // Step 2. Get total records and calculate total pages.
+        // Build action map once.
+        $actions = \aiprovider_datacurso\provider::get_actions();
+        $actionmap = [];
+        foreach ($actions as $actionitem) {
+            $actionmap[$actionitem['id']] = $actionitem['name'];
+        }
+
+        // Step 2. Get total records and total pages.
         $pagination = $firstresponse['paginacion'] ?? [];
         $totalrecords = (int)($pagination['total'] ?? 0);
-        $limitperpage = 50;
+        $limitperpage = self::LIMIT_PER_PAGE;
         $totalpages = ceil($totalrecords / $limitperpage);
 
         $allconsumptions = [];
 
-        // Step 3. Fetch all pages sequentially.
-        for ($page = 1; $page <= $totalpages; $page++) {
+        // Step 3. Process first page from first response.
+        $userdata = $firstresponse['usuarios'][0] ?? null;
+        $consumptions = $userdata['consumos'] ?? [];
+        foreach ($consumptions as $item) {
+            $rawaction = (string)($item['accion'] ?? '');
+            $translatedaction = $actionmap[$rawaction] ?? $rawaction;
+            $allconsumptions[] = [
+                'id_consumption' => (int)($item['id_consumo'] ?? 0),
+                'action' => $translatedaction,
+                'id_service' => (string)($item['id_servicio'] ?? ''),
+                'userid' => isset($item['userid']) ? (int)$item['userid'] : null,
+                'cant_tokens' => $item['cantidad_tokens'] ?? 0,
+                'balance' => $item['saldo_restante'] ?? 0,
+                'date' => (string)($item['fecha'] ?? ''),
+                'created_at' => (string)($item['created_at'] ?? ''),
+            ];
+        }
+
+        // Step 4. Fetch remaining pages sequentially (starting from page 2).
+        for ($page = 2; $page <= $totalpages; $page++) {
             $queryparams['page'] = $page;
             $queryparams['limit'] = $limitperpage;
 
@@ -127,13 +159,6 @@ class get_all_consumption extends external_api {
 
             $userdata = $response['usuarios'][0] ?? null;
             $consumptions = $userdata['consumos'] ?? [];
-
-            // Build a map of action names for translation.
-            $actions = \aiprovider_datacurso\provider::get_actions();
-            $actionmap = [];
-            foreach ($actions as $a) {
-                $actionmap[$a['id']] = $a['name'];
-            }
 
             // Collect and normalize consumption data.
             foreach ($consumptions as $item) {
@@ -154,7 +179,7 @@ class get_all_consumption extends external_api {
 
         return [
             'status' => 'success',
-            'total' => count($allconsumptions),
+            'total' => $totalrecords,
             'consumption' => $allconsumptions,
         ];
     }

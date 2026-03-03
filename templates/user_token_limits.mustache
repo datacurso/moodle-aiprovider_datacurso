@@ -32,10 +32,11 @@
             {"key": "email", "label": "Email", "sorturl": "https://example.com?..."},
             {"key": "tokenlimit", "label": "Limit", "sorturl": "https://example.com?..."},
             {"key": "tokensused", "label": "Used", "sorturl": "https://example.com?..."},
+            {"key": "tokensavailable", "label": "Available", "sorturl": "https://example.com?..."},
             {"key": "actions", "label": "Actions"}
         ],
         "rows": [
-            {"id": 1, "fullname": "Jane Doe", "email": "jane@example.com", "tokenlimit": 1000, "tokensused": 120, "editurl": "https://example.com/..."}
+            {"id": 1, "fullname": "Jane Doe", "email": "jane@example.com", "tokenlimit": 1000, "tokensused": 120, "tokensavailable": 880, "editurl": "https://example.com/..."}
         ],
         "empty": false,
         "nothingtodisplay": "Nothing to display",
@@ -80,7 +81,7 @@
         </thead>
         <tbody>
             {{#empty}}
-                <tr><td colspan="5">{{nothingtodisplay}}</td></tr>
+                <tr><td colspan="6">{{nothingtodisplay}}</td></tr>
             {{/empty}}
             {{^empty}}
                 {{#rows}}
@@ -96,6 +97,7 @@
                             </a>
                             {{/canreset}}
                         </td>
+                        <td>{{tokensavailable}}</td>
                         <td>
                             <a href="{{editurl}}" class="action-icon" data-action="openedit" data-id="{{id}}" data-username="{{fullname}}" title="{{#str}} edit {{/str}}">
                                 {{#pix}} t/edit, core, {{#str}} edit {{/str}} {{/pix}}

@@ -45,7 +45,10 @@ $pageurl = new moodle_url('/ai/provider/datacurso/admin/user_token_limits.php', 
     'page' => $page,
     'perpage' => $perpage,
 ]);
-admin_externalpage_setup('aiprovider_datacurso_userlimits', '', null, $pageurl);
+require_login();
+$PAGE->set_context($context);
+$PAGE->set_url($pageurl);
+$PAGE->set_pagelayout('admin');
 
 $heading = get_string('link_usertokenlimits', 'aiprovider_datacurso');
 $PAGE->set_title($heading);
@@ -57,7 +60,7 @@ if ($action === 'delete' && $id) {
     redirect(new moodle_url('/ai/provider/datacurso/admin/user_token_limits.php'));
 }
 
-$allowedsorts = ['fullname', 'email', 'tokenlimit', 'tokensused'];
+$allowedsorts = ['fullname', 'email', 'tokenlimit', 'tokensused', 'tokensavailable'];
 if (!in_array($sort, $allowedsorts, true)) {
     $sort = 'email';
 }
@@ -77,11 +80,12 @@ $headers = [
     'email' => get_string('email'),
     'tokenlimit' => get_string('usertokenlimit_limit', 'aiprovider_datacurso'),
     'tokensused' => get_string('usertokenlimit_used', 'aiprovider_datacurso'),
+    'tokensavailable' => get_string('tokens_available', 'aiprovider_datacurso'),
     'actions' => get_string('actions', 'moodle'),
 ];
 
 $columns = [];
-foreach (['fullname', 'email', 'tokenlimit', 'tokensused', 'actions'] as $col) {
+foreach (['fullname', 'email', 'tokenlimit', 'tokensused', 'tokensavailable', 'actions'] as $col) {
     $coldata = ['key' => $col, 'label' => $headers[$col]];
     $iscurrent = ($sort === $col);
     if ($iscurrent) {
@@ -119,6 +123,7 @@ foreach ($records as $record) {
         'email' => $record->email,
         'tokenlimit' => (int)$record->tokenlimit,
         'tokensused' => (int)$record->tokensused,
+        'tokensavailable' => max(0, (int)$record->tokenlimit - (int)$record->tokensused),
         'canreset' => $record->tokensused > 0,
         'editurl' => $editurl->out(false),
     ];

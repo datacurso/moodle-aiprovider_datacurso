@@ -19,9 +19,8 @@ namespace aiprovider_datacurso\form;
 defined('MOODLE_INTERNAL') || die();
 
 use aiprovider_datacurso\local\user_token_limit_manager;
-use context_system;
+use core\context\system as context_system;
 use core_form\dynamic_form;
-use moodle_url;
 
 require_once($CFG->libdir . '/formslib.php');
 
@@ -42,6 +41,7 @@ class user_token_limit_form extends dynamic_form {
         $id = (int)$this->optional_param('id', 0, PARAM_INT);
         $returnurl = (string)$this->optional_param('returnurl', '', PARAM_LOCALURL);
         $editing = $id > 0;
+        $pool = user_token_limit_manager::get_license_pool($editing ? $id : null);
 
         if ($editing) {
             $userlabel = (string)$this->optional_param('userlabel', '', PARAM_TEXT);
@@ -73,6 +73,62 @@ class user_token_limit_form extends dynamic_form {
         $mform->addRule('tokenlimit', get_string('required'), 'required', null, 'client');
         $mform->addRule('tokenlimit', null, 'numeric', null, 'client');
 
+        $mform->addElement(
+            'advcheckbox',
+            'recurringintervalenabled',
+            get_string('usertokenlimit_recurringenabled', 'aiprovider_datacurso')
+        );
+        $mform->addHelpButton('recurringintervalenabled', 'usertokenlimit_recurringenabled', 'aiprovider_datacurso');
+        $mform->setType('recurringintervalenabled', PARAM_INT);
+        $mform->setDefault('recurringintervalenabled', 0);
+
+        $unitoptions = [
+            'hour' => get_string('usertokenlimit_recurringunit_hour', 'aiprovider_datacurso'),
+            'day' => get_string('usertokenlimit_recurringunit_day', 'aiprovider_datacurso'),
+            'week' => get_string('usertokenlimit_recurringunit_week', 'aiprovider_datacurso'),
+            'month' => get_string('usertokenlimit_recurringunit_month', 'aiprovider_datacurso'),
+            'year' => get_string('usertokenlimit_recurringunit_year', 'aiprovider_datacurso'),
+        ];
+        $mform->addElement(
+            'select',
+            'recurringintervalunit',
+            get_string('usertokenlimit_recurringunit', 'aiprovider_datacurso'),
+            $unitoptions
+        );
+        $mform->addHelpButton('recurringintervalunit', 'usertokenlimit_recurringunit', 'aiprovider_datacurso');
+        $mform->setType('recurringintervalunit', PARAM_ALPHA);
+        $mform->setDefault('recurringintervalunit', 'day');
+        $mform->hideIf('recurringintervalunit', 'recurringintervalenabled', 'notchecked');
+
+        $mform->addElement('text', 'recurringintervalvalue', get_string('usertokenlimit_recurringvalue', 'aiprovider_datacurso'));
+        $mform->addHelpButton('recurringintervalvalue', 'usertokenlimit_recurringvalue', 'aiprovider_datacurso');
+        $mform->setType('recurringintervalvalue', PARAM_INT);
+        $mform->addRule('recurringintervalvalue', null, 'numeric', null, 'client');
+        $mform->setDefault('recurringintervalvalue', 1);
+        $mform->hideIf('recurringintervalvalue', 'recurringintervalenabled', 'notchecked');
+
+        if (($pool['status'] ?? 'error') === 'success') {
+            $mform->addElement(
+                'static',
+                'licensebalance',
+                get_string('usertokenlimit_licensebalance', 'aiprovider_datacurso'),
+                (string)((int)$pool['licensebalance'])
+            );
+            $mform->addElement(
+                'static',
+                'availabletoassign',
+                get_string('usertokenlimit_availabletoassign', 'aiprovider_datacurso'),
+                (string)((int)$pool['availabletoassign'])
+            );
+        } else {
+            $mform->addElement(
+                'static',
+                'licensebalanceerror',
+                get_string('usertokenlimit_licensebalance', 'aiprovider_datacurso'),
+                get_string('errorgetbalancecredits', 'aiprovider_datacurso')
+            );
+        }
+
         $mform->addElement('hidden', 'id', $id);
         $mform->setType('id', PARAM_INT);
 
@@ -98,12 +154,12 @@ class user_token_limit_form extends dynamic_form {
     /**
      * Page URL for dynamic submission.
      */
-    public function get_page_url_for_dynamic_submission(): moodle_url {
+    public function get_page_url_for_dynamic_submission(): \moodle_url {
         $returnurl = (string)$this->optional_param('returnurl', '', PARAM_LOCALURL);
         if (!empty($returnurl)) {
-            return new moodle_url($returnurl);
+            return new \moodle_url($returnurl);
         }
-        return new moodle_url('/ai/provider/datacurso/admin/user_token_limits.php');
+        return new \moodle_url('/ai/provider/datacurso/admin/user_token_limits.php');
     }
 
     /**
@@ -119,6 +175,9 @@ class user_token_limit_form extends dynamic_form {
                 $data->id = $record->id;
                 $data->userid = $record->userid;
                 $data->tokenlimit = $record->tokenlimit;
+                $data->recurringintervalenabled = (int)($record->recurringintervalenabled ?? 0);
+                $data->recurringintervalunit = (string)($record->recurringintervalunit ?? 'day');
+                $data->recurringintervalvalue = (int)($record->recurringintervalvalue ?? 0);
                 $data->userlabel = fullname($user) . ' (' . $user->email . ')';
                 $this->set_data($data);
             }
@@ -132,11 +191,18 @@ class user_token_limit_form extends dynamic_form {
      */
     public function process_dynamic_submission() {
         $data = $this->get_data();
-        user_token_limit_manager::save($data->userid, $data->tokenlimit, $data->id);
+        user_token_limit_manager::save(
+            (int)$data->userid,
+            (int)$data->tokenlimit,
+            (int)$data->id,
+            (int)($data->recurringintervalenabled ?? 0),
+            (string)($data->recurringintervalunit ?? 'day'),
+            (int)($data->recurringintervalvalue ?? 0)
+        );
 
         $returnurl = !empty($data->returnurl)
-            ? new moodle_url($data->returnurl)
-            : new moodle_url('/ai/provider/datacurso/admin/user_token_limits.php');
+            ? new \moodle_url($data->returnurl)
+            : new \moodle_url('/ai/provider/datacurso/admin/user_token_limits.php');
         return $returnurl->out(false);
     }
 
@@ -151,8 +217,35 @@ class user_token_limit_form extends dynamic_form {
         $errors = parent::validation($data, $files);
 
         $tokenlimit = (int)($data['tokenlimit'] ?? 0);
-        if ($tokenlimit <= 0) {
-            $errors['tokenlimit'] = get_string('usertokenlimit_limit_invalid', 'aiprovider_datacurso');
+        if ($tokenlimit < 0) {
+            $errors['tokenlimit'] = get_string('usertokenlimit_limit_invalid_nonnegative', 'aiprovider_datacurso');
+        }
+
+        $recurringenabled = !empty($data['recurringintervalenabled']);
+        $recurringintervalvalue = (int)($data['recurringintervalvalue'] ?? 0);
+        if ($recurringenabled && $recurringintervalvalue <= 0) {
+            $errors['recurringintervalvalue'] = get_string(
+                'usertokenlimit_recurringvalue_invalid_positive',
+                'aiprovider_datacurso'
+            );
+        }
+
+        $allowedunits = ['hour', 'day', 'week', 'month', 'year'];
+        $recurringintervalunit = (string)($data['recurringintervalunit'] ?? 'day');
+        if ($recurringenabled && !in_array($recurringintervalunit, $allowedunits, true)) {
+            $errors['recurringintervalunit'] = get_string('usertokenlimit_recurringunit_invalid', 'aiprovider_datacurso');
+        }
+
+        $id = (int)($data['id'] ?? 0);
+        $pool = user_token_limit_manager::get_license_pool($id > 0 ? $id : null);
+        if (($pool['status'] ?? 'error') !== 'success') {
+            $errors['tokenlimit'] = get_string('errorgetbalancecredits', 'aiprovider_datacurso');
+        } else if ($tokenlimit > (int)$pool['availabletoassign']) {
+            $params = (object)[
+                'requested' => $tokenlimit,
+                'available' => (int)$pool['availabletoassign'],
+            ];
+            $errors['tokenlimit'] = get_string('error_usertokenlimit_available_exceeded', 'aiprovider_datacurso', $params);
         }
 
         if (empty($data['id']) && empty($data['userid'])) {

@@ -155,7 +155,7 @@ class get_consumption_history extends \external_api {
 
                             $consumptions[] = [
                                 'id_consumption' => $consumption['id_consumo'] ?? 0,
-                                'userid' => $consumption['userid'] ?? 0,
+                                'userid' => $consumption['userid'] ?? ($consumption['id_usuario'] ?? 0),
                                 'action' => $actionname,
                                 'id_service' => $servicename,
                                 'cant_tokens' => $consumption['cantidad_tokens'] ?? 0,
