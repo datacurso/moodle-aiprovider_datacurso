@@ -22,7 +22,7 @@
  */
 
 import ModalForm from 'core_form/modalform';
-import {getString} from 'core/str';
+import { getString } from 'core/str';
 
 /**
  * Return modal instance
@@ -60,6 +60,6 @@ export const createUserTokenLimitModal = (triggerElement, modalTitle, id = 0, re
         triggerElement,
         modalTitle,
         'aiprovider_datacurso\\form\\user_token_limit_form',
-        {id, returnurl, userlabel}
+        { id, returnurl, userlabel }
     );
 };

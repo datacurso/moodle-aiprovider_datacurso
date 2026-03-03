@@ -222,6 +222,9 @@ class user_token_limit_manager {
      * @param int $userid
      * @param int $tokenlimit
      * @param int|null $id existing id to update
+     * @param int $recurringintervalenabled
+     * @param string $recurringintervalunit
+     * @param int $recurringintervalvalue
      * @return int record id
      */
     public static function save(
