@@ -131,5 +131,50 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         // Datacurso savepoint reached.
         upgrade_plugin_savepoint(true, 2025120301, 'aiprovider', 'datacurso');
     }
+
+    if ($oldversion < 2026030200) {
+        $table = new xmldb_table('aiprovider_datacurso_userlimit');
+
+        $field = new xmldb_field('nextresetat', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'lastsync');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field('recurringintervalenabled', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'lastsync');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field(
+            'recurringintervalunit',
+            XMLDB_TYPE_CHAR,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            'day',
+            'recurringintervalenabled'
+        );
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field(
+            'recurringintervalvalue',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'recurringintervalunit'
+        );
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026030200, 'aiprovider', 'datacurso');
+    }
+
     return true;
 }

@@ -582,12 +582,12 @@ class ratelimiter {
         $shouldstop = false;
 
         foreach ($users as $user) {
-            if (!$this->is_target_user($user, $userid)) {
+            $consumptions = $this->extract_consumptions_from_user($user);
+            if (empty($consumptions)) {
                 continue;
             }
 
-            $consumptions = $this->extract_consumptions_from_user($user);
-            if (empty($consumptions)) {
+            if (!$this->is_target_user($user, $userid)) {
                 continue;
             }
 
@@ -798,7 +798,7 @@ class ratelimiter {
 
     /**
      * Check if the user has remaining quota in the aiprovider_datacurso_userlimit table.
-     * Missing record or non-positive limit means unlimited (allowed).
+     * Missing record means unlimited (allowed). A configured limit <= 0 blocks access.
      *
      * @param int $userid
      * @return bool
@@ -813,7 +813,7 @@ class ratelimiter {
 
         $limit = (int)($record->tokenlimit ?? 0);
         if ($limit <= 0) {
-            return true;
+            return false;
         }
 
         $used = (int)($record->tokensused ?? 0);

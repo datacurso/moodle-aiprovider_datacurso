@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="ai/provider/datacurso/db" VERSION="20251105" COMMENT="XMLDB file for Moodle ai/provider/datacurso"
+<XMLDB PATH="ai/provider/datacurso/db" VERSION="2026021702" COMMENT="XMLDB file for Moodle ai/provider/datacurso"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../../lib/xmldb/xmldb.xsd"
 >
@@ -30,6 +30,10 @@
         <FIELD NAME="tokensused" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Total tokens consumed since countfrom"/>
         <FIELD NAME="countfrom" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Timestamp when the quota started tracking"/>
         <FIELD NAME="lastsync" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Last sync with Datacurso consumption history"/>
+        <FIELD NAME="recurringintervalenabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Whether recurring reset is enabled"/>
+        <FIELD NAME="recurringintervalunit" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="day" SEQUENCE="false" COMMENT="Recurring unit: hour/day/week/month/year"/>
+        <FIELD NAME="recurringintervalvalue" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Recurring interval value"/>
+        <FIELD NAME="nextresetat" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Timestamp for the next recurring reset attempt"/>
         <FIELD NAME="usermodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
