@@ -261,9 +261,11 @@ class datacurso_api_base {
             throw new \moodle_exception('jsondecodeerror', 'aiprovider_datacurso', '', json_last_error_msg());
         }
 
+        // Post-success syncs: only after a valid, non-error response.
         if (!empty($serviceid)) {
             $ratelimiter->sync_after_success($serviceid, $userid, $path);
         }
+        $ratelimiter->sync_user_quota_after_success($userid, $path);
 
         $ratelimiter->sync_user_quota_after_success($userid, $path);
         return $decodedresponse;

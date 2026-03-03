@@ -48,34 +48,6 @@ class ratelimit_settings {
     }
 
     /**
-     * Resolve and delegate to the concrete ratelimit settings class for a service.
-     *
-     * This uses the convention that the service id matches the class name in this
-     * namespace (for example serviceid "local_coursegen" -> class
-     * aiprovider_datacurso\local\ratelimit\local_coursegen).
-     *
-     * @param string $serviceid Frankenstyle service/component id.
-     * @param string|null $actionpath Optional HTTP path used to route to the correct list.
-     * @return int[] List of allowed user ids for this service/action only.
-     */
-    public static function get_allowed_users_for_service(string $serviceid, ?string $actionpath): array {
-        $classname = "aiprovider_datacurso\\local\\ratelimit\\" . $serviceid;
-
-        if (!class_exists($classname)) {
-            return [];
-        }
-
-        // Only call the method when the target class exposes the expected
-        // static API. This keeps service classes decoupled from inheritance
-        // while still allowing them to provide their own allowlist logic.
-        if (!method_exists($classname, 'get_allowed_service_user_ids')) {
-            return [];
-        }
-
-        return $classname::get_allowed_service_user_ids($serviceid, $actionpath);
-    }
-
-    /**
      * Resolve a configuration key for a given action path using a
      * prefix-to-config mapping.
      *
@@ -121,6 +93,35 @@ class ratelimit_settings {
 
         return $ids;
     }
+
+    /**
+     * Resolve and delegate to the concrete ratelimit settings class for a service.
+     *
+     * This uses the convention that the service id matches the class name in this
+     * namespace (for example serviceid "local_coursegen" -> class
+     * aiprovider_datacurso\local\ratelimit\local_coursegen).
+     *
+     * @param string $serviceid Frankenstyle service/component id.
+     * @param string|null $actionpath Optional HTTP path used to route to the correct list.
+     * @return int[] List of allowed user ids for this service/action only.
+     */
+    public static function get_allowed_users_for_service(string $serviceid, ?string $actionpath): array {
+        $classname = "aiprovider_datacurso\\local\\ratelimit\\" . $serviceid;
+
+        if (!class_exists($classname)) {
+            return [];
+        }
+
+        // Only call the method when the target class exposes the expected
+        // static API. This keeps service classes decoupled from inheritance
+        // while still allowing them to provide their own allowlist logic.
+        if (!method_exists($classname, 'get_allowed_service_user_ids')) {
+            return [];
+        }
+
+        return $classname::get_allowed_service_user_ids($serviceid, $actionpath);
+    }
+
 
     /**
      * Retrieve the list of selectable users for the autocomplete control.
