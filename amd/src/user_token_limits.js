@@ -22,9 +22,9 @@
  */
 
 import Notification from "core/notification";
-import {get_strings as getStrings, get_string as getString} from "core/str";
-import {createUserTokenLimitModal} from "aiprovider_datacurso/modals";
-import {deleteUserTokenLimit, resetUserTokenUsage} from "aiprovider_datacurso/repository";
+import { get_strings as getStrings, get_string as getString } from "core/str";
+import { createUserTokenLimitModal } from "aiprovider_datacurso/modals";
+import { deleteUserTokenLimit, resetUserTokenUsage } from "aiprovider_datacurso/repository";
 
 
 /**
@@ -35,8 +35,8 @@ import {deleteUserTokenLimit, resetUserTokenUsage} from "aiprovider_datacurso/re
  */
 const confirmAction = async (title, message, onYes) => {
     const [yes, no] = await getStrings([
-        {key: "yes"},
-        {key: "no"}
+        { key: "yes" },
+        { key: "no" }
     ]);
     Notification.confirm(title, message, yes, no, onYes);
 };
@@ -49,8 +49,8 @@ const handleDelete = async (link) => {
     const id = link.dataset.id;
     const username = link.dataset.username || "";
     const [title, message] = await getStrings([
-        {key: "confirm_delete_title", component: "aiprovider_datacurso"},
-        {key: "confirm_delete_message", component: "aiprovider_datacurso", param: username}
+        { key: "confirm_delete_title", component: "aiprovider_datacurso" },
+        { key: "confirm_delete_message", component: "aiprovider_datacurso", param: username }
     ]);
 
     await confirmAction(title, message, async () => {
@@ -77,8 +77,8 @@ const handleReset = async (link) => {
     const id = link.dataset.id;
     const username = link.dataset.username || "";
     const [title, message] = await getStrings([
-        {key: "usertokenlimit_reset_usage", component: "aiprovider_datacurso"},
-        {key: "confirm_reset_usage_message", component: "aiprovider_datacurso", param: username}
+        { key: "usertokenlimit_reset_usage", component: "aiprovider_datacurso" },
+        { key: "confirm_reset_usage_message", component: "aiprovider_datacurso", param: username }
     ]);
 
     await confirmAction(title, message, async () => {

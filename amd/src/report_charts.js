@@ -53,11 +53,11 @@ export const init = async () => {
             cachedData = consumptionResponse?.consumption || [];
             initCharts(services);
         })
-        .catch((e)=>{
+        .catch((e) => {
             let msg = e.message;
             Notification.addNotification({
-              message: msg,
-              type: 'error'
+                message: msg,
+                type: 'error'
             });
         });
 

@@ -239,7 +239,7 @@ export const init = async () => {
 
     let pagination = 0;
 
-    try{
+    try {
       const response = await getConsumptionHistory(args);
       const consumptions = response?.consumption || [];
       await renderTable(consumptions);
