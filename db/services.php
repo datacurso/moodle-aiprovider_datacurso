@@ -100,7 +100,15 @@ $functions = [
         'type'        => 'read',
         'ajax'        => true,
         'capabilities' => 'aiprovider/datacurso:viewreports',
-
+    ],
+    'aiprovider_datacurso_get_users' => [
+        'classname'   => 'aiprovider_datacurso\external\get_users',
+        'methodname'  => 'execute',
+        'classpath'   => '',
+        'description' => 'Get the list of users for filtering.',
+        'type'        => 'read',
+        'ajax'        => true,
+        'capabilities' => 'aiprovider/datacurso:viewreports',
     ],
     'aiprovider_datacurso_delete_user_token_limit' => [
         'classname'   => 'aiprovider_datacurso\\external\\delete_user_token_limit',

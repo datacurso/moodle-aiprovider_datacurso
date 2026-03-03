@@ -51,6 +51,7 @@ class get_all_consumption extends external_api {
         return new external_function_parameters([
             'service' => new external_value(PARAM_TEXT, 'Service filter', VALUE_OPTIONAL),
             'action' => new external_value(PARAM_TEXT, 'Action filter', VALUE_OPTIONAL),
+            'userid' => new external_value(PARAM_INT, 'User filter', VALUE_OPTIONAL),
             'fromdate' => new external_value(PARAM_RAW, 'Start date (YYYY-MM-DD)', VALUE_OPTIONAL),
             'todate' => new external_value(PARAM_RAW, 'End date (YYYY-MM-DD)', VALUE_OPTIONAL),
         ]);
@@ -61,6 +62,7 @@ class get_all_consumption extends external_api {
      *
      * @param string|null $service Service filter.
      * @param string|null $action Action filter.
+     * @param int|null $userid User filter.
      * @param string|null $fromdate Start date (YYYY-MM-DD).
      * @param string|null $todate End date (YYYY-MM-DD).
      * @return array Returns the status, total, and list of consumption records.
@@ -68,12 +70,14 @@ class get_all_consumption extends external_api {
     public static function execute(
         ?string $service = null,
         ?string $action = null,
+        ?int $userid = null,
         ?string $fromdate = null,
         ?string $todate = null
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'service' => $service,
             'action' => $action,
+            'userid' => $userid,
             'fromdate' => $fromdate,
             'todate' => $todate,
         ]);
@@ -96,6 +100,9 @@ class get_all_consumption extends external_api {
         }
         if (!empty($params['action']) && $params['action'] !== 'all') {
             $queryparams['accion'] = $params['action'];
+        }
+        if (!empty($params['userid'])) {
+            $queryparams['userid'] = $params['userid'];
         }
         if (!empty($params['fromdate'])) {
             $queryparams['fecha_desde'] = $params['fromdate'];
