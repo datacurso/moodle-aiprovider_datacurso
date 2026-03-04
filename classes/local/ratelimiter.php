@@ -495,7 +495,7 @@ class ratelimiter {
             $page++;
         }
 
-        return $tokens;
+        return (int)$tokens;
     }
 
     /**
@@ -614,7 +614,7 @@ class ratelimiter {
         }
 
         return [
-            'tokens' => $tokens,
+            'tokens' => (int)$tokens,
             'stop' => $shouldstop,
         ];
     }
@@ -689,7 +689,7 @@ class ratelimiter {
         }
 
         return [
-            'tokens' => $tokens,
+            'tokens' => (int)$tokens,
             'stop' => $shouldstop,
         ];
     }
@@ -950,6 +950,6 @@ class ratelimiter {
             $page++;
         }
 
-        return $tokens;
+        return (int)$tokens;
     }
 }
