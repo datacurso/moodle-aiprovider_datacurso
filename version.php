@@ -27,6 +27,6 @@ defined('MOODLE_INTERNAL') || die();
 $plugin->component = 'aiprovider_datacurso';
 $plugin->release = '2.0.7';
 $plugin->supported = [500, 501];
-$plugin->version = 2026030300;
+$plugin->version = 2026030400;
 $plugin->requires = 2025041400;
 $plugin->maturity = MATURITY_STABLE;
