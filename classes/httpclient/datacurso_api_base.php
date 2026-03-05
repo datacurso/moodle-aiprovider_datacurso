@@ -168,10 +168,11 @@ class datacurso_api_base {
         $response = null;
 
         $defaultpayload = [
-            'site_id' => md5($CFG->wwwroot),
+            'site_id' => self::get_site_uuid(),
             'userid' => $payload['userid'] ?? $USER->id,
             'timezone' => \core_date::get_user_timezone(),
             'lang' => $payload['lang'] ?? current_language(),
+            'site_url' => $CFG->wwwroot,
         ];
         switch (strtoupper($method)) {
             case 'GET':
@@ -259,31 +260,42 @@ class datacurso_api_base {
     /**
      * Upload a file using multipart/form-data.
      *
+     * This method receives a stored_file instance, creates a temporary copy
+     * on disk for the duration of the upload and ensures that the temporary
+     * file is deleted whether the request succeeds or fails.
+     *
      * @param string $path Relative endpoint. Example: '/upload-file'.
-     * @param string $filepath Absolute path to the file to upload.
-     * @param string|null $mimetype MIME type of the file (falls back to PHP detection when null).
-     * @param string|null $filename Name to use for the uploaded file (defaults to basename of $filepath).
+     * @param \stored_file $file Moodle stored file object to upload.
      * @param array $extraparams Extra POST parameters to include in the upload request.
      * @return array|null Decoded response from the API.
-     * @throws \Exception If the local file does not exist or the request fails.
+     * @throws \Exception If the request fails.
      */
     public function upload_file(
         string $path,
-        string $filepath,
-        ?string $mimetype = null,
-        ?string $filename = null,
+        \stored_file $file,
         array $extraparams = []
     ): ?array {
-        if (!file_exists($filepath)) {
-            $filename = basename($filepath);
-            throw new \coding_exception("File not found: {$filename}");
+        // Create a temporary copy of the file content on disk.
+        $filepath = $file->copy_content_to_temp();
+        $filename = $file->get_filename();
+        $mimetype = $file->get_mimetype();
+
+        if (!$filepath || !file_exists($filepath)) {
+            throw new \coding_exception('Temporary file could not be created for upload.');
         }
 
-        $postdata = array_merge($extraparams, [
-            'file' => new \CURLFile($filepath, $mimetype, $filename),
-        ]);
+        try {
+            $postdata = array_merge($extraparams, [
+                'file' => new \CURLFile($filepath, $mimetype, $filename),
+            ]);
 
-        return $this->send_request('UPLOAD', $path, $postdata);
+            return $this->send_request('UPLOAD', $path, $postdata);
+        } finally {
+            // Always clean up the temporary file.
+            if (file_exists($filepath)) {
+                @unlink($filepath);
+            }
+        }
     }
 
     /**
@@ -313,5 +325,21 @@ class datacurso_api_base {
         $datacursoapi = new datacurso_api();
         $response = $datacursoapi->get('tokens/saldo');
         return $response['is_for_eu'] == true;
+    }
+
+    /**
+     * Returns a persistent site UUID for the Datacurso course service.
+     *
+     * @return string
+     */
+    private static function get_site_uuid(): string {
+        $siteuuid = get_config('aiprovider_datacurso', 'site_uuid');
+        if (!empty($siteuuid)) {
+            return (string) $siteuuid;
+        }
+
+        $siteuuid = \core\uuid::generate();
+        set_config('site_uuid', $siteuuid, 'aiprovider_datacurso');
+        return $siteuuid;
     }
 }
