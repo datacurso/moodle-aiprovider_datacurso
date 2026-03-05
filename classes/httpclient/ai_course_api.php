@@ -72,13 +72,15 @@ class ai_course_api extends datacurso_api_base {
     }
 
     /**
-     * Build the streaming URL for a module creation job (create-mod), adjusting base URL for localhost dev environments.
+     * Build the streaming URL for an activity generation job.
+     *
+     * The Datacurso activity API exposes the SSE stream at `/activity/stream/{thread_id}`.
      *
      * @param string $jobid
      * @return string streaming URL
      */
     public function get_mod_streaming_url_for_job(string $jobid): string {
         $baseurl = rtrim($this->baseurl, '/');
-        return $baseurl . '/resources/create-mod/stream?job_id=' . urlencode($jobid);
+        return $baseurl . '/activity/stream/' . urlencode($jobid);
     }
 }
