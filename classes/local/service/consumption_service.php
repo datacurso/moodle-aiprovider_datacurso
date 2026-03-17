@@ -16,8 +16,6 @@
 
 namespace aiprovider_datacurso\local\service;
 
-defined('MOODLE_INTERNAL') || die();
-
 use aiprovider_datacurso\httpclient\datacurso_api;
 
 /**
