@@ -16,13 +16,12 @@
 
 namespace aiprovider_datacurso\local\service;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Service class for user-related operations.
  *
  * @package    aiprovider_datacurso
- * @category   service
+ * @copyright  2025 Josue <https://datacurso.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class user_service {
     /**

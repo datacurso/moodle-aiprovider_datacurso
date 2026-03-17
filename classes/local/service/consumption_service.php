@@ -24,8 +24,10 @@ use aiprovider_datacurso\httpclient\datacurso_api;
  * Service class for retrieving all consumption records from Datacurso API.
  *
  * @package    aiprovider_datacurso
- * @category   service
+ * @copyright  2025 Josue <https://datacurso.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 class consumption_service {
     private const LIMIT_PER_PAGE = 500;
 

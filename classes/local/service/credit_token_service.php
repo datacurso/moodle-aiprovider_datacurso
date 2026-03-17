@@ -16,15 +16,14 @@
 
 namespace aiprovider_datacurso\local\service;
 
-defined('MOODLE_INTERNAL') || die();
-
 use aiprovider_datacurso\local\user_token_limit_manager;
 
 /**
  * Service class for managing credit tokens.
  *
  * @package    aiprovider_datacurso
- * @category   service
+ * @copyright  2025 Josue <https://datacurso.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class credit_token_service {
     /**

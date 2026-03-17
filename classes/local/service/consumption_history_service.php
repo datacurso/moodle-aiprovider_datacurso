@@ -16,16 +16,16 @@
 
 namespace aiprovider_datacurso\local\service;
 
-defined('MOODLE_INTERNAL') || die();
-
 use aiprovider_datacurso\httpclient\datacurso_api;
 
 /**
  * Service class for retrieving consumption history with filtering and pagination.
  *
  * @package    aiprovider_datacurso
- * @category   service
+ * @copyright  2025 Josue <https://datacurso.com>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 class consumption_history_service {
     /**
      * Get consumption history with pagination.
