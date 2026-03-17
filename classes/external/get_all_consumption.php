@@ -24,7 +24,7 @@ use external_function_parameters;
 use external_single_structure;
 use external_multiple_structure;
 use external_value;
-use aiprovider_datacurso\httpclient\datacurso_api;
+use aiprovider_datacurso\local\service\consumption_service;
 
 /**
  * External web service to fetch all Datacurso API consumption history.
@@ -35,12 +35,6 @@ use aiprovider_datacurso\httpclient\datacurso_api;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class get_all_consumption extends external_api {
-    /**
-     * Number of records requested per API page.
-     *
-     * Higher value reduces the number of round-trips to the remote API.
-     */
-    private const LIMIT_PER_PAGE = 500;
 
     /**
      * Defines input parameters.
@@ -86,109 +80,13 @@ class get_all_consumption extends external_api {
         self::validate_context($context);
         require_capability('aiprovider/datacurso:viewreports', $context);
 
-        $client = new datacurso_api();
-
-        // Step 1. First request includes real page size to avoid an extra request.
-        $queryparams = [
-            'page' => 1,
-            'limit' => self::LIMIT_PER_PAGE,
-        ];
-
-        // Apply filters only if needed.
-        if (!empty($params['service']) && $params['service'] !== 'all') {
-            $queryparams['servicio'] = $params['service'];
-        }
-        if (!empty($params['action']) && $params['action'] !== 'all') {
-            $queryparams['accion'] = $params['action'];
-        }
-        if (!empty($params['userid'])) {
-            $queryparams['userid'] = $params['userid'];
-        }
-        if (!empty($params['fromdate'])) {
-            $queryparams['fecha_desde'] = $params['fromdate'];
-        }
-        if (!empty($params['todate'])) {
-            $queryparams['fecha_hasta'] = $params['todate'];
-        }
-
-        $firstresponse = $client->get('/tokens/historial-consumos', $queryparams);
-
-        if (empty($firstresponse) || $firstresponse['status'] !== 'success') {
-            return [
-                'status' => 'error',
-                'message' => get_string('errorinitinformation', 'aiprovider_datacurso'),
-            ];
-        }
-
-        // Build action map once.
-        $actions = \aiprovider_datacurso\provider::get_actions();
-        $actionmap = [];
-        foreach ($actions as $actionitem) {
-            $actionmap[$actionitem['id']] = $actionitem['name'];
-        }
-
-        // Step 2. Get total records and total pages.
-        $pagination = $firstresponse['paginacion'] ?? [];
-        $totalrecords = (int)($pagination['total'] ?? 0);
-        $limitperpage = self::LIMIT_PER_PAGE;
-        $totalpages = ceil($totalrecords / $limitperpage);
-
-        $allconsumptions = [];
-
-        // Step 3. Process first page from first response.
-        $userdata = $firstresponse['usuarios'][0] ?? null;
-        $consumptions = $userdata['consumos'] ?? [];
-        foreach ($consumptions as $item) {
-            $rawaction = (string)($item['accion'] ?? '');
-            $translatedaction = $actionmap[$rawaction] ?? $rawaction;
-            $allconsumptions[] = [
-                'id_consumption' => (int)($item['id_consumo'] ?? 0),
-                'action' => $translatedaction,
-                'id_service' => (string)($item['id_servicio'] ?? ''),
-                'userid' => isset($item['userid']) ? (int)$item['userid'] : null,
-                'cant_tokens' => $item['cantidad_tokens'] ?? 0,
-                'balance' => $item['saldo_restante'] ?? 0,
-                'date' => (string)($item['fecha'] ?? ''),
-                'created_at' => (string)($item['created_at'] ?? ''),
-            ];
-        }
-
-        // Step 4. Fetch remaining pages sequentially (starting from page 2).
-        for ($page = 2; $page <= $totalpages; $page++) {
-            $queryparams['page'] = $page;
-            $queryparams['limit'] = $limitperpage;
-
-            $response = $client->get('/tokens/historial-consumos', $queryparams);
-
-            if (empty($response) || $response['status'] !== 'success') {
-                continue;
-            }
-
-            $userdata = $response['usuarios'][0] ?? null;
-            $consumptions = $userdata['consumos'] ?? [];
-
-            // Collect and normalize consumption data.
-            foreach ($consumptions as $item) {
-                $rawaction = (string)($item['accion'] ?? '');
-                $translatedaction = $actionmap[$rawaction] ?? $rawaction;
-                $allconsumptions[] = [
-                    'id_consumption' => (int)($item['id_consumo'] ?? 0),
-                    'action' => $translatedaction,
-                    'id_service' => (string)($item['id_servicio'] ?? ''),
-                    'userid' => isset($item['userid']) ? (int)$item['userid'] : null,
-                    'cant_tokens' => $item['cantidad_tokens'] ?? 0,
-                    'balance' => $item['saldo_restante'] ?? 0,
-                    'date' => (string)($item['fecha'] ?? ''),
-                    'created_at' => (string)($item['created_at'] ?? ''),
-                ];
-            }
-        }
-
-        return [
-            'status' => 'success',
-            'total' => $totalrecords,
-            'consumption' => $allconsumptions,
-        ];
+        return consumption_service::get_all_consumption(
+            $params['service'],
+            $params['action'],
+            $params['userid'],
+            $params['fromdate'],
+            $params['todate']
+        );
     }
 
     /**

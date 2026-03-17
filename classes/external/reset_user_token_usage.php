@@ -16,7 +16,7 @@
 
 namespace aiprovider_datacurso\external;
 
-use aiprovider_datacurso\local\user_token_limit_manager;
+use aiprovider_datacurso\local\service\credit_token_service;
 use external_api;
 use external_function_parameters;
 use external_single_structure;
@@ -54,26 +54,12 @@ class reset_user_token_usage extends external_api {
      */
     public static function execute(int $id): array {
         $params = self::validate_parameters(self::execute_parameters(), ['id' => $id]);
-        $id = $params['id'];
 
         $context = \context_system::instance();
         self::validate_context($context);
         require_capability('aiprovider/datacurso:managetokenlimits', $context);
 
-        if ($id > 0) {
-            $ok = user_token_limit_manager::reset_usage($id);
-            if ($ok) {
-                return [
-                    'success' => true,
-                    'message' => get_string('usertokenlimit_reset_done', 'aiprovider_datacurso'),
-                ];
-            }
-        }
-
-        return [
-            'success' => false,
-            'message' => get_string('usertokenlimit_reset_failed', 'aiprovider_datacurso'),
-        ];
+        return credit_token_service::reset_user_token_usage((int) $params['id']);
     }
 
     /**

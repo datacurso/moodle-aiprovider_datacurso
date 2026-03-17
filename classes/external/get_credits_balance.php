@@ -23,7 +23,7 @@ use external_api;
 use external_function_parameters;
 use external_single_structure;
 use external_value;
-use aiprovider_datacurso\local\user_token_limit_manager;
+use aiprovider_datacurso\local\service\credit_token_service;
 
 /**
  * Web service to get the available credits balance for assignment.
@@ -49,22 +49,7 @@ class get_credits_balance extends external_api {
         self::validate_context($context);
         require_capability('aiprovider/datacurso:viewreports', $context);
 
-        $pool = user_token_limit_manager::get_license_pool();
-        if (($pool['status'] ?? 'error') !== 'success') {
-            return [
-                'status' => 'error',
-                'balance' => 0,
-                'availabletoassign' => 0,
-                'message' => get_string('errorgetbalancecredits', 'aiprovider_datacurso'),
-            ];
-        }
-
-        return [
-            'status' => 'success',
-            'balance' => (int)($pool['licensebalance'] ?? 0),
-            'availabletoassign' => (int)($pool['availabletoassign'] ?? 0),
-            'message' => '',
-        ];
+        return credit_token_service::get_credits_balance();
     }
 
     /**

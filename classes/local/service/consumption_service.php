@@ -75,6 +75,8 @@ class consumption_service {
             return [
                 'status' => 'error',
                 'message' => get_string('errorinitinformation', 'aiprovider_datacurso'),
+                'total' => 0,
+                'consumption' => [],
             ];
         }
 
@@ -140,7 +142,7 @@ class consumption_service {
         return [
             'status' => 'success',
             'total' => $totalrecords,
-            'consumptions' => $allconsumptions,
+            'consumption' => $allconsumptions,
         ];
     }
 }
