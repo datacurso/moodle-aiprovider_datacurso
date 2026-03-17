@@ -25,7 +25,6 @@ use aiprovider_datacurso\httpclient\datacurso_api;
  * @copyright  2025 Josue <https://datacurso.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
 class consumption_history_service {
     /**
      * Get consumption history with pagination.
@@ -107,7 +106,8 @@ class consumption_history_service {
                 $moodleusers = [];
                 if (!empty($userids)) {
                     [$insql, $inparams] = $DB->get_in_or_equal(array_values($userids));
-                    $moodleusers = $DB->get_records_select('user', "id $insql", $inparams, '', 'id, firstname, lastname, firstnamephonetic, lastnamephonetic, middlename, alternatename');
+                    $userfields = 'id, firstname, lastname, firstnamephonetic, lastnamephonetic, middlename, alternatename';
+                    $moodleusers = $DB->get_records_select('user', "id $insql", $inparams, '', $userfields);
                 }
 
                 foreach ($users as $user) {

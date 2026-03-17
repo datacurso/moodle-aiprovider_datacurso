@@ -25,8 +25,8 @@ use aiprovider_datacurso\httpclient\datacurso_api;
  * @copyright  2025 Josue <https://datacurso.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
 class consumption_service {
+    /** @var int Number of records per page. */
     private const LIMIT_PER_PAGE = 500;
 
     /**

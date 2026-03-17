@@ -35,7 +35,6 @@ use aiprovider_datacurso\local\service\consumption_service;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class get_all_consumption extends external_api {
-
     /**
      * Defines input parameters.
      *
