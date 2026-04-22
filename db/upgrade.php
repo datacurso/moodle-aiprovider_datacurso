@@ -176,5 +176,15 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026030200, 'aiprovider', 'datacurso');
     }
 
+    if ($oldversion < 2026042200) {
+        $table = new xmldb_table('aiprovider_datacurso_userlimit');
+
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2026042200, 'aiprovider', 'datacurso');
+    }
+
     return true;
 }

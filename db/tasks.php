@@ -27,14 +27,4 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$tasks = [
-    [
-        'classname' => 'aiprovider_datacurso\\task\\reset_user_token_limits',
-        'blocking' => 0,
-        'minute' => 'R',
-        'hour' => '*',
-        'day' => '*',
-        'dayofweek' => '*',
-        'month' => '*',
-    ],
-];
+$tasks = [];
