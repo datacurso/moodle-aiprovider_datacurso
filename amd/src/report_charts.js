@@ -35,7 +35,6 @@ export const init = async () => {
     const creditsConsumed = await getString('tokensconsumed', 'aiprovider_datacurso');
 
     const tokensAvailable = document.getElementById('tokens-available');
-    const tokensToAssign = document.getElementById('tokens-to-assign');
     const tokensConsumed = document.getElementById('tokens-consumed');
     const userTokensConsumed = document.getElementById('user-tokens-consumed');
 
@@ -47,9 +46,7 @@ export const init = async () => {
     Ajax.call([{ methodname: 'aiprovider_datacurso_get_credits_balance', args: {} }])[0]
         .then((balanceResponse) => {
             const balance = balanceResponse?.balance || 0;
-            const availableToAssign = balanceResponse?.availabletoassign || 0;
             tokensAvailable.textContent = balance;
-            tokensToAssign.textContent = availableToAssign;
         })
         .catch(Notification.exception);
 
