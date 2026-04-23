@@ -121,13 +121,3 @@ if ($hassiteconfig) {
         'moodle/site:config'
     ));
 }
-
-$systemcontext = context_system::instance();
-if ($hassiteconfig || has_capability('aiprovider/datacurso:managetokenlimits', $systemcontext)) {
-    $ADMIN->add('users', new admin_externalpage(
-        'aiprovider_datacurso_userlimits',
-        get_string('link_usertokenlimits', 'aiprovider_datacurso'),
-        new moodle_url('/ai/provider/datacurso/admin/user_token_limits.php'),
-        'aiprovider/datacurso:managetokenlimits'
-    ));
-}
