@@ -294,3 +294,4 @@ $string['ws_tokenexists'] = 'Token ada';
 $string['ws_user'] = 'Pengguna layanan';
 $string['ws_userassigned'] = 'Peran ditetapkan ke pengguna';
 $string['year'] = 'tahun';
+$string['downloadexportcsv'] = 'Unduh CSV';

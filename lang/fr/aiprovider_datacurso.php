@@ -286,3 +286,4 @@ $string['ws_tokenexists'] = 'Le jeton existe';
 $string['ws_user'] = 'Utilisateur du service';
 $string['ws_userassigned'] = 'Rôle attribué à l\'utilisateur';
 $string['year'] = 'an';
+$string['downloadexportcsv'] = 'Exporter CSV';

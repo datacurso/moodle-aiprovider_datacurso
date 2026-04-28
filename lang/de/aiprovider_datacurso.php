@@ -290,3 +290,4 @@ $string['ws_tokenexists'] = 'Token existiert';
 $string['ws_user'] = 'Dienstbenutzer';
 $string['ws_userassigned'] = 'Rolle dem Benutzer zugewiesen';
 $string['year'] = 'Jahr';
+$string['downloadexportcsv'] = 'CSV exportieren';

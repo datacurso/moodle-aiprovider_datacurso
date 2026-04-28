@@ -294,3 +294,4 @@ $string['ws_tokenexists'] = 'Токен существует';
 $string['ws_user'] = 'Сервисный пользователь';
 $string['ws_userassigned'] = 'Роль назначена пользователю';
 $string['year'] = 'год';
+$string['downloadexportcsv'] = 'Скачать CSV';

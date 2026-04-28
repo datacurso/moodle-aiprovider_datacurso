@@ -323,3 +323,4 @@ $string['ws_user_lastname'] = 'Servicio';
 $string['ws_userassigned'] = 'Rol asignado al usuario';
 $string['year'] = 'año';
 $string['years'] = 'Años';
+$string['downloadexportcsv'] = 'Exportar CSV';

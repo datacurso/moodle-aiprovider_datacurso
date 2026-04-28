@@ -294,3 +294,4 @@ $string['ws_tokenexists'] = 'Token existe';
 $string['ws_user'] = 'Usuário do serviço';
 $string['ws_userassigned'] = 'Função atribuída ao usuário';
 $string['year'] = 'ano';
+$string['downloadexportcsv'] = 'Baixar CSV';
