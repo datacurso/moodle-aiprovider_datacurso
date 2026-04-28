@@ -15,8 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace aiprovider_datacurso\local\service;
-
-use aiprovider_datacurso\local\user_token_limit_manager;
+use aiprovider_datacurso\httpclient\datacurso_api;
 
 /**
  * Service class for managing credit tokens.
@@ -32,65 +31,28 @@ class credit_token_service {
      * @return array
      */
     public static function get_credits_balance(): array {
-        $pool = user_token_limit_manager::get_license_pool();
-        if (($pool['status'] ?? 'error') !== 'success') {
+        try {
+            $client = new datacurso_api();
+            $response = $client->get('/tokens/saldo');
+            if (($response['status'] ?? 'error') !== 'success') {
+                return [
+                    'status' => 'error',
+                    'balance' => 0,
+                    'message' => get_string('errorgetbalancecredits', 'aiprovider_datacurso'),
+                ];
+            }
+
+            return [
+                'status' => 'success',
+                'balance' => (int)($response['saldo_actual'] ?? 0),
+                'message' => '',
+            ];
+        } catch (\Throwable $e) {
             return [
                 'status' => 'error',
                 'balance' => 0,
-                'availabletoassign' => 0,
                 'message' => get_string('errorgetbalancecredits', 'aiprovider_datacurso'),
             ];
         }
-
-        return [
-            'status' => 'success',
-            'balance' => (int)($pool['licensebalance'] ?? 0),
-            'availabletoassign' => (int)($pool['availabletoassign'] ?? 0),
-            'message' => '',
-        ];
-    }
-
-    /**
-     * Reset usage counters for a user token limit record.
-     *
-     * @param int $id Record ID to reset.
-     * @return array
-     */
-    public static function reset_user_token_usage(int $id): array {
-        if ($id > 0) {
-            $ok = user_token_limit_manager::reset_usage($id);
-            if ($ok) {
-                return [
-                    'success' => true,
-                    'message' => get_string('usertokenlimit_reset_done', 'aiprovider_datacurso'),
-                ];
-            }
-        }
-
-        return [
-            'success' => false,
-            'message' => get_string('usertokenlimit_reset_failed', 'aiprovider_datacurso'),
-        ];
-    }
-
-    /**
-     * Delete a user token limit record.
-     *
-     * @param int $id Record ID to delete.
-     * @return array
-     */
-    public static function delete_user_token_limit(int $id): array {
-        if ($id > 0) {
-            user_token_limit_manager::delete($id);
-            return [
-                'success' => true,
-                'message' => get_string('usertokenlimit_deleted', 'aiprovider_datacurso'),
-            ];
-        }
-
-        return [
-            'success' => false,
-            'message' => get_string('usertokenlimit_delete_failed', 'aiprovider_datacurso'),
-        ];
     }
 }

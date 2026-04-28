@@ -35,20 +35,18 @@ export const init = async () => {
     const creditsConsumed = await getString('tokensconsumed', 'aiprovider_datacurso');
 
     const tokensAvailable = document.getElementById('tokens-available');
-    const tokensToAssign = document.getElementById('tokens-to-assign');
     const tokensConsumed = document.getElementById('tokens-consumed');
     const userTokensConsumed = document.getElementById('user-tokens-consumed');
 
     let chartBar, chartPie, chartDay, chartUser;
     let cachedData = [];
+    let serviceMap = {};
 
     // Load balance independently to avoid waiting for heavy chart data.
     Ajax.call([{ methodname: 'aiprovider_datacurso_get_credits_balance', args: {} }])[0]
         .then((balanceResponse) => {
             const balance = balanceResponse?.balance || 0;
-            const availableToAssign = balanceResponse?.availabletoassign || 0;
             tokensAvailable.textContent = balance;
-            tokensToAssign.textContent = availableToAssign;
         })
         .catch(Notification.exception);
 
@@ -60,6 +58,10 @@ export const init = async () => {
         .then(([servicesResponse, consumptionResponse]) => {
             const services = servicesResponse?.services || [];
             cachedData = consumptionResponse?.consumption || [];
+            services.forEach(s => {
+                serviceMap[s.id] = s.name || s.fullname || s.id;
+            });
+
             initCharts(services);
         })
         .catch(Notification.exception);
@@ -105,11 +107,7 @@ export const init = async () => {
         renderPieChart(cachedData);
         renderDayChart(cachedData);
 
-        if (filterUser.value) {
-            updateUserChart();
-        } else {
-            renderUserChart([]); // Empty chart if no user
-        }
+        updateUserChart();
 
         // Listeners filters
         filterBar.addEventListener('change', () => updateBarChart());
@@ -300,7 +298,8 @@ export const init = async () => {
 
         // Group by service ID and sum tokens
         data.forEach(c => {
-            const serviceName = c.service || c.id_service;
+            const serviceId = c.service || c.id_service;
+            const serviceName = serviceMap[serviceId] || serviceId;
             byService[serviceName] = (byService[serviceName] || 0) + (c.cant_tokens || 0);
             total += (c.cant_tokens || 0);
         });

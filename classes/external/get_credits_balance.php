@@ -26,7 +26,7 @@ use external_value;
 use aiprovider_datacurso\local\service\credit_token_service;
 
 /**
- * Web service to get the available credits balance for assignment.
+ * Web service to get current credits balance.
  *
  * @package    aiprovider_datacurso
  * @copyright  2025 Industria Elearning
@@ -41,7 +41,7 @@ class get_credits_balance extends external_api {
     }
 
     /**
-     * WS logic: returns currently available credits to assign.
+     * WS logic: returns current credits balance.
      */
     public static function execute() {
         $params = self::validate_parameters(self::execute_parameters(), []);
@@ -59,7 +59,6 @@ class get_credits_balance extends external_api {
         return new external_single_structure([
             'status' => new external_value(PARAM_TEXT, 'Request status (success/error)'),
             'balance' => new external_value(PARAM_INT, 'Current total credits balance'),
-            'availabletoassign' => new external_value(PARAM_INT, 'Current available credits balance to assign'),
             'message' => new external_value(PARAM_RAW, 'Additional API message or error'),
         ]);
     }
