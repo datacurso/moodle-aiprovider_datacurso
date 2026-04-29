@@ -35,74 +35,79 @@ if ($hassiteconfig) {
         true
     );
 
-    // Settings general.
-    $settings->add(new admin_setting_heading(
-        'aiprovider_datacurso/general',
-        new lang_string('settings', 'core'),
-        ''
-    ));
-
-    // License key.
-    $settings->add(new admin_setting_configpasswordunmask(
-        'aiprovider_datacurso/licensekey',
-        new lang_string('licensekey', 'aiprovider_datacurso'),
-        new lang_string('licensekey_desc', 'aiprovider_datacurso'),
-        ''
-    ));
-
-    // Per-plugin rate limit settings.
-    $settings->add(new admin_setting_heading(
-        'aiprovider_datacurso/ratelimits_heading',
-        new lang_string('ratelimits_heading', 'aiprovider_datacurso'),
-        new lang_string('ratelimits_heading_desc', 'aiprovider_datacurso')
-    ));
-
-    $services = \aiprovider_datacurso\provider::get_services();
-
-    // Order services by name.
-    \core_collator::asort_array_of_arrays_by_key($services, 'name');
-    $ratelimitsettingsinterface = \aiprovider_datacurso\local\ratelimit\ratelimit_settings::class;
-    foreach ($services as $service) {
-        $sid = $service['id'];
-        $sname = $service['name'];
-
+    // Build full settings only when the selected settings page is rendered.
+    // This avoids expensive per-service user-capability queries while Moodle
+    // builds the global administration tree.
+    if ($ADMIN->fulltree) {
+        // Settings general.
         $settings->add(new admin_setting_heading(
-            "aiprovider_datacurso/ratelimit_{$sid}_heading",
-            format_string($sname),
+            'aiprovider_datacurso/general',
+            new lang_string('settings', 'core'),
             ''
         ));
 
-        // Enable per-user ratelimit for this plugin.
-        $settings->add(new admin_setting_configcheckbox(
-            "aiprovider_datacurso/ratelimit_{$sid}_enable",
-            new lang_string('ratelimit_enable', 'aiprovider_datacurso'),
-            new lang_string('ratelimit_enable_desc', 'aiprovider_datacurso'),
-            0
+        // License key.
+        $settings->add(new admin_setting_configpasswordunmask(
+            'aiprovider_datacurso/licensekey',
+            new lang_string('licensekey', 'aiprovider_datacurso'),
+            new lang_string('licensekey_desc', 'aiprovider_datacurso'),
+            ''
         ));
 
-        // Credit limit in the configured window.
-        $settings->add(new admin_setting_configtext(
-            "aiprovider_datacurso/ratelimit_{$sid}_limit",
-            new lang_string('ratelimit_limit', 'aiprovider_datacurso'),
-            new lang_string('ratelimit_limit_desc', 'aiprovider_datacurso'),
-            10,
-            PARAM_INT
+        // Per-plugin rate limit settings.
+        $settings->add(new admin_setting_heading(
+            'aiprovider_datacurso/ratelimits_heading',
+            new lang_string('ratelimits_heading', 'aiprovider_datacurso'),
+            new lang_string('ratelimits_heading_desc', 'aiprovider_datacurso')
         ));
-        $settings->hide_if("aiprovider_datacurso/ratelimit_{$sid}_limit", "aiprovider_datacurso/ratelimit_{$sid}_enable", 'eq', 0);
 
-        // Window: duration + unit.
-        $settings->add(new \aiprovider_datacurso\admin_setting_duration_unit(
-            "aiprovider_datacurso/ratelimit_{$sid}_window",
-            new lang_string('ratelimit_window', 'aiprovider_datacurso'),
-            new lang_string('ratelimit_window_desc', 'aiprovider_datacurso'),
-            json_encode(['value' => 1, 'unit' => 'hours'])
-        ));
-        $settings->hide_if("aiprovider_datacurso/ratelimit_{$sid}_window", "aiprovider_datacurso/ratelimit_{$sid}_enable", 'eq', 0);
+        $services = \aiprovider_datacurso\provider::get_services();
 
-        $classname = \aiprovider_datacurso\provider::get_ratelimit_settings_class($sid);
-        if ($classname !== null && is_subclass_of($classname, $ratelimitsettingsinterface)) {
-            $provider = new $classname();
-            $provider->add_settings($settings, $sid);
+        // Order services by name.
+        \core_collator::asort_array_of_arrays_by_key($services, 'name');
+        $ratelimitsettingsinterface = \aiprovider_datacurso\local\ratelimit\ratelimit_settings::class;
+        foreach ($services as $service) {
+            $sid = $service['id'];
+            $sname = $service['name'];
+
+            $settings->add(new admin_setting_heading(
+                "aiprovider_datacurso/ratelimit_{$sid}_heading",
+                format_string($sname),
+                ''
+            ));
+
+            // Enable per-user ratelimit for this plugin.
+            $settings->add(new admin_setting_configcheckbox(
+                "aiprovider_datacurso/ratelimit_{$sid}_enable",
+                new lang_string('ratelimit_enable', 'aiprovider_datacurso'),
+                new lang_string('ratelimit_enable_desc', 'aiprovider_datacurso'),
+                0
+            ));
+
+            // Credit limit in the configured window.
+            $settings->add(new admin_setting_configtext(
+                "aiprovider_datacurso/ratelimit_{$sid}_limit",
+                new lang_string('ratelimit_limit', 'aiprovider_datacurso'),
+                new lang_string('ratelimit_limit_desc', 'aiprovider_datacurso'),
+                10,
+                PARAM_INT
+            ));
+            $settings->hide_if("aiprovider_datacurso/ratelimit_{$sid}_limit", "aiprovider_datacurso/ratelimit_{$sid}_enable", 'eq', 0);
+
+            // Window: duration + unit.
+            $settings->add(new \aiprovider_datacurso\admin_setting_duration_unit(
+                "aiprovider_datacurso/ratelimit_{$sid}_window",
+                new lang_string('ratelimit_window', 'aiprovider_datacurso'),
+                new lang_string('ratelimit_window_desc', 'aiprovider_datacurso'),
+                json_encode(['value' => 1, 'unit' => 'hours'])
+            ));
+            $settings->hide_if("aiprovider_datacurso/ratelimit_{$sid}_window", "aiprovider_datacurso/ratelimit_{$sid}_enable", 'eq', 0);
+
+            $classname = \aiprovider_datacurso\provider::get_ratelimit_settings_class($sid);
+            if ($classname !== null && is_subclass_of($classname, $ratelimitsettingsinterface)) {
+                $provider = new $classname();
+                $provider->add_settings($settings, $sid);
+            }
         }
     }
 
