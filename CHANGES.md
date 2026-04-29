@@ -1,3 +1,15 @@
+## 1.1.5
+
+**Released on:** 2026-04-29
+
+**Compatibility note:** This version is compatible **with Moodle 4.5 only**.
+
+## Changed
+- **Optimized ratelimit settings class lookup in admin settings**  
+  Replaced dynamic class discovery per service with an explicit service-to-class map in the provider, reducing unnecessary autoload checks when loading plugin settings.
+- **Added tests for ratelimit settings mapping**  
+  Added PHPUnit coverage for known and unknown service ids to ensure class resolution remains predictable and maintainable.
+
 ## 1.0.10
 
 **Released on:** 2026-02-10
