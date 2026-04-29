@@ -61,6 +61,7 @@ if ($hassiteconfig) {
 
     // Order services by name.
     \core_collator::asort_array_of_arrays_by_key($services, 'name');
+    $ratelimitsettingsinterface = \aiprovider_datacurso\local\ratelimit\ratelimit_settings::class;
     foreach ($services as $service) {
         $sid = $service['id'];
         $sname = $service['name'];
@@ -98,9 +99,8 @@ if ($hassiteconfig) {
         ));
         $settings->hide_if("aiprovider_datacurso/ratelimit_{$sid}_window", "aiprovider_datacurso/ratelimit_{$sid}_enable", 'eq', 0);
 
-        $classname = "\\aiprovider_datacurso\\local\\ratelimit\\{$sid}";
-        $iface = \aiprovider_datacurso\local\ratelimit\ratelimit_settings::class;
-        if (class_exists($classname) && is_subclass_of($classname, $iface)) {
+        $classname = \aiprovider_datacurso\provider::get_ratelimit_settings_class($sid);
+        if ($classname !== null && is_subclass_of($classname, $ratelimitsettingsinterface)) {
             $provider = new $classname();
             $provider->add_settings($settings, $sid);
         }
