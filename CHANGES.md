@@ -1,3 +1,13 @@
+## 1.1.6
+
+**Released on:** 2026-04-29
+
+**Compatibility note:** This version is compatible **with Moodle 4.5 only**.
+
+## Changed
+- **Optimized admin settings loading path**  
+  Added an `ADMIN->fulltree` guard in provider settings so heavy per-service user capability lookups are executed only when the Datacurso settings page is actually rendered.
+
 ## 1.1.5
 
 **Released on:** 2026-04-29
