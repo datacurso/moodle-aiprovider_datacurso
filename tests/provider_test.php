@@ -26,36 +26,22 @@ namespace aiprovider_datacurso;
  */
 final class provider_test extends \basic_testcase {
     /**
-     * Ensure known services map to their explicit ratelimit settings class.
-     *
-     * @covers \aiprovider_datacurso\provider::get_ratelimit_settings_class
+     * Ensure provider no longer exposes legacy user-mapping API.
      */
-    public function test_get_ratelimit_settings_class_for_known_services(): void {
-        $this->assertSame(
-            \aiprovider_datacurso\local\ratelimit\local_coursegen::class,
-            provider::get_ratelimit_settings_class('local_coursegen')
-        );
-        $this->assertSame(
-            \aiprovider_datacurso\local\ratelimit\local_datacurso_ratings::class,
-            provider::get_ratelimit_settings_class('local_datacurso_ratings')
-        );
-        $this->assertSame(
-            \aiprovider_datacurso\local\ratelimit\local_assign_ai::class,
-            provider::get_ratelimit_settings_class('local_assign_ai')
-        );
-        $this->assertSame(
-            \aiprovider_datacurso\local\ratelimit\report_lifestory::class,
-            provider::get_ratelimit_settings_class('report_lifestory')
-        );
+    public function test_provider_has_no_ratelimit_settings_mapping_method(): void {
+        $this->assertFalse(method_exists(provider::class, 'get_ratelimit_settings_class'));
     }
 
     /**
-     * Ensure services without extension class do not trigger dynamic lookup.
+     * Ensure provider services list still includes known AI consumers.
      *
-     * @covers \aiprovider_datacurso\provider::get_ratelimit_settings_class
+     * @covers \aiprovider_datacurso\provider::get_services
      */
-    public function test_get_ratelimit_settings_class_for_unknown_services(): void {
-        $this->assertNull(provider::get_ratelimit_settings_class('local_forum_ai'));
-        $this->assertNull(provider::get_ratelimit_settings_class('aiprovider_datacurso'));
+    public function test_get_services_contains_known_ids(): void {
+        $serviceids = array_column(provider::get_services(), 'id');
+
+        $this->assertContains('local_coursegen', $serviceids);
+        $this->assertContains('local_assign_ai', $serviceids);
+        $this->assertContains('report_lifestory', $serviceids);
     }
 }

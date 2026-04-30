@@ -36,8 +36,8 @@ if ($hassiteconfig) {
     );
 
     // Build full settings only when the selected settings page is rendered.
-    // This avoids expensive per-service user-capability queries while Moodle
-    // builds the global administration tree.
+    // This keeps the admin tree fast while loading per-service rate-limit
+    // controls on demand.
     if ($ADMIN->fulltree) {
         // Settings general.
         $settings->add(new admin_setting_heading(
@@ -65,7 +65,6 @@ if ($hassiteconfig) {
 
         // Order services by name.
         \core_collator::asort_array_of_arrays_by_key($services, 'name');
-        $ratelimitsettingsinterface = \aiprovider_datacurso\local\ratelimit\ratelimit_settings::class;
         foreach ($services as $service) {
             $sid = $service['id'];
             $sname = $service['name'];
@@ -76,7 +75,7 @@ if ($hassiteconfig) {
                 ''
             ));
 
-            // Enable per-user ratelimit for this plugin.
+            // Enable per-user rate limit tracking for this plugin.
             $settings->add(new admin_setting_configcheckbox(
                 "aiprovider_datacurso/ratelimit_{$sid}_enable",
                 new lang_string('ratelimit_enable', 'aiprovider_datacurso'),
@@ -102,12 +101,6 @@ if ($hassiteconfig) {
                 json_encode(['value' => 1, 'unit' => 'hours'])
             ));
             $settings->hide_if("aiprovider_datacurso/ratelimit_{$sid}_window", "aiprovider_datacurso/ratelimit_{$sid}_enable", 'eq', 0);
-
-            $classname = \aiprovider_datacurso\provider::get_ratelimit_settings_class($sid);
-            if ($classname !== null && is_subclass_of($classname, $ratelimitsettingsinterface)) {
-                $provider = new $classname();
-                $provider->add_settings($settings, $sid);
-            }
         }
     }
 
