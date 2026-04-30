@@ -28,14 +28,6 @@ class provider extends \core_ai\provider {
     /** @var mixed License key for Datacurso API. */
     private mixed $licensekey;
 
-    /** @var array<string,string> Service id => ratelimit settings class map. */
-    private const RATELIMIT_SETTINGS_CLASSES = [
-        'local_assign_ai' => \aiprovider_datacurso\local\ratelimit\local_assign_ai::class,
-        'local_coursegen' => \aiprovider_datacurso\local\ratelimit\local_coursegen::class,
-        'local_datacurso_ratings' => \aiprovider_datacurso\local\ratelimit\local_datacurso_ratings::class,
-        'report_lifestory' => \aiprovider_datacurso\local\ratelimit\report_lifestory::class,
-    ];
-
     /**
      * Builder.
      */
@@ -135,16 +127,6 @@ class provider extends \core_ai\provider {
             ['id' => 'report_lifestory', 'name' => get_string('pluginname_lifestory', 'aiprovider_datacurso')],
             ['id' => 'local_coursedynamicrules', 'name' => get_string('pluginname_smartrules', 'aiprovider_datacurso')],
         ];
-    }
-
-    /**
-     * Return the ratelimit settings class for a service when available.
-     *
-     * @param string $serviceid Service component id.
-     * @return string|null Fully-qualified class name or null.
-     */
-    public static function get_ratelimit_settings_class(string $serviceid): ?string {
-        return self::RATELIMIT_SETTINGS_CLASSES[$serviceid] ?? null;
     }
 
     /**
