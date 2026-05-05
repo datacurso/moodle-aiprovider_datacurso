@@ -132,79 +132,28 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025120301, 'aiprovider', 'datacurso');
     }
 
-    if ($oldversion < 2026030200) {
-        $table = new xmldb_table('aiprovider_datacurso_userlimit');
+    if ($oldversion < 2025121900) {
+        // Define table aiprovider_datacurso_tenant_config to be created.
+        $table = new xmldb_table('aiprovider_datacurso_tenant_config');
 
-        $field = new xmldb_field('nextresetat', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'lastsync');
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
+        // Adding fields to table aiprovider_datacurso_tenant_config.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('plugin', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        $table->add_field('tenant_id', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('name', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        $table->add_field('value', XMLDB_TYPE_TEXT, null, null, null, null, null);
+
+        // Adding keys to table aiprovider_datacurso_tenant_config.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('plugin_tenant_name_uk', XMLDB_KEY_UNIQUE, ['plugin', 'tenant_id', 'name']);
+
+        // Conditionally launch create table for aiprovider_datacurso_tenant_config.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
         }
 
-        $field = new xmldb_field('recurringintervalenabled', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'lastsync');
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-
-        $field = new xmldb_field(
-            'recurringintervalunit',
-            XMLDB_TYPE_CHAR,
-            '10',
-            null,
-            XMLDB_NOTNULL,
-            null,
-            'day',
-            'recurringintervalenabled'
-        );
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-
-        $field = new xmldb_field(
-            'recurringintervalvalue',
-            XMLDB_TYPE_INTEGER,
-            '10',
-            null,
-            XMLDB_NOTNULL,
-            null,
-            '0',
-            'recurringintervalunit'
-        );
-        if (!$dbman->field_exists($table, $field)) {
-            $dbman->add_field($table, $field);
-        }
-
-        upgrade_plugin_savepoint(true, 2026030200, 'aiprovider', 'datacurso');
-    }
-
-    if ($oldversion < 2026042200) {
-        $table = new xmldb_table('aiprovider_datacurso_userlimit');
-
-        if ($dbman->table_exists($table)) {
-            $dbman->drop_table($table);
-        }
-
-        upgrade_plugin_savepoint(true, 2026042200, 'aiprovider', 'datacurso');
-    }
-
-    if ($oldversion < 2026042902) {
-        $obsoletekeys = [
-            'ratelimit_local_assign_ai_allowedusers_enable',
-            'ratelimit_local_assign_ai_allowedusers',
-            'ratelimit_local_coursegen_allowedusers_enable',
-            'ratelimit_local_coursegen_coursecreators',
-            'ratelimit_local_coursegen_activitycreators',
-            'ratelimit_local_datacurso_ratings_allowedusers_enable',
-            'ratelimit_local_datacurso_ratings_courseanalysts',
-            'ratelimit_local_datacurso_ratings_generalanalysts',
-            'ratelimit_report_lifestory_allowedusers_enable',
-            'ratelimit_report_lifestory_allowedusers',
-        ];
-
-        foreach ($obsoletekeys as $key) {
-            unset_config($key, 'aiprovider_datacurso');
-        }
-
-        upgrade_plugin_savepoint(true, 2026042902, 'aiprovider', 'datacurso');
+        // Datacurso savepoint reached.
+        upgrade_plugin_savepoint(true, 2025121900, 'aiprovider', 'datacurso');
     }
 
     return true;

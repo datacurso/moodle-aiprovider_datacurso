@@ -16,15 +16,18 @@
 
 namespace aiprovider_datacurso\external;
 
+
 defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/externallib.php');
 
 use external_api;
+use moodle_exception;
 use external_function_parameters;
 use external_single_structure;
 use external_multiple_structure;
 use external_value;
-use aiprovider_datacurso\local\service\consumption_service;
+use aiprovider_datacurso\httpclient\datacurso_api;
+use aiprovider_datacurso\local\tenant_config;
 
 /**
  * External web service to fetch all Datacurso API consumption history.
@@ -44,7 +47,6 @@ class get_all_consumption extends external_api {
         return new external_function_parameters([
             'service' => new external_value(PARAM_TEXT, 'Service filter', VALUE_OPTIONAL),
             'action' => new external_value(PARAM_TEXT, 'Action filter', VALUE_OPTIONAL),
-            'userid' => new external_value(PARAM_INT, 'User filter', VALUE_OPTIONAL),
             'fromdate' => new external_value(PARAM_RAW, 'Start date (YYYY-MM-DD)', VALUE_OPTIONAL),
             'todate' => new external_value(PARAM_RAW, 'End date (YYYY-MM-DD)', VALUE_OPTIONAL),
         ]);
@@ -55,7 +57,6 @@ class get_all_consumption extends external_api {
      *
      * @param string|null $service Service filter.
      * @param string|null $action Action filter.
-     * @param int|null $userid User filter.
      * @param string|null $fromdate Start date (YYYY-MM-DD).
      * @param string|null $todate End date (YYYY-MM-DD).
      * @return array Returns the status, total, and list of consumption records.
@@ -63,14 +64,12 @@ class get_all_consumption extends external_api {
     public static function execute(
         ?string $service = null,
         ?string $action = null,
-        ?int $userid = null,
         ?string $fromdate = null,
         ?string $todate = null
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
             'service' => $service,
             'action' => $action,
-            'userid' => $userid,
             'fromdate' => $fromdate,
             'todate' => $todate,
         ]);
@@ -79,13 +78,112 @@ class get_all_consumption extends external_api {
         self::validate_context($context);
         require_capability('aiprovider/datacurso:viewreports', $context);
 
-        return consumption_service::get_all_consumption(
-            $params['service'],
-            $params['action'],
-            $params['userid'],
-            $params['fromdate'],
-            $params['todate']
+        global $USER;
+
+        $tenantid = \tool_tenant\tenancy::get_tenant_id($USER->id);
+
+        $licensekey = tenant_config::get(
+            'aiprovider_datacurso',
+            $tenantid,
+            'licensekey'
         );
+
+        $client = new datacurso_api();
+
+        // Step 1. Lightweight request to get pagination info only.
+        $queryparams = [
+            'page' => 1,
+            'limit' => 1,
+            'tenant_id' => $tenantid,
+        ];
+
+        // Apply filters only if needed.
+        if (!empty($params['service']) && $params['service'] !== 'all') {
+            $queryparams['servicio'] = $params['service'];
+        }
+        if (!empty($params['action']) && $params['action'] !== 'all') {
+            $queryparams['accion'] = $params['action'];
+        }
+        if (!empty($params['fromdate'])) {
+            $queryparams['fecha_desde'] = $params['fromdate'];
+        }
+        if (!empty($params['todate'])) {
+            $queryparams['fecha_hasta'] = $params['todate'];
+        }
+
+        $firstresponse = $client->get('/tokens/historial-consumos', $queryparams);
+
+        if (empty($firstresponse) || $firstresponse['status'] !== 'success') {
+            return [
+                'status' => 'error',
+                'message' => get_string('errorinitinformation', 'aiprovider_datacurso'),
+            ];
+        }
+
+        // Step 2. Get total records and calculate total pages.
+        $pagination = $firstresponse['paginacion'] ?? [];
+        $totalrecords = (int)($pagination['total'] ?? 0);
+        $limitperpage = 50;
+        $totalpages = ceil($totalrecords / $limitperpage);
+
+        $allconsumptions = [];
+
+        // Step 3. Fetch all pages sequentially.
+        for ($page = 1; $page <= $totalpages; $page++) {
+            $queryparams['page'] = $page;
+            $queryparams['limit'] = $limitperpage;
+
+            $response = $client->get('/tokens/historial-consumos', $queryparams);
+
+            if (empty($response) || ($response['status'] ?? '') !== 'success') {
+                $message = $response['message'] ?? get_string('errorinitinformation', 'aiprovider_datacurso');
+                throw new moodle_exception($message);
+            }
+
+            if (empty($response) || $response['status'] !== 'success') {
+                continue;
+            }
+
+            $userdata = $response['usuarios'][0] ?? null;
+            $consumptions = $userdata['consumos'] ?? [];
+
+            // Build a map of action names for translation.
+            $actions = \aiprovider_datacurso\provider::get_actions();
+            $actionmap = [];
+            foreach ($actions as $a) {
+                $actionmap[$a['id']] = $a['name'];
+            }
+
+            // Collect and normalize consumption data.
+            foreach ($consumptions as $item) {
+                $rawaction = (string)($item['accion'] ?? '');
+                $translatedaction = $actionmap[$rawaction] ?? $rawaction;
+                $allconsumptions[] = [
+                    'id_consumption' => (int)($item['id_consumo'] ?? 0),
+                    'action' => $translatedaction,
+                    'id_service' => (string)($item['id_servicio'] ?? ''),
+                    'userid' => isset($item['userid']) ? (int)$item['userid'] : null,
+                    'cant_tokens' => $item['cantidad_tokens'] ?? 0,
+                    'balance' => $item['saldo_restante'] ?? 0,
+                    'date' => (string)($item['fecha'] ?? ''),
+                    'created_at' => (string)($item['created_at'] ?? ''),
+                ];
+            }
+        }
+
+        if (empty($response) || $response['status'] === 'success') {
+            return [
+                'status' => 'success',
+                'total' => count($allconsumptions),
+                'consumption' => $allconsumptions,
+            ];
+        }
+
+        return [
+            'status' => 'error',
+            'total' => 0,
+            'consumption' => [],
+        ];
     }
 
     /**

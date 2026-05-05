@@ -16,6 +16,8 @@
 
 namespace aiprovider_datacurso\httpclient;
 
+use aiprovider_datacurso\local\tenant_config;
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/filelib.php');
@@ -42,15 +44,32 @@ class datacurso_api_base {
     /** @var string|null $licensekey The license key obtained from Datacurso SHOP */
     protected $licensekey;
 
+    /** @var int|null $tenantid The id number of current tenant */
+    protected $tenantid;
+
     /**
      * Constructor.
      *
      * @param string $baseurl The base URL for Datacurso API requests.
      * @param string|null $licensekey The license key obtained from Datacurso SHOP.
+     * @param int|null $tenantid Tenant id to use.
      */
-    public function __construct(string $baseurl, ?string $licensekey = null) {
+    public function __construct(string $baseurl, ?string $licensekey = null, ?int $tenantid = null) {
+        global $USER;
+
+        // Resolve tenant.
+        $tenantid = $tenantid ?? \tool_tenant\tenancy::get_tenant_id($USER->id);
+
+        // Resolve license key from tenant config when not explicitly provided.
+        $licensekeytenant = tenant_config::get(
+            'aiprovider_datacurso',
+            $tenantid,
+            'licensekey'
+        );
+
         $this->baseurl = $baseurl;
-        $this->licensekey = $licensekey ?? get_config('aiprovider_datacurso', 'licensekey');
+        $this->licensekey = $licensekey ?? $licensekeytenant;
+        $this->tenantid = (int)$tenantid;
     }
 
     /**
@@ -123,13 +142,27 @@ class datacurso_api_base {
             $path = '/' . $path;
         }
 
-        // Enforce per-service rate limit using cached DB pre-check.
+        // Enforce per-user, per-service rate limit using cached DB pre-check.
         // Service could be null if the path is not mapped.
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
         $this->enforce_webservice_requirements($serviceid);
+        $userid = (int)($payload['userid'] ?? $USER->id);
         $ratelimiter = new \aiprovider_datacurso\local\ratelimiter();
 
-        $userid = (int)($payload['userid'] ?? $USER->id);
+        // Validate if user is allowed to make this request.
+        if (!empty($serviceid) && !$ratelimiter->is_user_allowed($serviceid, $userid)) {
+            throw new \moodle_exception('notallowed', 'aiprovider_datacurso');
+        }
+
+        // Enforce user global quota (across services) first.
+        if (!$ratelimiter->precheck_user_quota($userid)) {
+            $snapshot = $ratelimiter->get_user_quota_snapshot($userid);
+            $details = '';
+            if (is_array($snapshot) && ($snapshot['limit'] ?? 0) > 0) {
+                $details = $snapshot['used'] . '/' . $snapshot['limit'];
+            }
+            throw new \moodle_exception('error_usertokenlimit_exceeded', 'aiprovider_datacurso', '', $details);
+        }
 
         if (!empty($serviceid) && !$ratelimiter->precheck($serviceid, $userid)) {
             $remaining = $ratelimiter->get_time_until_next_window((string)$serviceid, (int)$userid);
@@ -158,6 +191,7 @@ class datacurso_api_base {
             'userid' => $payload['userid'] ?? $USER->id,
             'timezone' => \core_date::get_user_timezone(),
             'lang' => $payload['lang'] ?? current_language(),
+            'tenant_id' => (string) $this->tenantid,
         ];
         switch (strtoupper($method)) {
             case 'GET':
@@ -223,6 +257,7 @@ class datacurso_api_base {
         if (!empty($serviceid)) {
             $ratelimiter->sync_after_success($serviceid, $userid, $path);
         }
+        $ratelimiter->sync_user_quota_after_success($userid, $path);
 
         return $decodedresponse;
     }
@@ -290,13 +325,33 @@ class datacurso_api_base {
     }
 
     /**
-     * Check if the license is for European Union.
+     * Check if a given license (and tenant) is for European Union.
      *
+     * This helper does not rely on object state, so it can be used
+     * from constructors before the base class is fully initialised.
+     *
+     * @param string|null $licensekey
+     * @param int|null $tenantid
      * @return bool
      */
-    public function is_for_ue(): bool {
-        $datacursoapi = new datacurso_api();
+    public static function is_license_for_ue(?string $licensekey = null, ?int $tenantid = null): bool {
+        global $USER;
+
+        // Resolve tenant.
+        $tenantid = $tenantid ?? \tool_tenant\tenancy::get_tenant_id($USER->id);
+
+        // Resolve license key from tenant config when not explicitly provided.
+        $licensekeytenant = tenant_config::get(
+            'aiprovider_datacurso',
+            $tenantid,
+            'licensekey'
+        );
+
+        $resolvedlicensekey = $licensekey ?? $licensekeytenant;
+
+        $datacursoapi = new datacurso_api($resolvedlicensekey);
         $response = $datacursoapi->get('tokens/saldo');
-        return $response['is_for_eu'] == true;
+
+        return !empty($response['is_for_eu']);
     }
 }
