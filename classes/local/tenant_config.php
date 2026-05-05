@@ -49,7 +49,11 @@ class tenant_config {
                 continue;
             }
 
-            if (is_array($value) || is_object($value)) {
+            if (is_array($value)) {
+                $items = array_map('strval', $value);
+                $items = array_filter($items, static fn($item): bool => $item !== '');
+                $value = implode(',', $items);
+            } else if (is_object($value)) {
                 $value = json_encode($value);
             }
 
@@ -168,5 +172,32 @@ class tenant_config {
             'plugin'    => $plugin,
             'tenant_id' => $tenantid,
         ]);
+    }
+
+    /**
+     * Delete specific configuration names across all tenants for a plugin.
+     *
+     * @param string $plugin
+     * @param string[] $names
+     */
+    public static function delete_names(string $plugin, array $names): void {
+        global $DB;
+
+        $names = array_values(array_filter(array_map('strval', $names), static function (string $name): bool {
+            return $name !== '';
+        }));
+
+        if (empty($names)) {
+            return;
+        }
+
+        [$insql, $params] = $DB->get_in_or_equal($names, SQL_PARAMS_NAMED);
+        $params['plugin'] = $plugin;
+
+        $DB->delete_records_select(
+            self::TABLE,
+            "plugin = :plugin AND name {$insql}",
+            $params
+        );
     }
 }

@@ -65,23 +65,21 @@ $tabs[] = new tabobject(
     get_string('link_listplugings', 'aiprovider_datacurso')
 );
 
-$tabs[] = new tabobject(
-    'configwebservice',
-    new moodle_url('/ai/provider/datacurso/admin/webservice_config.php'),
-    get_string('link_webservice_config', 'aiprovider_datacurso')
-);
+if (has_capability('aiprovider/datacurso:configurews', $context)) {
+    $tabs[] = new tabobject(
+        'configwebservice',
+        new moodle_url('/ai/provider/datacurso/admin/webservice_config.php'),
+        get_string('link_webservice_config', 'aiprovider_datacurso')
+    );
+}
 
-$tabs[] = new tabobject(
-    'usertokenlimits',
-    new moodle_url('/ai/provider/datacurso/admin/user_token_limits.php'),
-    get_string('link_usertokenlimits', 'aiprovider_datacurso')
-);
-
-$tabs[] = new tabobject(
-    'configprovider',
-    new moodle_url('/ai/provider/datacurso/admin/settings_tenant.php'),
-    get_string('link_provider_config', 'aiprovider_datacurso')
-);
+if (has_capability('moodle/site:config', $context)) {
+    $tabs[] = new tabobject(
+        'configprovider',
+        new moodle_url('/ai/provider/datacurso/admin/settings_tenant.php'),
+        get_string('link_provider_config', 'aiprovider_datacurso')
+    );
+}
 
 // Render page header and navigation.
 echo $OUTPUT->header();

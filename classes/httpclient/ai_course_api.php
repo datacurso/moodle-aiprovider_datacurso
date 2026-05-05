@@ -26,20 +26,27 @@ namespace aiprovider_datacurso\httpclient;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class ai_course_api extends datacurso_api_base {
+    /** Default base URL for the standard DataCurso course AI service. */
+    private const DEFAULT_BASE_URL = 'https://course-ai.datacurso.com';
+
+    /** Default base URL for the EU-hosted DataCurso course AI service. */
+    private const DEFAULT_BASE_URL_EU = 'https://eu.course-ai.datacurso.com';
+
     /**
      * Constructor.
      *
      * @param string|null $licensekey The license key obtained from Datacurso SHOP.
-     * @param int|null $tenantid Tenant id to use.
+     * @param string|null $baseurl Optional standard-region base URL to override the default endpoint.
+     * @param string|null $baseurleu Optional EU-region base URL to override the default endpoint.
      */
-    public function __construct(?string $licensekey = null, ?int $tenantid = null) {
-        $isforue = datacurso_api_base::is_license_for_ue($licensekey, $tenantid);
-
-        if ($isforue) {
-            parent::__construct('https://eu.course-ai.datacurso.com', $licensekey, $tenantid);
+    public function __construct(?string $licensekey = null, ?string $baseurl = null, ?string $baseurleu = null) {
+        if ($this->is_for_ue()) {
+            $finalbaseurl = $baseurleu ?? self::DEFAULT_BASE_URL_EU;
         } else {
-            parent::__construct('https://course-ai.datacurso.com', $licensekey, $tenantid);
+            $finalbaseurl = $baseurl ?? self::DEFAULT_BASE_URL;
         }
+
+        parent::__construct($finalbaseurl, $licensekey);
     }
 
     /**

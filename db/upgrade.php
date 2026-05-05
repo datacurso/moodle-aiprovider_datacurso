@@ -156,5 +156,54 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2025121900, 'aiprovider', 'datacurso');
     }
 
+    if ($oldversion < 2026050501) {
+        $table = new xmldb_table('aiprovider_datacurso_userlimit');
+
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2026050501, 'aiprovider', 'datacurso');
+    }
+
+    if ($oldversion < 2026050502) {
+        $obsoletekeys = [
+            'ratelimit_local_assign_ai_allowedusers_enable',
+            'ratelimit_local_assign_ai_allowedusers',
+            'ratelimit_local_coursegen_allowedusers_enable',
+            'ratelimit_local_coursegen_coursecreators',
+            'ratelimit_local_coursegen_activitycreators',
+            'ratelimit_local_datacurso_ratings_allowedusers_enable',
+            'ratelimit_local_datacurso_ratings_courseanalysts',
+            'ratelimit_local_datacurso_ratings_generalanalysts',
+            'ratelimit_report_lifestory_allowedusers_enable',
+            'ratelimit_report_lifestory_allowedusers',
+        ];
+
+        foreach ($obsoletekeys as $key) {
+            unset_config($key, 'aiprovider_datacurso');
+        }
+
+        upgrade_plugin_savepoint(true, 2026050502, 'aiprovider', 'datacurso');
+    }
+
+    if ($oldversion < 2026050503) {
+        // Workplace adaptation: clean legacy per-user/allowlist values saved per tenant.
+        \aiprovider_datacurso\local\tenant_config::delete_names('aiprovider_datacurso', [
+            'ratelimit_local_assign_ai_allowedusers_enable',
+            'ratelimit_local_assign_ai_allowedusers',
+            'ratelimit_local_coursegen_allowedusers_enable',
+            'ratelimit_local_coursegen_coursecreators',
+            'ratelimit_local_coursegen_activitycreators',
+            'ratelimit_local_datacurso_ratings_allowedusers_enable',
+            'ratelimit_local_datacurso_ratings_courseanalysts',
+            'ratelimit_local_datacurso_ratings_generalanalysts',
+            'ratelimit_report_lifestory_allowedusers_enable',
+            'ratelimit_report_lifestory_allowedusers',
+        ]);
+
+        upgrade_plugin_savepoint(true, 2026050503, 'aiprovider', 'datacurso');
+    }
+
     return true;
 }

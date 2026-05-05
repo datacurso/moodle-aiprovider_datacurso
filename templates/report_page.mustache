@@ -84,6 +84,30 @@
             <div class="col-12 mb-4">
                 <div class="card h-100">
                     <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                        <h4 class="card-title mb-2 mb-md-0">{{#str}}chart_user_consumption, aiprovider_datacurso{{/str}}</h4>
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="filter-user-charts" class="mb-0 mr-2 font-weight-bold">{{#str}}user, core{{/str}}:</label>
+                            <select id="filter-user-charts" class="form-control form-control-sm w-auto">
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-12 text-center">
+                                <h5 class="text-muted">{{#str}}total_user_consumed, aiprovider_datacurso{{/str}}:
+                                    <span id="user-tokens-consumed" class="font-weight-bold text-success">0</span>
+                                </h5>
+                            </div>
+                        </div>
+                        <div class="chart-container" style="position: relative; height: 400px;">
+                            <canvas id="chart-user-consumption"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 mb-4">
+                <div class="card h-100">
+                    <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
                         <h4 class="card-title mb-2 mb-md-0">{{#str}}chart_tokens_by_day, aiprovider_datacurso{{/str}}</h4>
                         <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-md-auto mt-2 mt-md-0">
                             <input type="date" id="filter-start-date" class="form-control form-control-sm">
