@@ -28,29 +28,21 @@ require_once($CFG->libdir . '/filelib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class ai_services_api extends datacurso_api_base {
-    /** Default base URL for the standard DataCurso AI service. */
-    private const DEFAULT_BASE_URL = 'https://plugins-ai.datacurso.com';
-
-    /** Default base URL for the EU-hosted DataCurso AI service. */
-    private const DEFAULT_BASE_URL_EU = 'https://eu.plugins-ai.datacurso.com';
-
     /**
      * Constructor.
      *
      * @param string|null $licensekey The license key obtained from Datacurso SHOP.
-     * @param string|null $baseurl Optional standard-region base URL to override the default endpoint.
-     * @param string|null $baseurleu Optional EU-region base URL to override the default endpoint.
+     * @param int|null $tenantid Tenant id to use.
      */
-    public function __construct(?string $licensekey = null, ?string $baseurl = null, ?string $baseurleu = null) {
-        global $CFG;
+    public function __construct(?string $licensekey = null, ?int $tenantid = null) {
+        $isforue = datacurso_api_base::is_license_for_ue($licensekey, $tenantid);
 
-        if ($this->is_for_ue()) {
-            $finalbaseurl    = $baseurleu ?? self::DEFAULT_BASE_URL_EU;
+        if ($isforue) {
+            parent::__construct('https://eu.plugins-ai.datacurso.com', $licensekey, $tenantid);
         } else {
-            $finalbaseurl    = $baseurl ?? self::DEFAULT_BASE_URL;
+            parent::__construct('https://plugins-ai.datacurso.com', $licensekey, $tenantid);
         }
-
-        parent::__construct($finalbaseurl, $licensekey);
+        // parent::__construct('http://plugins-ai-server:8000', $licensekey, $tenantid);
     }
 
     /**
@@ -62,6 +54,7 @@ class ai_services_api extends datacurso_api_base {
     public function get_streaming_url_for_session(string $sessionid): string {
         // Build streaming URL with session ID.
         $baseurl = rtrim($this->baseurl, '/');
+        // $baseurl = 'http://localhost:8002';
 
         return $baseurl . '/chat/stream?session_id=' . urlencode($sessionid);
     }

@@ -16,6 +16,7 @@
 
 namespace aiprovider_datacurso\httpclient;
 
+use aiprovider_datacurso\local\tenant_config;
 use moodle_exception;
 use moodle_url;
 
@@ -37,18 +38,32 @@ class datacurso_api {
     private $licensekey;
 
     /**
-     * Builder.
+     * Builder
      *
+     * @param string|null $licensekey The license key obtained from Datacurso SHOP.
      * @throws moodle_exception
      */
-    public function __construct() {
-        $this->baseurl    = 'https://shop.datacurso.com/index.php?m=tokens_manager&api=';
-        $this->licensekey = get_config('aiprovider_datacurso', 'licensekey');
+    public function __construct(?string $licensekey = null) {
+        global $USER;
+        $this->baseurl = 'https://shop.datacurso.com/index.php?m=tokens_manager&api=';
+
+        // Resolve tenant.
+        $tenantid = \tool_tenant\tenancy::get_tenant_id($USER->id);
+
+        // Resolve license key from tenant config.
+        $licensekeytenant = tenant_config::get(
+            'aiprovider_datacurso',
+            $tenantid,
+            'licensekey'
+        );
+
+        $this->licensekey = $licensekey ?? trim($licensekeytenant);
 
         if (empty($this->licensekey)) {
-            throw new moodle_exception('API baseurl or licensekey not configured');
+            throw new moodle_exception('licensekey_missing', 'aiprovider_datacurso');
         }
     }
+
 
     /**
      * Build the full URL depending on whether the baseurl uses querystring (?api=).

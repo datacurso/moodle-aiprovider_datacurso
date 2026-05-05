@@ -56,6 +56,20 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             get_string('privacy:metadata:aiprovider_datacurso_rlimit', 'aiprovider_datacurso')
         );
 
+        $userlimitfields = [
+            'userid' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:userid', 'aiprovider_datacurso'),
+            'tokenlimit' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:tokenlimit', 'aiprovider_datacurso'),
+            'tokensused' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:tokensused', 'aiprovider_datacurso'),
+            'countfrom' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:countfrom', 'aiprovider_datacurso'),
+            'lastsync' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:lastsync', 'aiprovider_datacurso'),
+            'timecreated' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:timecreated', 'aiprovider_datacurso'),
+            'timemodified' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:timemodified', 'aiprovider_datacurso'),
+        ];
+        $collection->add_database_table(
+            'aiprovider_datacurso_userlimit',
+            $userlimitfields,
+            get_string('privacy:metadata:aiprovider_datacurso_userlimit', 'aiprovider_datacurso')
+        );
         return $collection;
     }
 
@@ -179,6 +193,7 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
     protected static function get_table_user_map(stdClass $user): array {
         return [
             'aiprovider_datacurso_rlimit' => ['userid' => $user->id],
+            'aiprovider_datacurso_userlimit' => ['userid' => $user->id],
         ];
     }
 }

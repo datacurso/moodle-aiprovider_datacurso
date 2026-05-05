@@ -1,4 +1,4 @@
-# Datacurso AI Provider for Moodle
+# Datacurso AI Provider for Moodle Workplace 4.5
 
 The **Datacurso AI Provider** is the core engine that connects Moodle with the **Datacurso AI services** — unlocking a full ecosystem of smart, AI-powered plugins designed to revolutionize online learning.
 
@@ -138,10 +138,29 @@ These Moodle security settings directly affect the Datacurso AI Provider and, th
 
    ![Enable Datacurso AI Provider](./_docs/images/aiprovider_datacurso_enable_datacurso_ai_provider.png)
 
-3. Configure the following settings:
-   - **License key**: Enter the license key that we copied in the [Obtain License Keys](#obtain-license-keys) section
+3. Enter the following settings:
+
+   - **Link configuration provider of tenant**: Enter the link configuration tenant
 
    ![Config](./_docs/images/aiprovider_datacurso_config.png)
+
+4. Configure the settings:
+
+   - **License key**: Enter the license key that we copied in the [Obtain License Keys](#obtain-license-keys) section
+
+   ![Config tenant](./_docs/images/aiprovider_datacurso_config_tenant.png)
+
+### ⚠️IMPORTANT: 
+
+This configuration only applies to the tenant in which it is configured. In this example, this provider configuration is applied and saved only in the Company1 tenant.
+
+
+## Datacurso AI Provider 
+
+In this section we will find global reports and configurations from our provider.
+
+![Config](./_docs/images/aiprovider_datacurso_5_link_section.png)
+
 
 ## Datacurso webservice setup
 
@@ -158,12 +177,6 @@ You can find more information about these plugins in their respective documentat
 ### Description
 
 This feature allows you to automatically configure the Web Service used by Datacurso to fetch contextual information from your platform and improve AI responses.
-
-### How to use it
-
-To configure the webservice, go to `Site administration > Server > Datacurso webservice setup`.
-
-![Datacurso Webservice Setup](./_docs/images/aiprovider_datacurso_datacurso_webservice_setup.png)
 
 ### What it does:
 - Enables Web services and the **REST** protocol if they are not already active.
@@ -296,7 +309,7 @@ From the same configuration page of the **Datacurso AI Provider**, you can enabl
 
 In this section you can monitor credit usage in detail for each action performed in each plugin of the Datacurso suite, including totals, trends, and distribution by service.
 
-To view the reports, go to `Site administration > Reports > General report Datacurso AI`.
+To view the reports, go to `Site administration > Datacurso AI Provider`.
 
 ![Report Link](./_docs/images/aiprovider_datacurso_page-general-report.png)
 
@@ -318,6 +331,16 @@ The second section displays information about credit usage through visual graphs
 The third section shows the list of Datacurso plugins that are compatible with the Datacurso AI provider.
 
 ![List plugins](./_docs/images/aiprovider_datacurso_page-report-listplugins.png)
+
+### Datacurso per-user credits limits
+
+This section is for create credits limits of use AI per user.
+
+![Credit limit user](./_docs/images/aiprovider_datacurso_credits_limits_user.png)
+
+### Provider configuration
+
+This section is the settings provider of tenant.
 
 ## License ##
 
