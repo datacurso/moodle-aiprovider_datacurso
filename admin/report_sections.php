@@ -174,7 +174,6 @@ switch ($tab) {
         $page = new \aiprovider_datacurso\output\plugin_list_page($pluginslist);
         echo $OUTPUT->render($page);
         break;
-
 }
 
 // Render page footer.
