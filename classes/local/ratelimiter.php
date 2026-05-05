@@ -17,7 +17,6 @@
 namespace aiprovider_datacurso\local;
 
 use tool_tenant\tenancy;
-use aiprovider_datacurso\local\tenant_config;
 
 /**
  * Per-user rate limiter for Datacurso services.
@@ -27,63 +26,25 @@ use aiprovider_datacurso\local\tenant_config;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class ratelimiter {
-    /** @var int|null $tenantid The ID of current tenant */
-    private int $tenantid;
+    /** @var int Current tenant id */
+    private $tenantid;
 
     /**
-     * Constructor for the rate limiter.
+     * Constructor.
      */
     public function __construct() {
         global $USER;
-        $this->tenantid = tenancy::get_tenant_id($USER->id);
+        $this->tenantid = (int)tenancy::get_tenant_id($USER->id);
     }
 
     /**
-     * Wrapper to fetch tenant configuration.
+     * Tenant-aware config getter with Moodle global fallback.
      *
      * @param string $key
-     * @return mixed|null
+     * @return mixed
      */
     private function get_tenant_config(string $key) {
-        return tenant_config::get('aiprovider_datacurso', $this->tenantid, $key);
-    }
-
-
-    /**
-     * Determine if the given user is allowed to use a service.
-     *
-     * This checks, in order:
-     * - Empty service id: allow.
-     * - Site administrators: always allow.
-     * - If user restriction for the service is disabled: allow.
-     * - Otherwise, only allow users listed in the configured allowed users list for the service.
-     *
-     * @param string $serviceid Service identifier such as 'local_coursegen'.
-     * @param int $userid Moodle user id.
-     * @return bool True if the user is allowed to access the service, false otherwise.
-     */
-    public function is_user_allowed(string $serviceid, int $userid): bool {
-        if (empty($serviceid)) {
-            return true;
-        }
-
-        if (is_siteadmin($userid)) {
-            return true;
-        }
-
-        if (!$this->is_user_restriction_enabled($serviceid)) {
-            return true;
-        }
-
-        $key = "ratelimit_{$serviceid}_coursecreators";
-        $raw = (string)$this->get_tenant_config($key);
-
-        if ($raw === '') {
-            return true;
-        }
-
-        $allowed = array_filter(explode(',', $raw));
-        return empty($allowed) || in_array($userid, $allowed);
+        return tenant_config::get('aiprovider_datacurso', $this->tenantid, $key, get_config('aiprovider_datacurso', $key));
     }
 
     /**
@@ -224,17 +185,8 @@ class ratelimiter {
      * @return bool True when the rate limit is enabled, false otherwise.
      */
     private function is_rate_limit_enabled(string $serviceid): bool {
-        return (int)$this->get_tenant_config("ratelimit_{$serviceid}_enable") === 1;
-    }
-
-    /**
-     * Determine whether the user restriction is enabled for the service.
-     *
-     * @param string $serviceid Service identifier such as 'local_coursegen'.
-     * @return bool True when the user restriction is enabled, false otherwise.
-     */
-    private function is_user_restriction_enabled(string $serviceid): bool {
-        return (int)$this->get_tenant_config("ratelimit_{$serviceid}_allowedusers_enable") === 1;
+        $value = $this->get_tenant_config("ratelimit_{$serviceid}_enable");
+        return (int)$value === 1;
     }
 
     /**
@@ -244,7 +196,8 @@ class ratelimiter {
      * @return int
      */
     private function get_service_limit(string $serviceid): int {
-        return (int)$this->get_tenant_config("ratelimit_{$serviceid}_limit");
+        $value = $this->get_tenant_config("ratelimit_{$serviceid}_limit");
+        return (int)$value;
     }
 
     /**
@@ -254,17 +207,32 @@ class ratelimiter {
      * @return int
      */
     private function get_window_length_in_seconds(string $serviceid): int {
-        $value = (int)$this->get_tenant_config("ratelimit_{$serviceid}_window_value");
-        $unit  = (string)$this->get_tenant_config("ratelimit_{$serviceid}_window_unit");
+        $windowvalue = $this->get_tenant_config("ratelimit_{$serviceid}_window_value");
+        $windowunit = $this->get_tenant_config("ratelimit_{$serviceid}_window_unit");
 
-        $value = $value > 0 ? $value : 1;
+        // Fallback to legacy JSON window format.
+        if ($windowvalue === false || $windowvalue === null || $windowunit === false || $windowunit === null) {
+            $json = (string)$this->get_tenant_config("ratelimit_{$serviceid}_window");
+            $data = json_decode($json, true);
+            if (!is_array($data)) {
+                $data = [];
+            }
+
+            $value = (int)($data['value'] ?? 1);
+            $value = $value > 0 ? $value : 1;
+            $unit = (string)($data['unit'] ?? 'hours');
+        } else {
+            $value = (int)$windowvalue;
+            $value = $value > 0 ? $value : 1;
+            $unit = (string)$windowunit;
+        }
 
         $multiplier = match ($unit) {
             'seconds' => 1,
             'minutes' => MINSECS,
-            'hours'   => HOURSECS,
-            'days'    => DAYSECS,
-            default   => HOURSECS,
+            'hours' => HOURSECS,
+            'days' => DAYSECS,
+            default => HOURSECS,
         };
 
         return $value * $multiplier;
@@ -591,12 +559,12 @@ class ratelimiter {
         $shouldstop = false;
 
         foreach ($users as $user) {
-            if (!$this->is_target_user($user, $userid)) {
+            $consumptions = $this->extract_consumptions_from_user($user);
+            if (empty($consumptions)) {
                 continue;
             }
 
-            $consumptions = $this->extract_consumptions_from_user($user);
-            if (empty($consumptions)) {
+            if (!$this->is_target_user($user, $userid)) {
                 continue;
             }
 
@@ -803,148 +771,5 @@ class ratelimiter {
     private function normalise_string(string $value): string {
         $lowercase = \core_text::strtolower($value);
         return trim($lowercase);
-    }
-
-    /**
-     * Check if the user has remaining quota in the aiprovider_datacurso_userlimit table.
-     * Missing record or non-positive limit means unlimited (allowed).
-     *
-     * @param int $userid
-     * @return bool
-     */
-    public function precheck_user_quota(int $userid): bool {
-        global $DB;
-
-        $record = $DB->get_record('aiprovider_datacurso_userlimit', ['userid' => $userid]);
-        if (!$record) {
-            return true;
-        }
-
-        $limit = (int)($record->tokenlimit ?? 0);
-        if ($limit <= 0) {
-            return true;
-        }
-
-        $used = (int)($record->tokensused ?? 0);
-        return $used < $limit;
-    }
-
-    /**
-     * Get a snapshot of the user quota values.
-     *
-     * @param int $userid
-     * @return array{limit:int,used:int,remaining:int}|null Null when no record exists.
-     */
-    public function get_user_quota_snapshot(int $userid): ?array {
-        global $DB;
-        $record = $DB->get_record('aiprovider_datacurso_userlimit', ['userid' => $userid]);
-        if (!$record) {
-            return null;
-        }
-        $limit = (int)($record->tokenlimit ?? 0);
-        $used = (int)($record->tokensused ?? 0);
-        $remaining = $limit > 0 ? max(0, $limit - $used) : PHP_INT_MAX;
-        return [
-            'limit' => $limit,
-            'used' => $used,
-            'remaining' => $remaining,
-        ];
-    }
-
-    /**
-     * After a successful request, refresh the user quota usage by summing remote consumptions
-     * from the configured countfrom timestamp up to now (all services/actions).
-     *
-     * @param int $userid
-     * @param string|null $actionpath Optional action path to help remote filtering (not required).
-     * @return void
-     */
-    public function sync_user_quota_after_success(int $userid, ?string $actionpath = null): void {
-        global $DB;
-
-        $record = $DB->get_record('aiprovider_datacurso_userlimit', ['userid' => $userid]);
-        if (!$record) {
-            return; // No quota set; nothing to sync.
-        }
-
-        $limit = (int)($record->tokenlimit ?? 0);
-        if ($limit <= 0) {
-            return; // Unlimited.
-        }
-
-        $from = (int)($record->countfrom ?? 0);
-        $now = time();
-
-        $tokensused = $this->get_user_tokens_since($userid, $from > 0 ? $from : 0, $now, $actionpath);
-
-        $record->tokensused = $tokensused;
-        $record->lastsync = $now;
-        $record->timemodified = $now;
-        $DB->update_record('aiprovider_datacurso_userlimit', $record);
-    }
-
-    /**
-     * Sum total tokens consumed by the user between two timestamps across all services.
-     *
-     * @param int $userid
-     * @param int $from
-     * @param int $to
-     * @param string|null $actionpath
-     * @return int
-     */
-    private function get_user_tokens_since(int $userid, int $from, int $to, ?string $actionpath = null): int {
-        $client = new \aiprovider_datacurso\httpclient\datacurso_api();
-
-        $page = 1;
-        $limit = 100;
-        $tokens = 0;
-
-        while (true) {
-            $response = $this->request_consumption_page(
-                $client,
-                $userid,
-                '', // No service filter: all services.
-                $actionpath,
-                $from,
-                $to,
-                $page,
-                $limit
-            );
-
-            if (!$this->is_success_response($response)) {
-                break;
-            }
-
-            $users = $this->extract_users_from_response($response);
-            if (empty($users)) {
-                break;
-            }
-
-            // API is filtered by userid; take the first entry.
-            $user = $users[0];
-            $consumptions = $this->extract_consumptions_from_user($user);
-            if (!empty($consumptions)) {
-                // Pass empty service to include all.
-                $summary = $this->sum_tokens_from_consumptions(
-                    $consumptions,
-                    '',
-                    null,
-                    $from,
-                    $to
-                );
-                $tokens += $summary['tokens'];
-                if ($summary['stop']) {
-                    break;
-                }
-            }
-
-            if (!$this->response_has_more_pages($response, $page)) {
-                break;
-            }
-
-            $page++;
-        }
-
-        return $tokens;
     }
 }

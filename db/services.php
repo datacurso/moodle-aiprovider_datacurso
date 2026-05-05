@@ -32,7 +32,7 @@ $functions = [
         'classname'   => 'aiprovider_datacurso\external\get_credits_balance',
         'methodname'  => 'execute',
         'classpath'   => '',
-        'description' => 'Gets the current credit balance from the external API',
+        'description' => 'Gets current available credits balance',
         'type'        => 'read',
         'ajax'        => true,
         'capabilities' => 'aiprovider/datacurso:viewreports',
@@ -100,24 +100,14 @@ $functions = [
         'type'        => 'read',
         'ajax'        => true,
         'capabilities' => 'aiprovider/datacurso:viewreports',
-
     ],
-    'aiprovider_datacurso_delete_user_token_limit' => [
-        'classname'   => 'aiprovider_datacurso\\external\\delete_user_token_limit',
+    'aiprovider_datacurso_get_users' => [
+        'classname'   => 'aiprovider_datacurso\external\get_users',
         'methodname'  => 'execute',
         'classpath'   => '',
-        'description' => 'Delete a user token limit record by id.',
-        'type'        => 'write',
+        'description' => 'Get the list of users for filtering.',
+        'type'        => 'read',
         'ajax'        => true,
-        'capabilities' => 'aiprovider/datacurso:managetokenlimits',
-    ],
-    'aiprovider_datacurso_reset_user_token_usage' => [
-        'classname'   => 'aiprovider_datacurso\\external\\reset_user_token_usage',
-        'methodname'  => 'execute',
-        'classpath'   => '',
-        'description' => 'Reset usage counters for a user token limit record by id.',
-        'type'        => 'write',
-        'ajax'        => true,
-        'capabilities' => 'aiprovider/datacurso:managetokenlimits',
+        'capabilities' => 'aiprovider/datacurso:viewreports',
     ],
 ];

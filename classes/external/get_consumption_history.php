@@ -25,8 +25,6 @@
 
 namespace aiprovider_datacurso\external;
 
-use moodle_exception;
-
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/externallib.php');
@@ -35,8 +33,7 @@ use external_function_parameters;
 use external_value;
 use external_single_structure;
 use external_multiple_structure;
-use aiprovider_datacurso\httpclient\datacurso_api;
-use aiprovider_datacurso\local\tenant_config;
+use aiprovider_datacurso\local\service\consumption_history_service;
 
 /**
  * External web service to fetch Datacurso API consumption history.
@@ -103,97 +100,21 @@ class get_consumption_history extends \external_api {
             'shordir' => $shordir,
         ]);
 
-        $page = max(1, (int)$params['page']);
-        $limit = max(1, (int)$params['limit']);
-
         $context = \context_system::instance();
         self::validate_context($context);
         require_capability('aiprovider/datacurso:viewreports', $context);
 
-        global $USER;
-
-        $tenantid = \tool_tenant\tenancy::get_tenant_id($USER->id);
-
-        $licensekey = tenant_config::get(
-            'aiprovider_datacurso',
-            $tenantid,
-            'licensekey'
+        return consumption_history_service::get_consumption_history(
+            (int) $params['page'],
+            (int) $params['limit'],
+            !empty($params['userid']) ? (int) $params['userid'] : null,
+            !empty($params['service']) ? $params['service'] : null,
+            !empty($params['action']) ? $params['action'] : null,
+            !empty($params['fromdate']) ? $params['fromdate'] : null,
+            !empty($params['todate']) ? $params['todate'] : null,
+            !empty($params['shor']) ? $params['shor'] : null,
+            !empty($params['shordir']) ? $params['shordir'] : null
         );
-
-        $client = new datacurso_api();
-
-        // Prepare query parameters for API request.
-        $queryparams = [
-            'page' => $page,
-            'limit' => $limit,
-            'userid' => $params['userid'],
-            'servicio' => $params['service'],
-            'accion' => $params['action'],
-            'fecha_desde' => $params['fromdate'],
-            'fecha_hasta' => $params['todate'],
-            'shor' => $params['shor'],
-            'shordir' => $params['shordir'],
-            'tenant_id' => $tenantid,
-        ];
-
-        // Perform API request.
-        $response = $client->get('/tokens/historial-consumos', $queryparams);
-        if (isset($response['status']) && $response['status'] === 'success') {
-            $users = $response['usuarios'] ?? [];
-            $consumptions = [];
-            // Get available actions from provider.
-            $actions = \aiprovider_datacurso\provider::get_actions();
-            $actionmap = [];
-            $services = \aiprovider_datacurso\provider::get_services();
-            $servicesmap = [];
-            foreach ($services as $s) {
-                $servicesmap[$s['id']] = $s['name'];
-            }
-            foreach ($actions as $a) {
-                $actionmap[$a['id']] = $a['name'];
-            }
-            foreach ($users as $user) {
-                if (!empty($user['consumos'])) {
-                    foreach ($user['consumos'] as $consumption) {
-                        $actionid = $consumption['accion'] ?? '';
-                        $actionname = $actionmap[$actionid] ?? $actionid;
-                        $serviceid = $consumption['id_servicio'] ?? '';
-                        $servicename = $servicesmap[$serviceid] ?? $serviceid;
-                        $consumptions[] = [
-                            'id_consumption' => $consumption['id_consumo'] ?? 0,
-                            'userid' => $consumption['userid'] ?? 0,
-                            'action' => $actionname,
-                            'id_service' => $servicename,
-                            'cant_tokens' => $consumption['cantidad_tokens'] ?? 0,
-                            'balance' => $consumption['saldo_restante'] ?? 0,
-                            'date' => $consumption['created_at'] ?? '',
-                        ];
-                    }
-                }
-            }
-            // Pagination normalization.
-            $pagination = $response['pagination'] ?? $response['paginacion'] ?? [];
-            return [
-                'status' => 'success',
-                'consumption' => $consumptions,
-                'pagination' => [
-                    'current_page' => $pagination['current_page'] ?? $pagination['pagina_actual'] ?? $page,
-                    'limit' => $pagination['limit'] ?? $pagination['limite'] ?? $limit,
-                    'total' => $pagination['total'] ?? count($consumptions),
-                    'total_pages' => $pagination['total_pages'] ?? $pagination['total_paginas'] ?? 1,
-                ],
-            ];
-        }
-
-        if (empty($response) || ($response['status'] ?? '') !== 'success') {
-            $message = $response['message'] ?? get_string('errorinitinformation', 'aiprovider_datacurso');
-            throw new moodle_exception($message);
-        }
-        return [
-            'status' => 'error',
-            'message' => $response['message'],
-            'consumption' => [],
-        ];
     }
 
     /**
@@ -209,6 +130,7 @@ class get_consumption_history extends \external_api {
                 new external_single_structure([
                     'id_consumption' => new external_value(PARAM_INT, 'Consumption ID'),
                     'userid' => new external_value(PARAM_INT, 'User ID'),
+                    'username' => new external_value(PARAM_TEXT, 'User full name'),
                     'action' => new external_value(PARAM_TEXT, 'Action performed'),
                     'id_service' => new external_value(PARAM_TEXT, 'Service identifier'),
                     'cant_tokens' => new external_value(PARAM_FLOAT, 'Tokens used'),

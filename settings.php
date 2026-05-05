@@ -23,15 +23,41 @@
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use core_ai\admin\admin_settingspage_provider;
+
 defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
-    $settings->add(new admin_setting_heading(
-        'aiprovider_datacurso/configlink',
-        get_string('settings', 'core'),
-        html_writer::link(
-            new moodle_url('/ai/provider/datacurso/admin/settings_tenant.php'),
-            get_string('link_provider_config_tenant', 'aiprovider_datacurso')
-        )
+    $settings = new admin_settingspage_provider(
+        'aiprovider_datacurso',
+        new lang_string('pluginname', 'aiprovider_datacurso'),
+        'moodle/site:config',
+        true
+    );
+
+    // Keep plugin settings page visible and redirect provider config to tenant-aware UI.
+    if ($ADMIN->fulltree) {
+        $settings->add(new admin_setting_heading(
+            'aiprovider_datacurso/configlink',
+            get_string('settings', 'core'),
+            html_writer::link(
+                new moodle_url('/ai/provider/datacurso/admin/settings_tenant.php'),
+                get_string('link_provider_config_tenant', 'aiprovider_datacurso')
+            )
+        ));
+    }
+
+    $ADMIN->add('reports', new admin_externalpage(
+        'aiprovider_datacurso_reports',
+        get_string('link_generalreport_datacurso', 'aiprovider_datacurso'),
+        new moodle_url('/ai/provider/datacurso/admin/report_sections.php'),
+        'moodle/site:config'
+    ));
+
+    $ADMIN->add('server', new admin_externalpage(
+        'aiprovider_datacurso_webservice',
+        get_string('link_webservice_config', 'aiprovider_datacurso'),
+        new moodle_url('/ai/provider/datacurso/admin/webservice_config.php'),
+        'moodle/site:config'
     ));
 }

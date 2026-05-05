@@ -24,7 +24,7 @@
  */
 
 import Notification from "core/notification";
-import {get_string as getString} from "core/str";
+import { get_string as getString } from "core/str";
 import Templates from "core/templates";
 import {
   webserviceSetup,
@@ -103,20 +103,20 @@ async function setup() {
  * Retry the webservice setup for Datacurso.
  */
 async function retry() {
-    try {
-        const message = await getString('ws_step_token_retry', 'aiprovider_datacurso');
-        log(message);
-        const res = await webserviceSetup();
-        res.messages.forEach((m) => log(m));
-        await refreshStatus();
-        Notification.addNotification({
-          message: "Done: retry",
-          type: "success",
-        });
-      } catch (e) {
-        Notification.exception(e);
-        log("Error: " + (e.message || e), "error");
-      }
+  try {
+    const message = await getString('ws_step_token_retry', 'aiprovider_datacurso');
+    log(message);
+    const res = await webserviceSetup();
+    res.messages.forEach((m) => log(m));
+    await refreshStatus();
+    Notification.addNotification({
+      message: "Done: retry",
+      type: "success",
+    });
+  } catch (e) {
+    Notification.exception(e);
+    log("Error: " + (e.message || e), "error");
+  }
 }
 
 /**
@@ -146,8 +146,8 @@ async function regenerate() {
  * @param {string} type The type of the message.
  */
 function log(msg, type = "info") {
-  logEntries.push({msg, type});
-  appendLogEntry({msg, type});
+  logEntries.push({ msg, type });
+  appendLogEntry({ msg, type });
 }
 
 /**

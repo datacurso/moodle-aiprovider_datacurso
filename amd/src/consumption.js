@@ -21,21 +21,23 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import Ajax from "core/ajax";
-import { get_string as getString } from "core/str";
-import Templates from "core/templates";
-import Notification from "core/notification";
-import { getConsumptionHistory } from "aiprovider_datacurso/repository";
+import Ajax from 'core/ajax';
+import { get_string as getString } from 'core/str';
+import Templates from 'core/templates';
+import Notification from 'core/notification';
+import AutoComplete from 'core/form-autocomplete';
+import { getConsumptionHistory } from 'aiprovider_datacurso/repository';
 
 export const init = async () => {
   // Elements DOM
-  const filterService = document.getElementById("filter-service");
-  const filterAction = document.getElementById("filter-action");
-  const filterFrom = document.getElementById("filter-date-from");
-  const filterTo = document.getElementById("filter-date-to");
-  const prevPageBtn = document.getElementById("prev-page");
-  const nextPageBtn = document.getElementById("next-page");
-  const pageInfo = document.getElementById("page-info");
+  const filterUser = document.getElementById('filter-user');
+  const filterService = document.getElementById('filter-service');
+  const filterAction = document.getElementById('filter-action');
+  const filterFrom = document.getElementById('filter-date-from');
+  const filterTo = document.getElementById('filter-date-to');
+  const prevPageBtn = document.getElementById('prev-page');
+  const nextPageBtn = document.getElementById('next-page');
+  const pageInfo = document.getElementById('page-info');
   const tableRegionSelector =
     '[data-region="aiprovider_datacurso/consumption-table"]';
 
@@ -102,6 +104,27 @@ export const init = async () => {
       });
 
     updateSortIndicators();
+  };
+
+  // Load users for filter
+  // Setup user autocomplete with AJAX.
+  const setupUserAutocomplete = async () => {
+    try {
+      const placeholder = await getString('search', 'core');
+      AutoComplete.enhance(
+        '#filter-user',
+        false,
+        'aiprovider_datacurso/repository',
+        placeholder,
+        false,
+        true,
+        '',
+        false,
+        1
+      );
+    } catch (error) {
+      Notification.exception(error);
+    }
   };
 
   const loadServices = async () => {
@@ -193,12 +216,14 @@ export const init = async () => {
   const fetchData = async () => {
     const serviceValue = filterService.value;
     const actionValue = filterAction.value;
+    const userValue = filterUser.value;
     const fromValue = filterFrom.value;
     const toValue = filterTo.value;
 
     const args = {
       page: currentPage,
       limit: currentLimit,
+      userid: userValue !== "" ? parseInt(userValue) : 0,
       service: serviceValue !== "all" ? serviceValue : "",
       action: actionValue !== "all" ? actionValue : "",
       fromdate: fromValue || "",
@@ -212,25 +237,15 @@ export const init = async () => {
 
     await renderTable([], { loading: true });
 
-    let pagination = 0;
+    const response = await getConsumptionHistory(args);
 
-    try{
-      const response = await getConsumptionHistory(args);
-      const consumptions = response?.consumption || [];
-      await renderTable(consumptions);
-      pagination = response?.pagination;
-    }
-    catch (error) {
-      let msg = error.message;
-      Notification.addNotification({
-        message: msg,
-        type: 'error'
-      });
-    }
+    const consumptions = response?.consumption || [];
+    await renderTable(consumptions);
 
+    const pagination = response?.pagination;
     if (pagination) {
       const { current_page, total_pages, total } = pagination;
-      const pageInfoText = await getString("pageinfo", "aiprovider_datacurso", {
+      const pageInfoText = await getString('pageinfo', 'aiprovider_datacurso', {
         current: current_page,
         totalpages: total_pages,
         total: total,
@@ -249,7 +264,7 @@ export const init = async () => {
   };
 
   // Event listeners for filters
-  [filterService, filterAction, filterFrom, filterTo].forEach((el) => {
+  [filterUser, filterService, filterAction, filterFrom, filterTo].forEach((el) => {
     el.addEventListener("change", () => {
       currentPage = 1;
       savePage(currentPage);
@@ -294,9 +309,10 @@ export const init = async () => {
   }
 
   // Initial load
-  Promise.all([loadServices(), loadActions()])
-    .then(() => fetchData())
-    .catch(Notification.exception);
+  await setupUserAutocomplete();
+  await loadServices();
+  await loadActions();
+  await fetchData();
 
   bindSortingHandlers();
 };
