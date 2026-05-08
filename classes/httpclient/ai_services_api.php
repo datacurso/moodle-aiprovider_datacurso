@@ -38,19 +38,24 @@ class ai_services_api extends datacurso_api_base {
      * Constructor.
      *
      * @param string|null $licensekey The license key obtained from Datacurso SHOP.
-     * @param string|null $baseurl Optional standard-region base URL to override the default endpoint.
+     * @param string|int|null $baseurl Optional standard-region base URL override.
      * @param string|null $baseurleu Optional EU-region base URL to override the default endpoint.
      */
-    public function __construct(?string $licensekey = null, ?string $baseurl = null, ?string $baseurleu = null) {
-        global $CFG;
+    public function __construct(?string $licensekey = null, int|string|null $baseurl = null, ?string $baseurleu = null) {
+        $tenantid = null;
 
-        if ($this->is_for_ue()) {
+        if (is_int($baseurl) || (is_string($baseurl) && ctype_digit($baseurl))) {
+            $tenantid = (int)$baseurl;
+            $baseurl = null;
+        }
+
+        if (datacurso_api_base::is_license_for_ue($licensekey, $tenantid)) {
             $finalbaseurl    = $baseurleu ?? self::DEFAULT_BASE_URL_EU;
         } else {
             $finalbaseurl    = $baseurl ?? self::DEFAULT_BASE_URL;
         }
 
-        parent::__construct($finalbaseurl, $licensekey);
+        parent::__construct($finalbaseurl, $licensekey, $tenantid);
     }
 
     /**
