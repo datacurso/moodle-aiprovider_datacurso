@@ -67,7 +67,7 @@ class consumption_history_service {
             'fecha_desde' => $fromdate,
             'fecha_hasta' => $todate,
             'shor' => $sort,
-            'shordir' => $sortdir,
+            'shor_dir' => $sortdir,
         ];
 
         try {

@@ -93,7 +93,7 @@ export const init = async () => {
             currentSortDir = currentSortDir === "asc" ? "desc" : "asc";
           } else {
             currentSortField = field;
-            currentSortDir = "asc";
+            currentSortDir = "desc";
           }
 
           updateSortIndicators();
@@ -313,6 +313,4 @@ export const init = async () => {
   await loadServices();
   await loadActions();
   await fetchData();
-
-  bindSortingHandlers();
 };
