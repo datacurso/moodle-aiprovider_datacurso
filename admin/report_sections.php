@@ -157,8 +157,8 @@ switch ($tab) {
             [
                 'name' => get_string('pluginname_smartrules', 'aiprovider_datacurso'),
                 'description' => get_string('plugindesc_smartrules', 'aiprovider_datacurso'),
-                'component' => 'local_smartrules',
-                'url' => 'https://moodle.org/plugins/local_smartrules',
+                'component' => 'local_coursedynamicrules',
+                'url' => 'https://moodle.org/plugins/local_coursedynamicrules',
             ],
         ];
 
