@@ -123,17 +123,13 @@ class datacurso_api_base {
             $path = '/' . $path;
         }
 
-        // Enforce per-user, per-service rate limit using cached DB pre-check.
+        // Enforce per-service rate limit using cached DB pre-check.
         // Service could be null if the path is not mapped.
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
         $this->enforce_webservice_requirements($serviceid);
-        $userid = (int)($payload['userid'] ?? $USER->id);
         $ratelimiter = new \aiprovider_datacurso\local\ratelimiter();
 
-        // Validate if user is allowed to make this request.
-        if (!empty($serviceid) && !$ratelimiter->is_user_allowed($serviceid, $userid, $path)) {
-            throw new \moodle_exception('notallowed', 'aiprovider_datacurso');
-        }
+        $userid = (int)($payload['userid'] ?? $USER->id);
 
         if (!empty($serviceid) && !$ratelimiter->precheck($serviceid, $userid)) {
             $remaining = $ratelimiter->get_time_until_next_window((string)$serviceid, (int)$userid);
