@@ -1,3 +1,29 @@
+## 1.1.6
+
+**Released on:** 2026-04-29
+
+**Compatibility note:** This version is compatible **with Moodle 4.5 only**.
+
+## Changed
+- **Optimized admin settings loading path**  
+  Added an `ADMIN->fulltree` guard in provider settings so heavy per-service user capability lookups are executed only when the Datacurso settings page is actually rendered.
+- **Removed per-user allowlist controls from Datacurso rate limiting**  
+  Deleted service-specific allowlist checks and settings so Moodle permissions are the only access control, while preserving existing per-service rate-limit enforcement.
+- **Cleaned obsolete allowlist configuration and code paths**  
+  Removed allowlist-only classes/strings and added an upgrade step to delete legacy allowlist config keys.
+
+## 1.1.5
+
+**Released on:** 2026-04-29
+
+**Compatibility note:** This version is compatible **with Moodle 4.5 only**.
+
+## Changed
+- **Optimized ratelimit settings class lookup in admin settings**  
+  Replaced dynamic class discovery per service with an explicit service-to-class map in the provider, reducing unnecessary autoload checks when loading plugin settings.
+- **Added tests for ratelimit settings mapping**  
+  Added PHPUnit coverage for known and unknown service ids to ensure class resolution remains predictable and maintainable.
+
 ## 1.0.10
 
 **Released on:** 2026-02-10

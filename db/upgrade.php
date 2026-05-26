@@ -186,5 +186,26 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026042200, 'aiprovider', 'datacurso');
     }
 
+    if ($oldversion < 2026042902) {
+        $obsoletekeys = [
+            'ratelimit_local_assign_ai_allowedusers_enable',
+            'ratelimit_local_assign_ai_allowedusers',
+            'ratelimit_local_coursegen_allowedusers_enable',
+            'ratelimit_local_coursegen_coursecreators',
+            'ratelimit_local_coursegen_activitycreators',
+            'ratelimit_local_datacurso_ratings_allowedusers_enable',
+            'ratelimit_local_datacurso_ratings_courseanalysts',
+            'ratelimit_local_datacurso_ratings_generalanalysts',
+            'ratelimit_report_lifestory_allowedusers_enable',
+            'ratelimit_report_lifestory_allowedusers',
+        ];
+
+        foreach ($obsoletekeys as $key) {
+            unset_config($key, 'aiprovider_datacurso');
+        }
+
+        upgrade_plugin_savepoint(true, 2026042902, 'aiprovider', 'datacurso');
+    }
+
     return true;
 }

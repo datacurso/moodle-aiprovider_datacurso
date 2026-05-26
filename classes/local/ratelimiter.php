@@ -25,50 +25,6 @@ namespace aiprovider_datacurso\local;
  */
 class ratelimiter {
     /**
-     * Determine if the given user is allowed to use a service (and optional action).
-     *
-     * This checks, in order:
-     * - Empty service id: allow.
-     * - Site administrators: always allow.
-     * - If user restriction for the service is disabled: allow.
-     * - Otherwise, only allow users listed in the configured allowed users list
-     *   for the specific service/action pair.
-     *
-     * @param string $serviceid Service identifier such as 'local_coursegen'.
-     * @param int $userid Moodle user id.
-     * @param string|null $actionpath Optional HTTP path used to route the request.
-     * @return bool True if the user is allowed to access the service, false otherwise.
-     */
-    public function is_user_allowed(string $serviceid, int $userid, ?string $actionpath = null): bool {
-        if (empty($serviceid)) {
-            return true;
-        }
-
-        if (is_siteadmin($userid)) {
-            return true;
-        }
-
-        if (!$this->is_user_restriction_enabled($serviceid)) {
-            return true;
-        }
-
-        // Delegate to the ratelimit settings class for this service in order to
-        // keep per-action user lists isolated.
-        $alloweduserids = \aiprovider_datacurso\local\ratelimit\ratelimit_settings::get_allowed_users_for_service(
-            $serviceid,
-            $actionpath
-        );
-
-        // When there is no specific list for this service/action, treat it as
-        // unrestricted.
-        if (empty($alloweduserids)) {
-            return true;
-        }
-
-        return in_array($userid, $alloweduserids, true);
-    }
-
-    /**
      * Cached pre-check using only DB data. No remote calls. No writes.
      *
      * @param string|null $serviceid Service identifier such as 'local_coursegen'.
@@ -260,17 +216,6 @@ class ratelimiter {
      */
     private function is_rate_limit_enabled(string $serviceid): bool {
         $value = get_config('aiprovider_datacurso', "ratelimit_{$serviceid}_enable");
-        return (int)$value === 1;
-    }
-
-    /**
-     * Determine whether the user restriction is enabled for the service.
-     *
-     * @param string $serviceid Service identifier such as 'local_coursegen'.
-     * @return bool True when the user restriction is enabled, false otherwise.
-     */
-    private function is_user_restriction_enabled(string $serviceid): bool {
-        $value = get_config('aiprovider_datacurso', "ratelimit_{$serviceid}_allowedusers_enable");
         return (int)$value === 1;
     }
 
