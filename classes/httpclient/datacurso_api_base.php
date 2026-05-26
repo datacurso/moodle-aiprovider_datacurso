@@ -222,7 +222,7 @@ class datacurso_api_base {
 
         // Post-success syncs: only after a valid, non-error response.
         if (!empty($serviceid)) {
-            $ratelimiter->sync_after_success($serviceid, $userid, $path);
+            $ratelimiter->increment_local_usage((string)$serviceid, (int)$userid);
         }
 
         return $decodedresponse;

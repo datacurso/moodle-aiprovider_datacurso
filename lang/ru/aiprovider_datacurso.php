@@ -276,4 +276,5 @@ $string['ws_token_label'] = 'Токен Datacurso';
 $string['ws_tokenexists'] = 'Токен существует';
 $string['ws_user'] = 'Сервисный пользователь';
 $string['ws_userassigned'] = 'Роль назначена пользователю';
+$string['downloadexportcsv'] = 'Скачать CSV';
 $string['year'] = 'год';

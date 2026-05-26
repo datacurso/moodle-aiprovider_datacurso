@@ -57,6 +57,54 @@ export const init = async () => {
   const saveLimit = (limit) =>
     sessionStorage.setItem("consumptionLimit", limit);
 
+  // Store consumptions in memory for CSV export
+  let cachedConsumptions = [];
+
+  // Export to CSV
+  const exportToCSV = () => {
+    if (!cachedConsumptions.length) {
+      return;
+    }
+
+    const headers = [
+      'ID',
+      'Usuario',
+      'Accion',
+      'Servicio',
+      'Creditos utilizados',
+      'Saldo restante',
+      'Fecha'
+    ];
+
+    const rows = cachedConsumptions.map(c => [
+      c.id_consumption || '',
+      c.username || '',
+      c.action || '',
+      c.id_service || '',
+      c.cant_tokens || '',
+      c.balance || '',
+      c.date || ''
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `consumos_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  // Bind export button
+  const exportCsvBtn = document.getElementById('export-csv');
+  if (exportCsvBtn) {
+    exportCsvBtn.addEventListener('click', exportToCSV);
+  }
+
   const updateSortIndicators = () => {
     document
       .querySelectorAll(`${tableRegionSelector} .sort-icon`)
@@ -240,6 +288,7 @@ export const init = async () => {
     const response = await getConsumptionHistory(args);
 
     const consumptions = response?.consumption || [];
+    cachedConsumptions = consumptions; // Cache for CSV export
     await renderTable(consumptions);
 
     const pagination = response?.pagination;
