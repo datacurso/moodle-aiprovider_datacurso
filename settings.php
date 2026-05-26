@@ -91,7 +91,12 @@ if ($hassiteconfig) {
                 10,
                 PARAM_INT
             ));
-            $settings->hide_if("aiprovider_datacurso/ratelimit_{$sid}_limit", "aiprovider_datacurso/ratelimit_{$sid}_enable", 'eq', 0);
+            $settings->hide_if(
+                "aiprovider_datacurso/ratelimit_{$sid}_limit",
+                "aiprovider_datacurso/ratelimit_{$sid}_enable",
+                'eq',
+                0
+            );
 
             // Window: duration + unit.
             $settings->add(new \aiprovider_datacurso\admin_setting_duration_unit(
@@ -100,7 +105,12 @@ if ($hassiteconfig) {
                 new lang_string('ratelimit_window_desc', 'aiprovider_datacurso'),
                 json_encode(['value' => 1, 'unit' => 'hours'])
             ));
-            $settings->hide_if("aiprovider_datacurso/ratelimit_{$sid}_window", "aiprovider_datacurso/ratelimit_{$sid}_enable", 'eq', 0);
+            $settings->hide_if(
+                "aiprovider_datacurso/ratelimit_{$sid}_window",
+                "aiprovider_datacurso/ratelimit_{$sid}_enable",
+                'eq',
+                0
+            );
         }
     }
 

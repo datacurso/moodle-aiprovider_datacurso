@@ -27,6 +27,8 @@ namespace aiprovider_datacurso;
 final class provider_test extends \basic_testcase {
     /**
      * Ensure provider no longer exposes legacy user-mapping API.
+     *
+     * @coversNothing
      */
     public function test_provider_has_no_ratelimit_settings_mapping_method(): void {
         $this->assertFalse(method_exists(provider::class, 'get_ratelimit_settings_class'));

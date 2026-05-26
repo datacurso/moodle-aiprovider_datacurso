@@ -123,7 +123,7 @@ class ratelimiter {
         $this->update_usage_record($record, $tokensused, $activewindowstart, $currenttime);
     }
 
-     /**
+    /**
      * Immediately increment the local token usage counter by 1 for the given service/user.
      *
      * This provides a reliable, remote-independent guard: even if the subsequent remote
@@ -175,7 +175,7 @@ class ratelimiter {
         $newcount = (int)($record->tokensused ?? 0) + 1;
         $this->update_usage_record($record, $newcount, $activewindowstart, $now);
     }
-    
+
     /**
      * Resolve the configured service id from a request path.
      *

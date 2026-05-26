@@ -276,5 +276,5 @@ $string['ws_token_label'] = 'Token Datacurso';
 $string['ws_tokenexists'] = 'Token existe';
 $string['ws_user'] = 'Usuário do serviço';
 $string['ws_userassigned'] = 'Função atribuída ao usuário';
-$string['year'] = 'ano';
 $string['downloadexportcsv'] = 'Baixar CSV';
+$string['year'] = 'ano';

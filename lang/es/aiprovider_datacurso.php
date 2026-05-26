@@ -303,6 +303,6 @@ $string['ws_user'] = 'Usuario del servicio';
 $string['ws_user_firstname'] = 'Datacurso';
 $string['ws_user_lastname'] = 'Servicio';
 $string['ws_userassigned'] = 'Rol asignado al usuario';
+$string['downloadexportcsv'] = 'Exportar CSV';
 $string['year'] = 'año';
 $string['years'] = 'Años';
-$string['downloadexportcsv'] = 'Exportar CSV';
