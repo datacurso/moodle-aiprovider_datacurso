@@ -27,10 +27,10 @@ namespace aiprovider_datacurso\httpclient;
  */
 class ai_course_api extends datacurso_api_base {
     /** Default base URL for the standard DataCurso course AI service. */
-    private const DEFAULT_BASE_URL = 'https://course-ai.datacurso.com';
+    private const DEFAULT_BASE_URL = 'https://course-ai-v2.datacurso.com/api/v1';
 
     /** Default base URL for the EU-hosted DataCurso course AI service. */
-    private const DEFAULT_BASE_URL_EU = 'https://eu.course-ai.datacurso.com';
+    private const DEFAULT_BASE_URL_EU = 'https://course-ai-v2.datacurso.com/api/v1';
 
     /**
      * Constructor.
