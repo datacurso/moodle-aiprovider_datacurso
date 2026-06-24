@@ -90,14 +90,23 @@ abstract class abstract_processor extends process_base {
 
         $client = \core\di::get(http_client::class);
 
+        $endpoint = $this->get_endpoint();
+
+        // Forward the configured per-service rate limit so the Python service can
+        // enforce it centrally (these core actions map to the 'aiprovider_datacurso' service).
+        $headers = [
+            'Content-Type' => 'application/json',
+            'License-Key' => $licensekey,
+        ];
+        $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($endpoint->getPath());
+        $ratelimiter = new \aiprovider_datacurso\local\ratelimiter();
+        $headers = array_merge($headers, $ratelimiter->get_rate_limit_header_map($serviceid));
+
         try {
             $response = $client->post(
-                $this->get_endpoint(),
+                $endpoint,
                 [
-                    RequestOptions::HEADERS => [
-                        'Content-Type' => 'application/json',
-                        'License-Key' => $licensekey,
-                    ],
+                    RequestOptions::HEADERS => $headers,
                     RequestOptions::JSON => $this->build_request_body($userid),
                     RequestOptions::HTTP_ERRORS => false,
                 ]
