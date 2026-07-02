@@ -64,6 +64,26 @@ class datacurso_api_base {
     }
 
     /**
+     * Returns a persistent site UUID used to identify this Moodle site across the AI services.
+     *
+     * Unlike md5($CFG->wwwroot), this UUID is stable even if the site URL changes, and is what the
+     * services use as `site_id` to isolate per-user rate-limit counters between sites that share the
+     * same license (Moodle user ids are only unique within a site).
+     *
+     * @return string
+     */
+    public static function get_site_uuid(): string {
+        $siteuuid = get_config('aiprovider_datacurso', 'site_uuid');
+        if (!empty($siteuuid)) {
+            return (string) $siteuuid;
+        }
+
+        $siteuuid = \core\uuid::generate();
+        set_config('site_uuid', $siteuuid, 'aiprovider_datacurso');
+        return $siteuuid;
+    }
+
+    /**
      * Download a file from Datacurso API.
      *
      * @param string $endpoint Relative endpoint (starting with "/").
@@ -148,7 +168,7 @@ class datacurso_api_base {
         $response = null;
 
         $defaultpayload = [
-            'site_id' => md5($CFG->wwwroot),
+            'site_id' => self::get_site_uuid(),
             'userid' => $payload['userid'] ?? $USER->id,
             'timezone' => \core_date::get_user_timezone(),
             'lang' => $payload['lang'] ?? current_language(),
