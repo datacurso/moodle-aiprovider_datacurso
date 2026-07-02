@@ -71,7 +71,7 @@ $string['enableglobalratelimit'] = 'Habilitar límite global';
 $string['enableglobalratelimit_desc'] = 'Si está habilitado, se aplicará un límite de solicitudes global por hora para todos los usuarios.';
 $string['enableuserratelimit'] = 'Habilitar límite por usuario';
 $string['enableuserratelimit_desc'] = 'Si está habilitado, cada usuario tendrá un límite de solicitudes por hora.';
-$string['error_ratelimit_exceeded'] = 'Se ha superado el límite de consumos permitidos. Por favor, inténtalo de nuevo a las {$a}.';
+$string['error_ratelimit_exceeded'] = 'Se ha superado el límite de consumos permitidos. Por favor, inténtalo de nuevo el {$a}.';
 $string['error_webservice_not_configured'] = 'No es posible continuar con esta acción porque el servicio web de Datacurso que proporciona datos contextuales a la IA no está configurado. Complete la configuración automática en <a href="{$a->url}">Configuración de servicio web Datacurso</a> e inténtelo de nuevo. O contacte a su administrador para más información.';
 $string['errorgetbalancecredits'] = 'No se pudo recuperar el saldo de créditos de la API externa';
 $string['errorinitinformation'] = 'No se pudo obtener la información inicial.';
