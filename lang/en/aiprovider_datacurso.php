@@ -182,12 +182,16 @@ $string['privacy:metadata:aiprovider_datacurso_rlimit:userid'] = 'User ID relate
 $string['privacy:metadata:aiprovider_datacurso_rlimit:windowstart'] = 'Window start timestamp used to compute consumption limits.';
 $string['ratelimit_creditperaction'] = 'Credits per action';
 $string['ratelimit_creditperaction_desc'] = 'Estimated maximum credits a single action of this plugin can cost. A request is blocked upfront when the credits remaining in the window are fewer than this value.';
+$string['ratelimit_creditperaction_help'] = 'Estimated maximum credits a single action of this plugin can cost. A request is blocked upfront when the credits remaining in the window are fewer than this value.';
 $string['ratelimit_enable'] = 'Enable rate limit';
 $string['ratelimit_enable_desc'] = 'If enabled, this plugin enforces per-user credit limits. Access control remains managed by Moodle permissions.';
+$string['ratelimit_enable_help'] = 'If enabled, this plugin enforces per-user credit limits. Access control remains managed by Moodle permissions.';
 $string['ratelimit_limit'] = 'Credit limit per window';
 $string['ratelimit_limit_desc'] = 'Maximum number of credits a user can consume within the selected time window. 0 for unlimited.';
+$string['ratelimit_limit_help'] = 'Maximum number of credits a user can consume within the selected time window. 0 for unlimited.';
 $string['ratelimit_window'] = 'Time window';
 $string['ratelimit_window_desc'] = 'Select the duration and unit for the rate limit window.';
+$string['ratelimit_window_help'] = 'Select the duration and unit for the rate limit window.';
 $string['ratelimits_heading'] = 'Per-plugin rate limits';
 $string['ratelimits_heading_desc'] = 'Configure per-user rate limits for each plugin using the Datacurso provider. Access control is handled by Moodle permissions.';
 $string['ratelimits_moved_desc'] = 'Per-plugin rate limits are configured in the <a href="{$a->url}">Datacurso AI Provider → Configuration</a> page.';

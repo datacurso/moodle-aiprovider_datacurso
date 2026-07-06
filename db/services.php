@@ -110,13 +110,4 @@ $functions = [
         'ajax'        => true,
         'capabilities' => 'aiprovider/datacurso:viewreports',
     ],
-    'aiprovider_datacurso_ratelimit_save_config' => [
-        'classname'   => 'aiprovider_datacurso\external\ratelimit_config_api',
-        'methodname'  => 'save_config',
-        'classpath'   => '',
-        'description' => 'Save the per-plugin rate limit configuration (limit, window, credits per action).',
-        'type'        => 'write',
-        'ajax'        => true,
-        'capabilities' => 'aiprovider/datacurso:configurews',
-    ],
 ];

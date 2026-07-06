@@ -182,12 +182,16 @@ $string['privacy:metadata:aiprovider_datacurso_rlimit:userid'] = 'El usuario al 
 $string['privacy:metadata:aiprovider_datacurso_rlimit:windowstart'] = 'Inicio de la ventana usada para calcular el consumo.';
 $string['ratelimit_creditperaction'] = 'Créditos por acción';
 $string['ratelimit_creditperaction_desc'] = 'Créditos máximos estimados que puede costar una sola acción de este plugin. La solicitud se bloquea de antemano cuando los créditos restantes en la ventana son menos que este valor.';
+$string['ratelimit_creditperaction_help'] = 'Créditos máximos estimados que puede costar una sola acción de este plugin. La solicitud se bloquea de antemano cuando los créditos restantes en la ventana son menos que este valor.';
 $string['ratelimit_enable'] = 'Habilitar límite';
 $string['ratelimit_enable_desc'] = 'Si está habilitado, se aplicará el límite de créditos por usuario para este plugin.';
+$string['ratelimit_enable_help'] = 'Si está habilitado, se aplicará el límite de créditos por usuario para este plugin.';
 $string['ratelimit_limit'] = 'Créditos por ventana';
 $string['ratelimit_limit_desc'] = 'Número máximo de créditos que un usuario puede consumir dentro de la ventana de tiempo seleccionada. 0 para ilimitado.';
+$string['ratelimit_limit_help'] = 'Número máximo de créditos que un usuario puede consumir dentro de la ventana de tiempo seleccionada. 0 para ilimitado.';
 $string['ratelimit_window'] = 'Ventana de tiempo';
 $string['ratelimit_window_desc'] = 'Seleccione la duración y unidad para la ventana del límite.';
+$string['ratelimit_window_help'] = 'Seleccione la duración y unidad para la ventana del límite.';
 $string['ratelimits_heading'] = 'Límites por plugin';
 $string['ratelimits_heading_desc'] = 'Configura límites por usuario para cada plugin que use el proveedor Datacurso.';
 $string['ratelimits_moved_desc'] = 'Los límites por plugin se configuran en la página <a href="{$a->url}">Datacurso AI Provider → Configuración</a>.';
