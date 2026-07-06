@@ -162,13 +162,13 @@ class provider extends \core_ai\provider {
                 ['key' => 'default', 'name' => $s('action_default'), 'default' => 1],
             ],
             'local_forum_ai' => [
-                ['key' => 'default', 'name' => $s('action_default'), 'default' => 5],
+                ['key' => 'default', 'name' => $s('action_default'), 'default' => 3],
             ],
             'report_lifestory' => [
-                ['key' => 'default', 'name' => $s('action_default'), 'default' => 1],
+                ['key' => 'default', 'name' => $s('action_default'), 'default' => 5],
             ],
             'local_assign_ai' => [
-                ['key' => 'default', 'name' => $s('action_default'), 'default' => 5],
+                ['key' => 'default', 'name' => $s('action_default'), 'default' => 3],
             ],
             'local_dttutor' => [
                 ['key' => 'default', 'name' => $s('action_default'), 'default' => 2],
