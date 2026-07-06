@@ -93,10 +93,12 @@ abstract class abstract_processor extends process_base {
         // Forward the per-service rate-limit config so plugins-ai-server enforces the credit limit
         // for the provider's own actions (text/summary/image) and accumulates the window counter.
         // Returns an empty array when the limit is disabled for this service.
-        $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path(
-            $this->get_endpoint()->getPath()
-        );
-        $ratelimitheaders = (new \aiprovider_datacurso\local\ratelimiter())->get_rate_limit_header_map($serviceid);
+        $path = $this->get_endpoint()->getPath();
+        $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
+        // Resolve the sub-action (text vs image) so the look-ahead credit estimate is correct.
+        $actionkey = \aiprovider_datacurso\local\ratelimiter::resolve_action_key($serviceid, $path);
+        $ratelimitheaders = (new \aiprovider_datacurso\local\ratelimiter())
+            ->get_rate_limit_header_map($serviceid, $actionkey);
 
         try {
             $response = $client->post(

@@ -189,6 +189,44 @@ class provider extends \core_ai\provider {
     }
 
     /**
+     * Resolve the configured (worst-case) credit for a sub-action of a service.
+     *
+     * Reads the admin-saved JSON map `ratelimit_{sid}_creditperaction` ({key: credits}).
+     * Falls back to the catalog default for the key, then to the service's 'default'
+     * action, then to 1. This is the look-ahead value sent as X-RateLimit-MaxPerAction
+     * so the token-manager can block before overshooting the limit.
+     *
+     * @param string $serviceid Service identifier such as 'local_coursegen'.
+     * @param string $actionkey Sub-action key such as 'course_image' (defaults to 'default').
+     * @return int Estimated credits for this action (>= 1).
+     */
+    public static function get_credit_for_action(string $serviceid, string $actionkey = 'default'): int {
+        $actions = self::get_actions_for_service($serviceid);
+
+        // Admin-saved overrides, if any.
+        $stored = json_decode((string) get_config('aiprovider_datacurso', "ratelimit_{$serviceid}_creditperaction"), true);
+        $stored = is_array($stored) ? $stored : [];
+
+        // Catalog defaults keyed by action, for fallback.
+        $defaults = [];
+        foreach ($actions as $action) {
+            $defaults[$action['key']] = (int) $action['default'];
+        }
+
+        // Prefer the requested key; fall back to 'default'; then to any first action; then 1.
+        foreach ([$actionkey, 'default'] as $key) {
+            if (isset($stored[$key])) {
+                return max(1, (int) $stored[$key]);
+            }
+            if (isset($defaults[$key])) {
+                return max(1, $defaults[$key]);
+            }
+        }
+
+        return $defaults ? max(1, (int) reset($defaults)) : 1;
+    }
+
+    /**
      * Return all available AI actions for this provider.
      *
      * @return array

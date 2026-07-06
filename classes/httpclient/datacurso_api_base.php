@@ -153,9 +153,15 @@ class datacurso_api_base {
         ];
 
         // Forward the configured per-service rate limit to the Python service, which enforces it
-        // centrally against the user's accumulated credit consumption within the window.
+        // centrally against the user's accumulated credit consumption within the window. The
+        // resolved sub-action determines the look-ahead credit estimate (X-RateLimit-MaxPerAction).
+        $actionkey = \aiprovider_datacurso\local\ratelimiter::resolve_action_key(
+            $serviceid,
+            $path,
+            is_array($payload) ? $payload : []
+        );
         $ratelimiter = new \aiprovider_datacurso\local\ratelimiter();
-        $baseheaders = array_merge($baseheaders, $ratelimiter->get_rate_limit_headers($serviceid));
+        $baseheaders = array_merge($baseheaders, $ratelimiter->get_rate_limit_headers($serviceid, $actionkey));
 
         $headers = array_merge($baseheaders, $headers);
 
