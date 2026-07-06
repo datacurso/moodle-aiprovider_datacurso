@@ -207,5 +207,17 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026042902, 'aiprovider', 'datacurso');
     }
 
+    if ($oldversion < 2026062601) {
+        // Rate limit enforcement moved to the Datacurso service (token-manager), which now
+        // accumulates the per-plugin credit consumption. The local per-window usage table is
+        // no longer used.
+        $table = new xmldb_table('aiprovider_datacurso_rlimit');
+        if ($dbman->table_exists($table)) {
+            $dbman->drop_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2026062601, 'aiprovider', 'datacurso');
+    }
+
     return true;
 }

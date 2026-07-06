@@ -64,6 +64,26 @@ class datacurso_api_base {
     }
 
     /**
+     * Returns a persistent site UUID used to identify this Moodle site across the AI services.
+     *
+     * Unlike md5($CFG->wwwroot), this UUID is stable even if the site URL changes, and is what the
+     * services use as `site_id` to isolate per-user rate-limit counters between sites that share the
+     * same license (Moodle user ids are only unique within a site).
+     *
+     * @return string
+     */
+    public static function get_site_uuid(): string {
+        $siteuuid = get_config('aiprovider_datacurso', 'site_uuid');
+        if (!empty($siteuuid)) {
+            return (string) $siteuuid;
+        }
+
+        $siteuuid = \core\uuid::generate();
+        set_config('site_uuid', $siteuuid, 'aiprovider_datacurso');
+        return $siteuuid;
+    }
+
+    /**
      * Download a file from Datacurso API.
      *
      * @param string $endpoint Relative endpoint (starting with "/").
@@ -123,25 +143,25 @@ class datacurso_api_base {
             $path = '/' . $path;
         }
 
-        // Enforce per-service rate limit using cached DB pre-check.
-        // Service could be null if the path is not mapped.
+        // Resolve the configured service for this path; null when the path is not mapped.
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
         $this->enforce_webservice_requirements($serviceid);
-        $ratelimiter = new \aiprovider_datacurso\local\ratelimiter();
-
-        $userid = (int)($payload['userid'] ?? $USER->id);
-
-        if (!empty($serviceid) && !$ratelimiter->precheck($serviceid, $userid)) {
-            $remaining = $ratelimiter->get_time_until_next_window((string)$serviceid, (int)$userid);
-            $retrytimestamp = time() + max(0, (int)$remaining);
-            $retryat = userdate($retrytimestamp, get_string('strftimedatetime', 'langconfig'));
-            throw new \moodle_exception('error_ratelimit_exceeded', 'aiprovider_datacurso', '', $retryat);
-        }
 
         $curl = new \curl();
         $baseheaders = [
             'License-Key: ' . $this->licensekey,
         ];
+
+        // Forward the configured per-service rate limit to the Python service, which enforces it
+        // centrally against the user's accumulated credit consumption within the window. The
+        // resolved sub-action determines the look-ahead credit estimate (X-RateLimit-MaxPerAction).
+        $actionkey = \aiprovider_datacurso\local\ratelimiter::resolve_action_key(
+            $serviceid,
+            $path,
+            is_array($payload) ? $payload : []
+        );
+        $ratelimiter = new \aiprovider_datacurso\local\ratelimiter();
+        $baseheaders = array_merge($baseheaders, $ratelimiter->get_rate_limit_headers($serviceid, $actionkey));
 
         $headers = array_merge($baseheaders, $headers);
 
@@ -154,7 +174,7 @@ class datacurso_api_base {
         $response = null;
 
         $defaultpayload = [
-            'site_id' => md5($CFG->wwwroot),
+            'site_id' => self::get_site_uuid(),
             'userid' => $payload['userid'] ?? $USER->id,
             'timezone' => \core_date::get_user_timezone(),
             'lang' => $payload['lang'] ?? current_language(),
@@ -195,11 +215,20 @@ class datacurso_api_base {
         $httpcode = $curl->get_info()['http_code'] ?? 0;
         if ($httpcode == 403) {
             $decodedresponse = json_decode($response, true);
-            if ($decodedresponse['detail'] == 'tokens_not_sufficient') {
+            $detail = $decodedresponse['detail'] ?? '';
+            if ($detail === 'rate_limit_exceeded') {
+                $resetat = (int)($decodedresponse['reset_at'] ?? 0);
+                $retryat = $resetat > 0
+                    ? userdate($resetat, get_string('strftimedatetime', 'langconfig'))
+                    : '';
+                debugging('Rate limit exceeded for this service', DEBUG_DEVELOPER);
+                throw new \moodle_exception('error_ratelimit_exceeded', 'aiprovider_datacurso', '', $retryat);
+            }
+            if ($detail === 'tokens_not_sufficient') {
                 debugging('Not enough tokens to make this request', DEBUG_DEVELOPER);
                 throw new \moodle_exception('notenoughtokens', 'aiprovider_datacurso');
             }
-            if ($decodedresponse['detail'] == 'license_not_allowed') {
+            if ($detail === 'license_not_allowed') {
                 debugging('License not allowed to make this request', DEBUG_DEVELOPER);
                 throw new \moodle_exception('license_not_allowed', 'aiprovider_datacurso');
             }
@@ -217,11 +246,6 @@ class datacurso_api_base {
         if (json_last_error() !== JSON_ERROR_NONE) {
             debugging('JSON decode error: ' . json_last_error_msg() . '. Response: ' . $response, DEBUG_DEVELOPER);
             throw new \moodle_exception('jsondecodeerror', 'aiprovider_datacurso', '', json_last_error_msg());
-        }
-
-        // Post-success syncs: only after a valid, non-error response.
-        if (!empty($serviceid)) {
-            $ratelimiter->sync_after_success($serviceid, $userid, $path);
         }
 
         return $decodedresponse;
