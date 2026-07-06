@@ -37,7 +37,6 @@ require_once($CFG->libdir . '/formslib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class config_form extends \moodleform {
-
     /** @var string[] Allowed window units. */
     private const UNITS = ['minutes', 'hours', 'days'];
 
@@ -68,14 +67,12 @@ class config_form extends \moodleform {
             $mform->setExpanded("head_{$sid}", true);
 
             // Enable checkbox.
-            $mform->addElement('advcheckbox', "enable[{$sid}]",
-                get_string('ratelimit_enable', 'aiprovider_datacurso'));
+            $mform->addElement('advcheckbox', "enable[{$sid}]", get_string('ratelimit_enable', 'aiprovider_datacurso'));
             $mform->setType("enable[{$sid}]", PARAM_INT);
             $mform->addHelpButton("enable[{$sid}]", 'ratelimit_enable', 'aiprovider_datacurso');
 
             // Credit limit per window.
-            $mform->addElement('text', "limit[{$sid}]",
-                get_string('ratelimit_limit', 'aiprovider_datacurso'), ['size' => 8]);
+            $mform->addElement('text', "limit[{$sid}]", get_string('ratelimit_limit', 'aiprovider_datacurso'), ['size' => 8]);
             $mform->setType("limit[{$sid}]", PARAM_INT);
             $mform->addHelpButton("limit[{$sid}]", 'ratelimit_limit', 'aiprovider_datacurso');
             $mform->hideIf("limit[{$sid}]", "enable[{$sid}]");
@@ -85,19 +82,26 @@ class config_form extends \moodleform {
                 $mform->createElement('text', "windowvalue[{$sid}]", '', ['size' => 6]),
                 $mform->createElement('select', "windowunit[{$sid}]", '', $unitoptions),
             ];
-            $mform->addGroup($group, "windowgroup_{$sid}",
-                get_string('ratelimit_window', 'aiprovider_datacurso'), ' ', false);
+            $mform->addGroup($group, "windowgroup_{$sid}", get_string('ratelimit_window', 'aiprovider_datacurso'), ' ', false);
             $mform->setType("windowvalue[{$sid}]", PARAM_INT);
             $mform->addHelpButton("windowgroup_{$sid}", 'ratelimit_window', 'aiprovider_datacurso');
             $mform->hideIf("windowgroup_{$sid}", "enable[{$sid}]");
 
             // Credits per action: bold title in the label column, description alongside (no empty column).
-            $mform->addElement('static', "cpahead_{$sid}",
-                \html_writer::tag('strong', get_string('ratelimit_creditperaction', 'aiprovider_datacurso'),
-                    ['class' => 'h5']),
-                \html_writer::tag('span',
+            $mform->addElement(
+                'static',
+                "cpahead_{$sid}",
+                \html_writer::tag(
+                    'strong',
+                    get_string('ratelimit_creditperaction', 'aiprovider_datacurso'),
+                    ['class' => 'h5']
+                ),
+                \html_writer::tag(
+                    'span',
                     get_string('ratelimit_creditperaction_desc', 'aiprovider_datacurso'),
-                    ['class' => 'text-muted']));
+                    ['class' => 'text-muted']
+                )
+            );
             $mform->hideIf("cpahead_{$sid}", "enable[{$sid}]");
 
             foreach (provider::get_actions_for_service($sid) as $action) {
