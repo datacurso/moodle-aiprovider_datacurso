@@ -28,7 +28,6 @@ use moodle_url;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class hook_callbacks {
-
     /**
      * Add a "Datacurso AI Provider" item to the primary navigation (top bar), next to
      * Site administration. Visible only to users who can view the provider reports/config.

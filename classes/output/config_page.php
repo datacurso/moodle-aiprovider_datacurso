@@ -33,7 +33,6 @@ use aiprovider_datacurso\provider;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class config_page implements renderable, templatable {
-
     /** @var string[] Selectable window units. */
     private const UNITS = ['minutes', 'hours', 'days'];
 

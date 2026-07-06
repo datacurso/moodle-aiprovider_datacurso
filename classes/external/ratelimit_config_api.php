@@ -36,7 +36,6 @@ require_once($CFG->libdir . '/externallib.php');
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class ratelimit_config_api extends external_api {
-
     /** @var string[] Allowed window units. */
     private const UNITS = ['minutes', 'hours', 'days'];
 
