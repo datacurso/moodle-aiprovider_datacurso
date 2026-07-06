@@ -142,9 +142,9 @@ class provider extends \core_ai\provider {
         $s = static fn(string $id): \lang_string => new \lang_string($id, 'aiprovider_datacurso');
         return [
             'local_coursegen' => [
-                ['key' => 'course_image', 'name' => $s('action_course_image'), 'default' => 1500],
+                ['key' => 'course_image', 'name' => $s('action_course_image'), 'default' => 2000],
                 ['key' => 'course_noimage', 'name' => $s('action_course_noimage'), 'default' => 1000],
-                ['key' => 'activity_image', 'name' => $s('action_activity_image'), 'default' => 150],
+                ['key' => 'activity_image', 'name' => $s('action_activity_image'), 'default' => 100],
                 ['key' => 'activity_noimage', 'name' => $s('action_activity_noimage'), 'default' => 50],
             ],
             'aiprovider_datacurso' => [
@@ -152,7 +152,7 @@ class provider extends \core_ai\provider {
                 ['key' => 'image', 'name' => $s('action_image'), 'default' => 30],
             ],
             'local_coursedynamicrules' => [
-                ['key' => 'activity_image', 'name' => $s('action_activity_image'), 'default' => 150],
+                ['key' => 'activity_image', 'name' => $s('action_activity_image'), 'default' => 100],
                 ['key' => 'activity_noimage', 'name' => $s('action_activity_noimage'), 'default' => 50],
             ],
             'local_datacurso_ratings' => [
