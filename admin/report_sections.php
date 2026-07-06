@@ -40,12 +40,19 @@ require_capability('aiprovider/datacurso:viewreports', $context);
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/ai/provider/datacurso/admin/report_sections.php'));
 $PAGE->set_pagelayout('report');
+$PAGE->set_title('Datacurso AI Provider Reports');
 
-// Get the current tab parameter.
-$tab = optional_param('tab', 'consumption', PARAM_ALPHAEXT);
+// Get the current tab parameter. Configuration is the default landing tab.
+$tab = optional_param('tab', 'config', PARAM_ALPHAEXT);
 
 // Define tabs for navigation.
 $tabs = [];
+$tabs[] = new tabobject(
+    'config',
+    new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'config']),
+    get_string('link_config', 'aiprovider_datacurso')
+);
+
 $tabs[] = new tabobject(
     'consumption',
     new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'consumption']),
@@ -76,6 +83,13 @@ echo $OUTPUT->tabtree($tabs, $tab);
 
 // Load tab content.
 switch ($tab) {
+    case 'config':
+        // Render the per-plugin rate limit configuration form.
+        $page = new \aiprovider_datacurso\output\config_page();
+        echo $OUTPUT->render($page);
+        $PAGE->requires->js_call_amd('aiprovider_datacurso/config', 'init');
+        break;
+
     case 'consumption':
         // Render AI consumption history page.
         $page = new \aiprovider_datacurso\output\consumption_page();

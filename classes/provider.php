@@ -130,6 +130,65 @@ class provider extends \core_ai\provider {
     }
 
     /**
+     * Per-service "credits per action" catalog.
+     *
+     * Some services have several sub-actions with their own credit cost (e.g. the course creator).
+     * Each entry is {key, name (lang string), default}. Single-action services expose one 'default'.
+     * Drives the configuration UI and the stored JSON map ratelimit_{service}_creditperaction.
+     *
+     * @return array<string, array<int, array{key: string, name: \lang_string|string, default: int}>>
+     */
+    public static function get_service_actions(): array {
+        $s = static fn(string $id): \lang_string => new \lang_string($id, 'aiprovider_datacurso');
+        return [
+            'local_coursegen' => [
+                ['key' => 'course_image', 'name' => $s('action_course_image'), 'default' => 1500],
+                ['key' => 'course_noimage', 'name' => $s('action_course_noimage'), 'default' => 1000],
+                ['key' => 'activity_image', 'name' => $s('action_activity_image'), 'default' => 150],
+                ['key' => 'activity_noimage', 'name' => $s('action_activity_noimage'), 'default' => 50],
+            ],
+            'aiprovider_datacurso' => [
+                ['key' => 'text', 'name' => $s('action_text'), 'default' => 1],
+                ['key' => 'image', 'name' => $s('action_image'), 'default' => 30],
+            ],
+            'local_coursedynamicrules' => [
+                ['key' => 'activity_image', 'name' => $s('action_activity_image'), 'default' => 150],
+                ['key' => 'activity_noimage', 'name' => $s('action_activity_noimage'), 'default' => 50],
+            ],
+            'local_datacurso_ratings' => [
+                ['key' => 'default', 'name' => $s('action_default'), 'default' => 1],
+            ],
+            'local_socialcert' => [
+                ['key' => 'default', 'name' => $s('action_default'), 'default' => 1],
+            ],
+            'local_forum_ai' => [
+                ['key' => 'default', 'name' => $s('action_default'), 'default' => 5],
+            ],
+            'report_lifestory' => [
+                ['key' => 'default', 'name' => $s('action_default'), 'default' => 1],
+            ],
+            'local_assign_ai' => [
+                ['key' => 'default', 'name' => $s('action_default'), 'default' => 5],
+            ],
+            'local_dttutor' => [
+                ['key' => 'default', 'name' => $s('action_default'), 'default' => 2],
+            ],
+        ];
+    }
+
+    /**
+     * Return the credits-per-action catalog for a single service (empty if none).
+     *
+     * @param string $serviceid
+     * @return array<int, array{key: string, name: \lang_string|string, default: int}>
+     */
+    public static function get_actions_for_service(string $serviceid): array {
+        return self::get_service_actions()[$serviceid] ?? [
+            ['key' => 'default', 'name' => new \lang_string('action_default', 'aiprovider_datacurso'), 'default' => 10],
+        ];
+    }
+
+    /**
      * Return all available AI actions for this provider.
      *
      * @return array

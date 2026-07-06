@@ -53,6 +53,17 @@ export function webserviceGetStatus() {
 }
 
 /**
+ * Save the per-plugin rate limit configuration.
+ * @param {Array} services - Rows: {sid, enable, limit, windowvalue, windowunit, creditperaction}.
+ */
+export function saveRateLimitConfig(services) {
+    return Ajax.call([{
+        methodname: 'aiprovider_datacurso_ratelimit_save_config',
+        args: { services: services }
+    }])[0];
+}
+
+/**
  * Get consumption history for Datacurso.
  * @param {Object} args - The arguments for the consumption history.
  */
