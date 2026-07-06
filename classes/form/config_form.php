@@ -93,7 +93,8 @@ class config_form extends \moodleform {
 
             // Credits per action: bold title in the label column, description alongside (no empty column).
             $mform->addElement('static', "cpahead_{$sid}",
-                \html_writer::tag('strong', get_string('ratelimit_creditperaction', 'aiprovider_datacurso')),
+                \html_writer::tag('strong', get_string('ratelimit_creditperaction', 'aiprovider_datacurso'),
+                    ['class' => 'h5']),
                 \html_writer::tag('span',
                     get_string('ratelimit_creditperaction_desc', 'aiprovider_datacurso'),
                     ['class' => 'text-muted']));
