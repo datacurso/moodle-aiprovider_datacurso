@@ -86,6 +86,8 @@ $string['error_webservice_not_configured'] = 'No es posible continuar con esta a
 $string['errorgetbalancecredits'] = 'No se pudo recuperar el saldo de créditos de la API externa';
 $string['errorinitinformation'] = 'No se pudo obtener la información inicial.';
 $string['exists'] = 'Existe';
+$string['export_csv'] = 'Exportar CSV';
+$string['filter_year'] = 'Año';
 $string['forbidden'] = 'No tiene permiso para realizar esta acción con la licencia actual. Por favor, verifique su licencia y créditos disponibles en <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Gestionar Créditos</a> en la Tienda Datacurso.';
 $string['generate_activitie'] = 'Generar actividad o recurso con IA';
 $string['generate_ai_reinforcement_activity'] = 'Crear actividad de refuerzo con IA';
