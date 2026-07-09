@@ -117,7 +117,7 @@ jobs:
         run: exit 1
 
   analyze:
-    name: Analyze Security (CodeQL)
+    name: Analyze Security (CodeQL) - JavaScript/TypeScript
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -129,11 +129,32 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
-          languages: |
-            javascript-typescript
-            php
+          languages: javascript-typescript
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
+
+  semgrep:
+    name: SAST Scan (Semgrep) - PHP
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Run Semgrep OWASP scan
+        run: |
+          pip install semgrep
+          semgrep scan \
+            --config p/php \
+            --config p/security-audit \
+            --config p/owasp-top-ten \
+            --sarif --output semgrep.sarif \
+            --severity=ERROR
+      - name: Upload SARIF to GitHub Security
+        if: ${{ !cancelled() }}
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: semgrep.sarif
 
   leaks_check:
     name: Check for PII and Secret Leaks
