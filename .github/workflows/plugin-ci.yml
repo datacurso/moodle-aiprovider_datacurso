@@ -130,8 +130,8 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: |
-          javascript-typescript
-          php
+            javascript-typescript
+            php
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
 
