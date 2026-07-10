@@ -395,15 +395,72 @@ jobs:
                   - "**/db/tasks.php"
           RULES
 
+      # El escaneo produce SARIF (para subir a Security) SIN --error, para no
+      # cortar el paso con un exit code críptico. El bloqueo del merge lo decide
+      # el reporte legible de abajo: si hay hallazgos, imprime cada uno con
+      # archivo:línea + regla, publica una tabla en el resumen del job y falla.
       - name: Semgrep OWASP + Moodle AI scan
-        run: >
-          semgrep scan
-          --config p/php
-          --config p/security-audit
-          --config p/owasp-top-ten
-          --config /tmp/moodle-ai-security.yml
-          --sarif --output semgrep.sarif
-          --error
+        run: |
+          set +e
+          semgrep scan \
+            --config p/php \
+            --config p/security-audit \
+            --config p/owasp-top-ten \
+            --config /tmp/moodle-ai-security.yml \
+            --sarif --output semgrep.sarif
+          scan_rc=$?
+          # Códigos != 0 y != 1 (p.ej. 2) son fallas reales de Semgrep, no hallazgos.
+          if [ "$scan_rc" -gt 1 ]; then
+            echo "::error::Semgrep falló al ejecutarse (exit $scan_rc). No es un hallazgo de seguridad."
+            exit "$scan_rc"
+          fi
+
+      - name: Report Semgrep findings
+        if: ${{ !cancelled() }}
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          if not os.path.exists("semgrep.sarif"):
+              print("::warning::No se generó semgrep.sarif; ver el paso de escaneo.")
+              sys.exit(0)
+          data = json.load(open("semgrep.sarif"))
+          icon = {"error": "🔴", "warning": "🟡", "note": "🔵"}
+          order = {"error": 0, "warning": 1, "note": 2}
+          findings = []
+          for run in data.get("runs", []):
+              for res in run.get("results", []):
+                  loc = (res.get("locations") or [{}])[0].get("physicalLocation", {})
+                  findings.append((
+                      res.get("level", "warning"),
+                      res.get("ruleId", "?"),
+                      loc.get("artifactLocation", {}).get("uri", "?"),
+                      loc.get("region", {}).get("startLine", "?"),
+                      (res.get("message", {}).get("text", "") or "").strip().split("\n")[0],
+                  ))
+          findings.sort(key=lambda f: (order.get(f[0], 9), f[2], f[3]))
+          n = len(findings)
+          out = []
+          if n == 0:
+              out.append("## ✅ Semgrep: sin hallazgos de seguridad")
+          else:
+              out.append(f"## 🔒 Semgrep encontró {n} hallazgo(s) de seguridad")
+              out.append("")
+              out.append("Estos hallazgos **bloquean el merge**. Corregí cada uno, o si es un "
+                         "falso positivo verificado anotá la línea con `// nosemgrep: <regla>` y el motivo.")
+              out.append("")
+              out.append("| Sev | Regla | Archivo:línea | Detalle |")
+              out.append("|-----|-------|---------------|---------|")
+              for level, rid, path, line, msg in findings:
+                  out.append(f"| {icon.get(level, '⚪')} | `{rid}` | `{path}:{line}` | {msg} |")
+          report = "\n".join(out)
+          print(report)
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary:
+              with open(summary, "a") as fh:
+                  fh.write(report + "\n")
+          # Falla el job (bloquea el merge) si hubo hallazgos.
+          sys.exit(1 if n else 0)
+          PY
 
       - name: Upload SARIF to GitHub Security
         if: ${{ !cancelled() && !env.ACT }}  # se omite al correr localmente con act
