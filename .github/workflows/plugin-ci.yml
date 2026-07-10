@@ -436,11 +436,9 @@ jobs:
           data = json.load(open("semgrep.sarif"))
           n = sum(len(r.get("results", [])) for r in data.get("runs", []))
           if n:
-              print(f"::error::Semgrep encontró {n} hallazgo(s) de seguridad. "
-                    "El detalle (archivo, línea, regla) está en Security -> Code scanning, "
-                    "que es PRIVADO. No se muestra aquí porque el repositorio es público.")
+              print(f"::error::Se encontraron {n} problemas de seguridad.")
               sys.exit(1)
-          print("Semgrep: sin hallazgos de seguridad.")
+          print("Sin problemas de seguridad.")
           PY
 
   # =========================================================================
