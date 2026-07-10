@@ -9,6 +9,30 @@ on:
   pull_request:
 
 jobs:
+  # =========================================================================
+  # GATE: único check requerido por el ruleset. Depende de TODOS los demás
+  # jobs; si alguno falla, se salta o se cancela, este falla. Para exigir un
+  # job nuevo en el ruleset, basta con sumarlo a `needs` — no se toca la
+  # configuración del repositorio nunca más.
+  # =========================================================================
+  all_checks_passed:
+    name: All required checks passed
+    if: ${{ always() }}
+    needs: [test, analyze_js, analyze_php, leaks_check]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify every dependency succeeded
+        run: |
+          results="${{ join(needs.*.result, ' ') }}"
+          echo "Dependency results: $results"
+          for r in $results; do
+            if [ "$r" != "success" ]; then
+              echo "::error::A required job did not succeed (result: $r)"
+              exit 1
+            fi
+          done
+          echo "All required jobs succeeded."
+
   test:
     runs-on: ubuntu-22.04
 
