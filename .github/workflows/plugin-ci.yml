@@ -116,55 +116,303 @@ jobs:
         if: ${{ cancelled() }}
         run: exit 1
 
-  analyze:
-    name: Analyze Security (CodeQL) - JavaScript/TypeScript
+  # =========================================================================
+  # 2a. SEGURIDAD JS: CodeQL solo para JavaScript (NO soporta PHP)
+  # =========================================================================
+  analyze_js:
+    name: Analyze JS Security (CodeQL)
     runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: read
       security-events: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: javascript-typescript
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
 
-  semgrep:
-    name: SAST Scan (Semgrep) - PHP
-    runs-on: ubuntu-latest
-    permissions:
-      security-events: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Run Semgrep OWASP scan
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
+        with:
+          languages: 'javascript-typescript'
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
+
+  # =========================================================================
+  # 2b. SEGURIDAD PHP (OWASP): Semgrep — XSS, SQLi, IDOR, inyección, etc.
+  # =========================================================================
+  analyze_php:
+    name: Analyze PHP Security (Semgrep OWASP)
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      # Reglas custom embebidas para que el pipeline sea UN solo archivo
+      # replicable por plugin. Derivadas de la auditoría de seguridad de los
+      # plugins de IA (local_dttutor, local_assign_ai, aiprovider_datacurso,
+      # local_forum_ai, local_coursegen, local_coursedynamicrules).
+      # Falso positivo verificado => anotar la línea con "nosemgrep" + motivo.
+      - name: Write custom Moodle AI security rules
         run: |
-          pip install semgrep
-          semgrep scan \
-            --config p/php \
-            --config p/security-audit \
-            --config p/owasp-top-ten \
-            --sarif --output semgrep.sarif \
-            --severity=ERROR
+          cat > /tmp/moodle-ai-security.yml <<'RULES'
+          rules:
+            # 1. Escalamiento de privilegios: sobrescritura de $USER / suplantación.
+            - id: moodle-global-user-overwrite
+              languages: [php]
+              severity: ERROR
+              message: >
+                Sobrescritura de la variable global $USER o suplantación de sesión.
+                Un endpoint nunca debe reemplazar al usuario autenticado por una
+                cuenta de servicio. Ejecutar la lógica con los permisos del usuario real.
+              patterns:
+                - pattern-either:
+                    - patterns:
+                        - pattern: $VAR = $VAL;
+                        - metavariable-regex:
+                            metavariable: $VAR
+                            regex: ^\$USER$
+                    - pattern: \core\session\manager::set_user(...)
+                    - pattern: manager::set_user(...)
+
+            - id: moodle-get-admin-fallback
+              languages: [php]
+              severity: WARNING
+              message: >
+                Uso de get_admin(): si esto es un fallback de "cuenta de servicio" en
+                lógica invocable por usuarios (webservices, herramientas de IA), es un
+                escalamiento de privilegios. Verificar que solo se use en CLI/instalación.
+              pattern: get_admin(...)
+              paths:
+                exclude:
+                  - "**/cli/*"
+                  - "**/db/install.php"
+                  - "**/db/upgrade.php"
+
+            # 2. Borrado global de datos (delete_records sin filtros en observers).
+            - id: moodle-delete-records-no-filter
+              languages: [php]
+              severity: ERROR
+              message: >
+                $DB->delete_records() sin condiciones borra TODAS las filas de la tabla.
+                Fuera de db/uninstall.php esto es casi siempre un bug de integridad de
+                datos. Agregar filtros de contexto (courseid, cmid, userid...).
+              patterns:
+                - pattern-either:
+                    - pattern: $DB->delete_records($TABLE)
+                    - pattern: $DB->delete_records($TABLE, null)
+                    - pattern: $DB->delete_records($TABLE, [])
+                    - pattern: $DB->delete_records($TABLE, array())
+              paths:
+                exclude:
+                  - "**/db/uninstall.php"
+
+            # 3. Descarga remota insegura / SSRF (create_file_from_url sin validar).
+            - id: moodle-create-file-from-url-unvalidated
+              languages: [php]
+              severity: WARNING
+              message: >
+                create_file_from_url() descarga contenido remoto. Antes de llamarla se
+                debe validar: esquema HTTPS, host contra lista blanca de dominios del
+                proveedor, tipo MIME y tamaño máximo. Riesgo de SSRF hacia redes internas.
+              pattern: $FS->create_file_from_url(...)
+
+            # 4. HTML de IA marcado como confiable sin sanitizar.
+            - id: moodle-messagetrust-enabled
+              languages: [generic]
+              severity: ERROR
+              message: >
+                messagetrust=1 marca el HTML como confiable y desactiva la limpieza de
+                Moodle. El contenido generado por IA NUNCA es confiable: pasar por
+                clean_text()/format_text() y dejar messagetrust en 0.
+              patterns:
+                - pattern-regex: (messagetrust['"]?\s*(=>|=)\s*1)
+              paths:
+                include:
+                  - "**/*.php"
+
+            # 5. Secretos por defecto predecibles (fallback hardcodeado).
+            - id: moodle-hardcoded-secret-fallback
+              languages: [php]
+              severity: ERROR
+              message: >
+                Fallback hardcodeado para un secreto/llave/token. Si el admin no
+                configura la clave, el sistema queda con un secreto público y los tokens
+                son falsificables. Fallar explícitamente si la configuración falta.
+              patterns:
+                - pattern-either:
+                    - pattern: 'get_config($P, $NAME) ?: "..."'
+                    - pattern: 'get_config($P, $NAME) ?? "..."'
+                - metavariable-regex:
+                    metavariable: $NAME
+                    regex: (?i).*(secret|key|token|password|salt|hmac|sign).*
+
+            # 6. Tokens débiles (uniqid/rand/time no son CSPRNG).
+            - id: moodle-weak-token-generation
+              languages: [php]
+              severity: ERROR
+              message: >
+                Generación de token con funciones predecibles (uniqid/rand/time no son
+                criptográficamente seguras). Usar random_bytes() / bin2hex(random_bytes(32)).
+              patterns:
+                - pattern-either:
+                    - pattern: md5(uniqid(...))
+                    - pattern: sha1(uniqid(...))
+                    - pattern: md5(rand(...))
+                    - pattern: md5(mt_rand(...))
+                    - pattern: md5(time())
+                    - pattern: uniqid()
+
+            # 7. IDOR / control de acceso en servicios externos.
+            - id: moodle-external-missing-validate-context
+              languages: [php]
+              severity: ERROR
+              message: >
+                Función externa (webservice/AJAX) sin self::validate_context(). Todo
+                endpoint debe validar el contexto del objeto recibido — los ids que
+                llegan del cliente (courseid, jobid...) no son confiables (IDOR).
+              patterns:
+                - pattern: |
+                    public static function execute(...) { ... }
+                - pattern-not: |
+                    public static function execute(...) { ... self::validate_context(...); ... }
+                - pattern-not: |
+                    public static function execute(...) { ... static::validate_context(...); ... }
+                - pattern-not: |
+                    public static function execute(...) { ... parent::validate_context(...); ... }
+              paths:
+                include:
+                  - "**/classes/external/**"
+
+            - id: moodle-external-missing-capability-check
+              languages: [php]
+              severity: WARNING
+              message: >
+                Función externa sin require_capability()/has_capability(). La capacidad
+                debe exigirse DENTRO del endpoint (no solo en la página que lo llama), y
+                debe ser la capacidad específica de la acción, no una genérica de lectura.
+              patterns:
+                - pattern: |
+                    public static function execute(...) { ... }
+                - pattern-not: |
+                    public static function execute(...) { ... require_capability(...); ... }
+                - pattern-not: |
+                    public static function execute(...) { ... has_capability(...); ... }
+              paths:
+                include:
+                  - "**/classes/external/**"
+
+            # 8. XSS: Mustache sin escape y parámetros crudos.
+            - id: mustache-unescaped-output
+              languages: [generic]
+              severity: WARNING
+              message: >
+                Triple llave {{{...}}} desactiva el escape HTML de Mustache. Solo es
+                válido para HTML ya sanitizado server-side (format_text/clean_text).
+                Para texto plano usar {{...}}.
+              patterns:
+                - pattern-regex: \{\{\{
+              paths:
+                include:
+                  - "**/*.mustache"
+
+            - id: moodle-param-raw-in-external
+              languages: [generic]
+              severity: WARNING
+              message: >
+                PARAM_RAW en una función externa: el valor llega sin ninguna limpieza.
+                Usar el PARAM_* más restrictivo posible, o sanitizar explícitamente
+                antes de almacenar/renderizar (contenido de IA incluido).
+              patterns:
+                - pattern-regex: PARAM_RAW
+              paths:
+                include:
+                  - "**/classes/external/**"
+
+            # 9. Fuga de información técnica al cliente.
+            - id: moodle-exception-message-to-client
+              languages: [php]
+              severity: WARNING
+              message: >
+                Mensaje de excepción expuesto al cliente/UI. Puede filtrar rutas, SQL,
+                hosts internos o datos personales. Loguear el detalle server-side y
+                devolver un error genérico traducible (get_string).
+              patterns:
+                - pattern-either:
+                    - pattern: echo $E->getMessage();
+                    - pattern: print $E->getMessage();
+                    - pattern: die($E->getMessage());
+                    - pattern: return $E->getMessage();
+              paths:
+                include:
+                  - "**/classes/external/**"
+                  - "**/pages/**"
+                  - "**/ajax/**"
+
+            # 10. Riesgo operativo: tareas programadas cada minuto.
+            - id: moodle-task-every-minute
+              languages: [generic]
+              severity: WARNING
+              message: >
+                Tarea programada cada minuto ('minute' => '*'). Si recorre cursos o
+                usuarios, degrada sitios grandes. Justificar la frecuencia o espaciarla,
+                y acotar las consultas (límites, colas, índices).
+              patterns:
+                - pattern-regex: "['\"]minute['\"]\\s*=>\\s*['\"]\\*['\"]"
+              paths:
+                include:
+                  - "**/db/tasks.php"
+          RULES
+
+      - name: Semgrep OWASP + Moodle AI scan
+        run: >
+          semgrep scan
+          --config p/php
+          --config p/security-audit
+          --config p/owasp-top-ten
+          --config /tmp/moodle-ai-security.yml
+          --sarif --output semgrep.sarif
+          --error
+
       - name: Upload SARIF to GitHub Security
-        if: ${{ !cancelled() }}
-        uses: github/codeql-action/upload-sarif@v4
+        if: ${{ !cancelled() && !env.ACT }}  # se omite al correr localmente con act
+        uses: github/codeql-action/upload-sarif@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
         with:
           sarif_file: semgrep.sarif
 
+  # =========================================================================
+  # 3. PRIVACIDAD & FUGAS: Evita subir datos PII reales o claves por descuido
+  # =========================================================================
   leaks_check:
     name: Check for PII and Secret Leaks
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
+
+      # Se usa el CLI de gitleaks (MIT, gratis) en lugar de gitleaks-action,
+      # que requiere licencia paga (GITLEAKS_LICENSE) en organizaciones.
+      # Escanea TODO el historial git, no solo el working tree.
       - name: Gitleaks Scan
-        uses: gitleaks/gitleaks-action@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          GITLEAKS_VERSION=8.30.1
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar -xz gitleaks
+          ./gitleaks git --redact --verbose --report-format sarif --report-path gitleaks.sarif
+
+      - name: Upload SARIF to GitHub Security
+        if: ${{ always() && !env.ACT && hashFiles('gitleaks.sarif') != '' }}  # se omite con act
+        uses: github/codeql-action/upload-sarif@02c5e83432fe5497fd85b873b6c9f16a8578e1d9 # v3
+        with:
+          sarif_file: gitleaks.sarif
