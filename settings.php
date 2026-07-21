@@ -71,12 +71,4 @@ if ($hassiteconfig) {
         new moodle_url('/ai/provider/datacurso/admin/report_sections.php'),
         'moodle/site:config'
     ));
-
-    // Web service configuration page for automatic setup and token management.
-    $ADMIN->add('server', new admin_externalpage(
-        'aiprovider_datacurso_webservice',
-        get_string('link_webservice_config', 'aiprovider_datacurso'),
-        new moodle_url('/ai/provider/datacurso/admin/webservice_config.php'),
-        'moodle/site:config'
-    ));
 }
