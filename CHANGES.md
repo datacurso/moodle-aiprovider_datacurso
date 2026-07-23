@@ -1,3 +1,15 @@
+## 1.3.0
+
+**Released on:** 2026-07-23
+
+**Compatibility note:** This version is compatible **with Moodle 4.5 only**.
+
+## Removed
+- **Removed the Datacurso webservice setup feature** (PR #11)  
+  Deleted the "Datacurso webservice setup" admin page, its `aiprovider/datacurso:configurews` capability, the external service functions (`aiprovider_datacurso_webservice_setup`, `aiprovider_datacurso_webservice_regenerate_token`, `aiprovider_datacurso_webservice_get_status`), the `webservice_config` backend class and its AMD modules, and the related documentation and images.
+- **Added an upgrade step to clean up legacy webservice artifacts**  
+  On existing sites the upgrade removes the previously created service user, role, external service, token and stored registration config keys left by the old setup.
+
 ## 1.1.6
 
 **Released on:** 2026-04-29

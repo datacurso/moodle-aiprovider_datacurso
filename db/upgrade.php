@@ -30,7 +30,7 @@
  * @return bool
  */
 function xmldb_aiprovider_datacurso_upgrade($oldversion) {
-    global $DB;
+    global $CFG, $DB;
 
     $dbman = $DB->get_manager();
 
@@ -68,38 +68,14 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
     }
 
     if ($oldversion < 2025110600) {
-        try {
-            \aiprovider_datacurso\webservice_config::upgrade_sync_ws_and_capabilities();
-        } catch (\Exception $e) {
-            \core\notification::add(
-                get_string('upgrade_sync_error', 'aiprovider_datacurso', $e->getMessage()),
-                \core\output\notification::NOTIFY_ERROR
-            );
-        }
         upgrade_plugin_savepoint(true, 2025110600, 'aiprovider', 'datacurso');
     }
 
     if ($oldversion < 2025112705) {
-        try {
-            \aiprovider_datacurso\webservice_config::upgrade_sync_ws_and_capabilities();
-        } catch (\Exception $e) {
-            \core\notification::add(
-                get_string('upgrade_sync_error', 'aiprovider_datacurso', $e->getMessage()),
-                \core\output\notification::NOTIFY_ERROR
-            );
-        }
         upgrade_plugin_savepoint(true, 2025112705, 'aiprovider', 'datacurso');
     }
 
     if ($oldversion < 2025120201) {
-        try {
-            \aiprovider_datacurso\webservice_config::upgrade_sync_ws_and_capabilities();
-        } catch (\Exception $e) {
-            \core\notification::add(
-                get_string('upgrade_sync_error', 'aiprovider_datacurso', $e->getMessage()),
-                \core\output\notification::NOTIFY_ERROR
-            );
-        }
         upgrade_plugin_savepoint(true, 2025120201, 'aiprovider', 'datacurso');
     }
 
@@ -217,6 +193,37 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         }
 
         upgrade_plugin_savepoint(true, 2026062601, 'aiprovider', 'datacurso');
+    }
+
+    if ($oldversion < 2026071601) {
+        // Clean up the artifacts created by the removed Datacurso webservice setup
+        // (service user, role, external service, tokens, registration flags).
+        // Global settings (enablewebservices, webservice auth plugin, REST protocol)
+        // are intentionally left untouched: other integrations may rely on them.
+        require_once($CFG->dirroot . '/webservice/lib.php');
+
+        if ($service = $DB->get_record('external_services', ['shortname' => 'datacursows'])) {
+            (new webservice())->delete_service($service->id);
+        }
+
+        if ($roleid = $DB->get_field('role', 'id', ['shortname' => 'datacursows'])) {
+            delete_role($roleid);
+        }
+
+        $user = $DB->get_record('user', [
+            'username' => 'datacursows',
+            'deleted' => 0,
+            'mnethostid' => $CFG->mnet_localhost_id,
+        ]);
+        if ($user) {
+            delete_user($user);
+        }
+
+        foreach (['registration_verified', 'registration_lastsent', 'registration_laststatus'] as $key) {
+            unset_config($key, 'aiprovider_datacurso');
+        }
+
+        upgrade_plugin_savepoint(true, 2026071601, 'aiprovider', 'datacurso');
     }
 
     return true;

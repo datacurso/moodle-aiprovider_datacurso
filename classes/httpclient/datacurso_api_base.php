@@ -29,13 +29,6 @@ require_once($CFG->libdir . '/filelib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class datacurso_api_base {
-    /** Services that depend on the local Moodle webservice. */
-    private const SERVICES_REQUIRING_WEBSERVICE = [
-        'local_assign_ai',
-        'local_forum_ai',
-        'local_dttutor',
-    ];
-
     /** @var string $baseurl The base URL for Datacurso API requests */
     protected $baseurl;
 
@@ -145,7 +138,6 @@ class datacurso_api_base {
 
         // Resolve the configured service for this path; null when the path is not mapped.
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
-        $this->enforce_webservice_requirements($serviceid);
 
         $curl = new \curl();
         $baseheaders = [
@@ -293,24 +285,6 @@ class datacurso_api_base {
         ]);
 
         return $this->send_request('UPLOAD', $path, $postdata);
-    }
-
-    /**
-     * Ensure the Datacurso webservice is fully configured when required by the service.
-     *
-     * @param string|null $serviceid
-     * @return void
-     */
-    private function enforce_webservice_requirements(?string $serviceid): void {
-        if (empty($serviceid) || !in_array($serviceid, self::SERVICES_REQUIRING_WEBSERVICE, true)) {
-            return;
-        }
-
-        if (!\aiprovider_datacurso\webservice_config::is_configured()) {
-            $setupurl = \aiprovider_datacurso\webservice_config::get_url();
-            $messageparams = (object)['url' => $setupurl->out(false)];
-            throw new \moodle_exception('error_webservice_not_configured', 'aiprovider_datacurso', '', $messageparams);
-        }
     }
 
     /**
