@@ -1,3 +1,15 @@
+## [1.4.1] - 2025-07-25
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Changed
+- **Image/no-image variants for all action identifiers** (PR #14)
+  Replaced bare `create_activity_*` entries with `_image`/`_noimage` pairs in `get_actions()` so consumption reports distinguish between image-generating and non-image requests per activity type. Added `/course/execute_image` and `/course/execute_noimage` variants for course creation
+- **40 new action entries with translations in all 7 supported languages**
+  Added language strings for all image/noimage action variants in en, es, fr, de, id, pt_br, and ru
+- **Version bump**
+  Internal version bumped to **2026072500** and release version bumped to **1.4.1**
+
 ## [1.4.0] - 2025-07-25
 
 **Compatibility note:** This version is compatible only with **Moodle 4.5**.
