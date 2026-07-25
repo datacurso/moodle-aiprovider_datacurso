@@ -1,3 +1,21 @@
+## [1.4.0] - 2025-07-25
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Added
+- **19 Moodle activity type action identifiers** (PR #12)
+  Registered `create_activity_*` identifiers in the provider's action catalog so consumption reports show specific activity types (assign, quiz, lesson, workshop, h5pactivity, scorm, feedback, choice, data, book, page, resource, url, folder, label, imscp, forum, glossary, wiki) instead of the generic "Generate activity or resource with AI"
+- **Translations for activity type identifiers in all 7 supported languages**
+  Added language strings for all 19 activity type action names in en, es, fr, de, id, pt_br, and ru
+
+### Changed
+- **Version bump**
+  Internal version bumped to **2026072400** and release version bumped to **1.4.0**
+
+### Fixed
+- **Removed unnecessary ratelimiter routing for activity type identifiers**
+  Cleaned up prefix routing in `ratelimiter.php` that was no longer needed for `create_activity_*` identifiers
+
 ## 1.3.0
 
 **Released on:** 2026-07-23
