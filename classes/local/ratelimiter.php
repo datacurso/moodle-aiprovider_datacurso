@@ -53,6 +53,11 @@ class ratelimiter {
             '/chat/' => 'local_dttutor',
         ];
 
+        // Activity-type action identifiers (e.g. create_activity_forum) map to coursegen.
+        if (str_starts_with($normalised, 'create_activity_') || str_starts_with($normalised, '/create_activity_')) {
+            return 'local_coursegen';
+        }
+
         foreach ($map as $prefix => $service) {
             if (str_starts_with($normalised, $prefix)) {
                 return $service;

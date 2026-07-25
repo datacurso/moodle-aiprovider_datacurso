@@ -253,6 +253,26 @@ class provider extends \core_ai\provider {
             ['id' => '/story/analysis', 'name' => get_string('generate_analysis_story_student', 'aiprovider_datacurso')],
             ['id' => '/smartrules/create-mod', 'name' => get_string('generate_ai_reinforcement_activity', 'aiprovider_datacurso')],
             ['id' => '/chat/message', 'name' => get_string('generate_chat_message', 'aiprovider_datacurso')],
+            // Moodle activity types.
+            ['id' => 'create_activity_assign', 'name' => get_string('create_activity_assign', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_quiz', 'name' => get_string('create_activity_quiz', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_lesson', 'name' => get_string('create_activity_lesson', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_workshop', 'name' => get_string('create_activity_workshop', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_h5pactivity', 'name' => get_string('create_activity_h5pactivity', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_scorm', 'name' => get_string('create_activity_scorm', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_feedback', 'name' => get_string('create_activity_feedback', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_choice', 'name' => get_string('create_activity_choice', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_data', 'name' => get_string('create_activity_data', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_book', 'name' => get_string('create_activity_book', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_page', 'name' => get_string('create_activity_page', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_resource', 'name' => get_string('create_activity_resource', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_url', 'name' => get_string('create_activity_url', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_folder', 'name' => get_string('create_activity_folder', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_label', 'name' => get_string('create_activity_label', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_imscp', 'name' => get_string('create_activity_imscp', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_forum', 'name' => get_string('create_activity_forum', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_glossary', 'name' => get_string('create_activity_glossary', 'aiprovider_datacurso')],
+            ['id' => 'create_activity_wiki', 'name' => get_string('create_activity_wiki', 'aiprovider_datacurso')],
         ];
     }
 }
