@@ -54,78 +54,21 @@ if ($hassiteconfig) {
             ''
         ));
 
-        // Per-plugin rate limit settings.
-        $settings->add(new admin_setting_heading(
-            'aiprovider_datacurso/ratelimits_heading',
+        // Per-plugin rate limit settings now live in the dedicated Configuration page
+        // (Datacurso AI Provider → Configuration), which is the single source of truth.
+        $settings->add(new admin_setting_description(
+            'aiprovider_datacurso/ratelimits_moved',
             new lang_string('ratelimits_heading', 'aiprovider_datacurso'),
-            new lang_string('ratelimits_heading_desc', 'aiprovider_datacurso')
+            new lang_string('ratelimits_moved_desc', 'aiprovider_datacurso', (object) [
+                'url' => (new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'config']))->out(),
+            ])
         ));
-
-        $services = \aiprovider_datacurso\provider::get_services();
-
-        // Order services by name.
-        \core_collator::asort_array_of_arrays_by_key($services, 'name');
-        foreach ($services as $service) {
-            $sid = $service['id'];
-            $sname = $service['name'];
-
-            $settings->add(new admin_setting_heading(
-                "aiprovider_datacurso/ratelimit_{$sid}_heading",
-                format_string($sname),
-                ''
-            ));
-
-            // Enable per-user rate limit tracking for this plugin.
-            $settings->add(new admin_setting_configcheckbox(
-                "aiprovider_datacurso/ratelimit_{$sid}_enable",
-                new lang_string('ratelimit_enable', 'aiprovider_datacurso'),
-                new lang_string('ratelimit_enable_desc', 'aiprovider_datacurso'),
-                0
-            ));
-
-            // Credit limit in the configured window.
-            $settings->add(new admin_setting_configtext(
-                "aiprovider_datacurso/ratelimit_{$sid}_limit",
-                new lang_string('ratelimit_limit', 'aiprovider_datacurso'),
-                new lang_string('ratelimit_limit_desc', 'aiprovider_datacurso'),
-                10,
-                PARAM_INT
-            ));
-            $settings->hide_if(
-                "aiprovider_datacurso/ratelimit_{$sid}_limit",
-                "aiprovider_datacurso/ratelimit_{$sid}_enable",
-                'eq',
-                0
-            );
-
-            // Window: duration + unit.
-            $settings->add(new \aiprovider_datacurso\admin_setting_duration_unit(
-                "aiprovider_datacurso/ratelimit_{$sid}_window",
-                new lang_string('ratelimit_window', 'aiprovider_datacurso'),
-                new lang_string('ratelimit_window_desc', 'aiprovider_datacurso'),
-                json_encode(['value' => 1, 'unit' => 'hours'])
-            ));
-            $settings->hide_if(
-                "aiprovider_datacurso/ratelimit_{$sid}_window",
-                "aiprovider_datacurso/ratelimit_{$sid}_enable",
-                'eq',
-                0
-            );
-        }
     }
 
     $ADMIN->add('reports', new admin_externalpage(
         'aiprovider_datacurso_reports',
         get_string('link_generalreport_datacurso', 'aiprovider_datacurso'),
         new moodle_url('/ai/provider/datacurso/admin/report_sections.php'),
-        'moodle/site:config'
-    ));
-
-    // Web service configuration page for automatic setup and token management.
-    $ADMIN->add('server', new admin_externalpage(
-        'aiprovider_datacurso_webservice',
-        get_string('link_webservice_config', 'aiprovider_datacurso'),
-        new moodle_url('/ai/provider/datacurso/admin/webservice_config.php'),
         'moodle/site:config'
     ));
 }

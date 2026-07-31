@@ -15,22 +15,18 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Capability definitions for the Datacurso AI Provider plugin.
+ * Hook callbacks for aiprovider_datacurso.
  *
  * @package    aiprovider_datacurso
- * @copyright  2025 Industria Elearning
+ * @copyright  2025 Datacurso
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$capabilities = [
-    // Capability to view AI usage reports and statistics.
-    'aiprovider/datacurso:viewreports' => [
-        'captype' => 'read',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'archetypes' => [
-            'manager' => CAP_ALLOW,
-        ],
+$callbacks = [
+    [
+        'hook' => \core\hook\navigation\primary_extend::class,
+        'callback' => \aiprovider_datacurso\hook_callbacks::class . '::extend_primary_navigation',
     ],
 ];

@@ -38,12 +38,16 @@ export const init = async () => {
   const prevPageBtn = document.getElementById('prev-page');
   const nextPageBtn = document.getElementById('next-page');
   const pageInfo = document.getElementById('page-info');
+  const exportBtn = document.getElementById('export-csv');
   const tableRegionSelector =
     '[data-region="aiprovider_datacurso/consumption-table"]';
 
   // Order
   let currentSortField = "";
   let currentSortDir = "asc";
+
+  // Rows currently shown in the table (current page), used for CSV export.
+  let currentConsumptions = [];
 
   // Select and input for limit and page
   const limitSelect = document.getElementById("filter-limit");
@@ -56,54 +60,6 @@ export const init = async () => {
   const savePage = (page) => sessionStorage.setItem("consumptionPage", page);
   const saveLimit = (limit) =>
     sessionStorage.setItem("consumptionLimit", limit);
-
-  // Store consumptions in memory for CSV export
-  let cachedConsumptions = [];
-
-  // Export to CSV
-  const exportToCSV = () => {
-    if (!cachedConsumptions.length) {
-      return;
-    }
-
-    const headers = [
-      'ID',
-      'Usuario',
-      'Accion',
-      'Servicio',
-      'Creditos utilizados',
-      'Saldo restante',
-      'Fecha'
-    ];
-
-    const rows = cachedConsumptions.map(c => [
-      c.id_consumption || '',
-      c.username || '',
-      c.action || '',
-      c.id_service || '',
-      c.cant_tokens || '',
-      c.balance || '',
-      c.date || ''
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `consumos_${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-  };
-
-  // Bind export button
-  const exportCsvBtn = document.getElementById('export-csv');
-  if (exportCsvBtn) {
-    exportCsvBtn.addEventListener('click', exportToCSV);
-  }
 
   const updateSortIndicators = () => {
     document
@@ -288,7 +244,10 @@ export const init = async () => {
     const response = await getConsumptionHistory(args);
 
     const consumptions = response?.consumption || [];
-    cachedConsumptions = consumptions; // Cache for CSV export
+    currentConsumptions = consumptions;
+    if (exportBtn) {
+      exportBtn.disabled = consumptions.length === 0;
+    }
     await renderTable(consumptions);
 
     const pagination = response?.pagination;
@@ -311,6 +270,63 @@ export const init = async () => {
       nextPageBtn.disabled = true;
     }
   };
+
+  // Build and download a CSV of the rows currently shown in the table (current page only).
+  const exportCsv = async () => {
+    if (!currentConsumptions.length) {
+      return;
+    }
+
+    const [hId, hUser, hAction, hService, hTokens, hBalance, hDate] =
+      await Promise.all([
+        getString("id", "aiprovider_datacurso"),
+        getString("user", "core"),
+        getString("action", "aiprovider_datacurso"),
+        getString("service", "aiprovider_datacurso"),
+        getString("tokensused", "aiprovider_datacurso"),
+        getString("remainingtokens", "aiprovider_datacurso"),
+        getString("date", "core"),
+      ]);
+
+    const escape = (val) => `"${String(val ?? "").replace(/"/g, '""')}"`;
+    const lines = [[hId, hUser, hAction, hService, hTokens, hBalance, hDate].map(escape).join(",")];
+    currentConsumptions.forEach((c) => {
+      lines.push(
+        [
+          c.id_consumption,
+          c.username,
+          c.action,
+          c.id_service,
+          c.cant_tokens,
+          c.balance,
+          c.date,
+        ].map(escape).join(",")
+      );
+    });
+
+    // Prepend a UTF-8 BOM so Excel renders accents correctly.
+    const csv = "\uFEFF" + lines.join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const now = new Date();
+    const stamp =
+      `${now.getFullYear()}` +
+      `${String(now.getMonth() + 1).padStart(2, "0")}` +
+      `${String(now.getDate()).padStart(2, "0")}`;
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `consumption-history-${stamp}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  if (exportBtn) {
+    exportBtn.addEventListener("click", exportCsv);
+  }
 
   // Event listeners for filters
   [filterUser, filterService, filterAction, filterFrom, filterTo].forEach((el) => {

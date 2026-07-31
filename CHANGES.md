@@ -1,3 +1,45 @@
+## [1.4.1] - 2025-07-25
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Changed
+- **Image/no-image variants for all action identifiers** (PR #14)
+  Replaced bare `create_activity_*` entries with `_image`/`_noimage` pairs in `get_actions()` so consumption reports distinguish between image-generating and non-image requests per activity type. Added `/course/execute_image` and `/course/execute_noimage` variants for course creation
+- **40 new action entries with translations in all 7 supported languages**
+  Added language strings for all image/noimage action variants in en, es, fr, de, id, pt_br, and ru
+- **Version bump**
+  Internal version bumped to **2026072500** and release version bumped to **1.4.1**
+
+## [1.4.0] - 2025-07-25
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Added
+- **19 Moodle activity type action identifiers** (PR #12)
+  Registered `create_activity_*` identifiers in the provider's action catalog so consumption reports show specific activity types (assign, quiz, lesson, workshop, h5pactivity, scorm, feedback, choice, data, book, page, resource, url, folder, label, imscp, forum, glossary, wiki) instead of the generic "Generate activity or resource with AI"
+- **Translations for activity type identifiers in all 7 supported languages**
+  Added language strings for all 19 activity type action names in en, es, fr, de, id, pt_br, and ru
+
+### Changed
+- **Version bump**
+  Internal version bumped to **2026072400** and release version bumped to **1.4.0**
+
+### Fixed
+- **Removed unnecessary ratelimiter routing for activity type identifiers**
+  Cleaned up prefix routing in `ratelimiter.php` that was no longer needed for `create_activity_*` identifiers
+
+## 1.3.0
+
+**Released on:** 2026-07-23
+
+**Compatibility note:** This version is compatible **with Moodle 4.5 only**.
+
+## Removed
+- **Removed the Datacurso webservice setup feature** (PR #11)  
+  Deleted the "Datacurso webservice setup" admin page, its `aiprovider/datacurso:configurews` capability, the external service functions (`aiprovider_datacurso_webservice_setup`, `aiprovider_datacurso_webservice_regenerate_token`, `aiprovider_datacurso_webservice_get_status`), the `webservice_config` backend class and its AMD modules, and the related documentation and images.
+- **Added an upgrade step to clean up legacy webservice artifacts**  
+  On existing sites the upgrade removes the previously created service user, role, external service, token and stored registration config keys left by the old setup.
+
 ## 1.1.6
 
 **Released on:** 2026-04-29

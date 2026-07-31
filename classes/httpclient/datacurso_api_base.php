@@ -29,13 +29,6 @@ require_once($CFG->libdir . '/filelib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class datacurso_api_base {
-    /** Services that depend on the local Moodle webservice. */
-    private const SERVICES_REQUIRING_WEBSERVICE = [
-        'local_assign_ai',
-        'local_forum_ai',
-        'local_dttutor',
-    ];
-
     /** @var string $baseurl The base URL for Datacurso API requests */
     protected $baseurl;
 
@@ -61,6 +54,26 @@ class datacurso_api_base {
      */
     public function get_base_url(): string {
         return rtrim($this->baseurl, '/') . '/';
+    }
+
+    /**
+     * Returns a persistent site UUID used to identify this Moodle site across the AI services.
+     *
+     * Unlike md5($CFG->wwwroot), this UUID is stable even if the site URL changes, and is what the
+     * services use as `site_id` to isolate per-user rate-limit counters between sites that share the
+     * same license (Moodle user ids are only unique within a site).
+     *
+     * @return string
+     */
+    public static function get_site_uuid(): string {
+        $siteuuid = get_config('aiprovider_datacurso', 'site_uuid');
+        if (!empty($siteuuid)) {
+            return (string) $siteuuid;
+        }
+
+        $siteuuid = \core\uuid::generate();
+        set_config('site_uuid', $siteuuid, 'aiprovider_datacurso');
+        return $siteuuid;
     }
 
     /**
@@ -125,17 +138,22 @@ class datacurso_api_base {
 
         // Resolve the configured service for this path; null when the path is not mapped.
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
-        $this->enforce_webservice_requirements($serviceid);
 
         $curl = new \curl();
         $baseheaders = [
             'License-Key: ' . $this->licensekey,
         ];
 
-        // Forward the configured per-service rate limit to the Python service, which
-        // enforces it centrally against the user's real credit consumption window.
+        // Forward the configured per-service rate limit to the Python service, which enforces it
+        // centrally against the user's accumulated credit consumption within the window. The
+        // resolved sub-action determines the look-ahead credit estimate (X-RateLimit-MaxPerAction).
+        $actionkey = \aiprovider_datacurso\local\ratelimiter::resolve_action_key(
+            $serviceid,
+            $path,
+            is_array($payload) ? $payload : []
+        );
         $ratelimiter = new \aiprovider_datacurso\local\ratelimiter();
-        $baseheaders = array_merge($baseheaders, $ratelimiter->get_rate_limit_headers($serviceid));
+        $baseheaders = array_merge($baseheaders, $ratelimiter->get_rate_limit_headers($serviceid, $actionkey));
 
         $headers = array_merge($baseheaders, $headers);
 
@@ -152,25 +170,24 @@ class datacurso_api_base {
             'userid' => $payload['userid'] ?? $USER->id,
             'timezone' => \core_date::get_user_timezone(),
             'lang' => $payload['lang'] ?? current_language(),
-            'site_url' => $CFG->wwwroot,
         ];
         switch (strtoupper($method)) {
             case 'GET':
                 $response = $curl->get($url, $payload, $options);
                 break;
             case 'POST':
-                $payload = array_merge($defaultpayload, $payload);
+                $payload = array_merge($payload, $defaultpayload);
                 $response = $curl->post($url, json_encode($payload, JSON_UNESCAPED_UNICODE), $options);
                 break;
             case 'PUT':
-                $payload = array_merge($defaultpayload, $payload);
+                $payload = array_merge($payload, $defaultpayload);
                 $response = $curl->put($url, $payload, $options);
                 break;
             case 'DELETE':
                 $response = $curl->delete($url, $payload, $options);
                 break;
             case 'UPLOAD':
-                $payload = array_merge($defaultpayload, $payload);
+                $payload = array_merge($payload, $defaultpayload);
                 $response = $curl->post($url, $payload, $options);
                 break;
             default:
@@ -223,8 +240,6 @@ class datacurso_api_base {
             throw new \moodle_exception('jsondecodeerror', 'aiprovider_datacurso', '', json_last_error_msg());
         }
 
-        // Rate-limit usage is tracked centrally by the Python service (token-manager)
-        // from the real credit consumption ledger; no local counter to update here.
         return $decodedresponse;
     }
 
@@ -245,60 +260,31 @@ class datacurso_api_base {
     /**
      * Upload a file using multipart/form-data.
      *
-     * This method receives a stored_file instance, creates a temporary copy
-     * on disk for the duration of the upload and ensures that the temporary
-     * file is deleted whether the request succeeds or fails.
-     *
      * @param string $path Relative endpoint. Example: '/upload-file'.
-     * @param \stored_file $file Moodle stored file object to upload.
+     * @param string $filepath Absolute path to the file to upload.
+     * @param string|null $mimetype MIME type of the file (falls back to PHP detection when null).
+     * @param string|null $filename Name to use for the uploaded file (defaults to basename of $filepath).
      * @param array $extraparams Extra POST parameters to include in the upload request.
      * @return array|null Decoded response from the API.
-     * @throws \Exception If the request fails.
+     * @throws \Exception If the local file does not exist or the request fails.
      */
     public function upload_file(
         string $path,
-        \stored_file $file,
+        string $filepath,
+        ?string $mimetype = null,
+        ?string $filename = null,
         array $extraparams = []
     ): ?array {
-        // Create a temporary copy of the file content on disk.
-        $filepath = $file->copy_content_to_temp();
-        $filename = $file->get_filename();
-        $mimetype = $file->get_mimetype();
-
-        if (!$filepath || !file_exists($filepath)) {
-            throw new \coding_exception('Temporary file could not be created for upload.');
+        if (!file_exists($filepath)) {
+            $filename = basename($filepath);
+            throw new \coding_exception("File not found: {$filename}");
         }
 
-        try {
-            $postdata = array_merge($extraparams, [
-                'file' => new \CURLFile($filepath, $mimetype, $filename),
-            ]);
+        $postdata = array_merge($extraparams, [
+            'file' => new \CURLFile($filepath, $mimetype, $filename),
+        ]);
 
-            return $this->send_request('UPLOAD', $path, $postdata);
-        } finally {
-            // Always clean up the temporary file.
-            if (file_exists($filepath)) {
-                @unlink($filepath);
-            }
-        }
-    }
-
-    /**
-     * Ensure the Datacurso webservice is fully configured when required by the service.
-     *
-     * @param string|null $serviceid
-     * @return void
-     */
-    private function enforce_webservice_requirements(?string $serviceid): void {
-        if (empty($serviceid) || !in_array($serviceid, self::SERVICES_REQUIRING_WEBSERVICE, true)) {
-            return;
-        }
-
-        if (!\aiprovider_datacurso\webservice_config::is_configured()) {
-            $setupurl = \aiprovider_datacurso\webservice_config::get_url();
-            $messageparams = (object)['url' => $setupurl->out(false)];
-            throw new \moodle_exception('error_webservice_not_configured', 'aiprovider_datacurso', '', $messageparams);
-        }
+        return $this->send_request('UPLOAD', $path, $postdata);
     }
 
     /**
@@ -310,21 +296,5 @@ class datacurso_api_base {
         $datacursoapi = new datacurso_api();
         $response = $datacursoapi->get('tokens/saldo');
         return $response['is_for_eu'] == true;
-    }
-
-    /**
-     * Returns a persistent site UUID for the Datacurso course service.
-     *
-     * @return string
-     */
-    private static function get_site_uuid(): string {
-        $siteuuid = get_config('aiprovider_datacurso', 'site_uuid');
-        if (!empty($siteuuid)) {
-            return (string) $siteuuid;
-        }
-
-        $siteuuid = \core\uuid::generate();
-        set_config('site_uuid', $siteuuid, 'aiprovider_datacurso');
-        return $siteuuid;
     }
 }

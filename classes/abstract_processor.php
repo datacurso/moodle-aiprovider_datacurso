@@ -90,23 +90,27 @@ abstract class abstract_processor extends process_base {
 
         $client = \core\di::get(http_client::class);
 
-        $endpoint = $this->get_endpoint();
-
-        // Forward the configured per-service rate limit so the Python service can
-        // enforce it centrally (these core actions map to the 'aiprovider_datacurso' service).
-        $headers = [
-            'Content-Type' => 'application/json',
-            'License-Key' => $licensekey,
-        ];
-        $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($endpoint->getPath());
-        $ratelimiter = new \aiprovider_datacurso\local\ratelimiter();
-        $headers = array_merge($headers, $ratelimiter->get_rate_limit_header_map($serviceid));
+        // Forward the per-service rate-limit config so plugins-ai-server enforces the credit limit
+        // for the provider's own actions (text/summary/image) and accumulates the window counter.
+        // Returns an empty array when the limit is disabled for this service.
+        $path = $this->get_endpoint()->getPath();
+        $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
+        // Resolve the sub-action (text vs image) so the look-ahead credit estimate is correct.
+        $actionkey = \aiprovider_datacurso\local\ratelimiter::resolve_action_key($serviceid, $path);
+        $ratelimitheaders = (new \aiprovider_datacurso\local\ratelimiter())
+            ->get_rate_limit_header_map($serviceid, $actionkey);
 
         try {
             $response = $client->post(
-                $endpoint,
+                $this->get_endpoint(),
                 [
-                    RequestOptions::HEADERS => $headers,
+                    RequestOptions::HEADERS => array_merge(
+                        [
+                            'Content-Type' => 'application/json',
+                            'License-Key' => $licensekey,
+                        ],
+                        $ratelimitheaders
+                    ),
                     RequestOptions::JSON => $this->build_request_body($userid),
                     RequestOptions::HTTP_ERRORS => false,
                 ]
@@ -138,9 +142,24 @@ abstract class abstract_processor extends process_base {
         $status = (int)$response->getStatusCode();
         $body = $response->getBody()->getContents();
 
+        $decoded = !empty($body) ? json_decode($body) : null;
+
+        // Per-plugin rate limit exceeded: show a clear, localized message with the retry time
+        // (same handling as datacurso_api_base for the other plugins).
+        if ($status === 403 && isset($decoded->detail) && $decoded->detail === 'rate_limit_exceeded') {
+            $resetat = (int)($decoded->reset_at ?? 0);
+            $retryat = $resetat > 0
+                ? userdate($resetat, get_string('strftimedatetime', 'langconfig'))
+                : '';
+            return [
+                'success' => false,
+                'errorcode' => 403,
+                'errormessage' => get_string('error_ratelimit_exceeded', 'aiprovider_datacurso', $retryat),
+            ];
+        }
+
         $message = 'Unknown error';
         if (!empty($body)) {
-            $decoded = json_decode($body);
             if (isset($decoded->error->message)) {
                 $message = $decoded->error->message;
             } else {
