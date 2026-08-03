@@ -197,9 +197,15 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
 
     if ($oldversion < 2026071601) {
         // Clean up the artifacts created by the removed Datacurso webservice setup
-        // (service user, role, external service, tokens, registration flags).
+        // (role, external service, tokens, registration flags).
         // Global settings (enablewebservices, webservice auth plugin, REST protocol)
         // are intentionally left untouched: other integrations may rely on them.
+        // The 'datacursows' account is also left untouched on purpose. Deleting a user
+        // account is a site decision, not a plugin one, and delete_user() cannot run from
+        // an upgrade step: it calls \core\session\manager::destroy_user_sessions(), which
+        // makes lazily initialised session handlers (Redis) call session_set_save_handler()
+        // after output has already been sent, aborting the upgrade. Site administrators can
+        // delete the account from the users management page once the upgrade is complete.
         require_once($CFG->dirroot . '/webservice/lib.php');
 
         if ($service = $DB->get_record('external_services', ['shortname' => 'datacursows'])) {
@@ -208,15 +214,6 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
 
         if ($roleid = $DB->get_field('role', 'id', ['shortname' => 'datacursows'])) {
             delete_role($roleid);
-        }
-
-        $user = $DB->get_record('user', [
-            'username' => 'datacursows',
-            'deleted' => 0,
-            'mnethostid' => $CFG->mnet_localhost_id,
-        ]);
-        if ($user) {
-            delete_user($user);
         }
 
         foreach (['registration_verified', 'registration_lastsent', 'registration_laststatus'] as $key) {
