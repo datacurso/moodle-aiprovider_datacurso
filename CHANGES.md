@@ -1,3 +1,18 @@
+## [1.4.2] - 2026-08-03
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Fixed
+- **Upgrade no longer fails with "redissessionhandlerproblem"**
+  The `2026071601` upgrade step called `delete_user()` on the legacy `datacursows` service account. `delete_user()` ends by calling `\core\session\manager::destroy_user_sessions()`, which makes lazily initialised session handlers such as Redis run `session_set_save_handler()` from within the upgrade; under CLI the output has already been sent at that point, so the handler could not be registered and the upgrade aborted before reaching its savepoint
+
+### Changed
+- **The upgrade step no longer removes the service user account**
+  Cleanup is now limited to the artifacts the plugin owns (external service, role and registration config flags). The `datacursows` account is left in place for administrators to delete from the users management page
+
+- **Version bump**
+  Internal version bumped to **2026080300** and release version bumped to **1.4.2**
+
 ## [1.4.1] - 2025-07-25
 
 **Compatibility note:** This version is compatible only with **Moodle 4.5**.
