@@ -48,39 +48,4 @@ class ai_course_api extends datacurso_api_base {
 
         parent::__construct($finalbaseurl, $licensekey);
     }
-
-    /**
-     * Build the planning streaming URL for a given session ID.
-     *
-     * @param string $sessionid
-     * @return string streaming URL
-     */
-    public function get_streaming_url_for_session(string $sessionid): string {
-        $baseurl = rtrim($this->baseurl, '/');
-        return $baseurl . '/course/stream/' . urlencode($sessionid);
-    }
-
-    /**
-     * Build the generation streaming URL for a given session ID.
-     *
-     * @param string $sessionid
-     * @return string streaming URL
-     */
-    public function get_generation_streaming_url_for_session(string $sessionid): string {
-        $baseurl = rtrim($this->baseurl, '/');
-        return $baseurl . '/course/generation/stream?session_id=' . urlencode($sessionid);
-    }
-
-    /**
-     * Build the streaming URL for an activity generation job.
-     *
-     * The Datacurso activity API exposes the SSE stream at `/activity/stream/{thread_id}`.
-     *
-     * @param string $jobid
-     * @return string streaming URL
-     */
-    public function get_mod_streaming_url_for_job(string $jobid): string {
-        $baseurl = rtrim($this->baseurl, '/');
-        return $baseurl . '/activity/stream/' . urlencode($jobid);
-    }
 }

@@ -170,6 +170,7 @@ class datacurso_api_base {
             'userid' => $payload['userid'] ?? $USER->id,
             'timezone' => \core_date::get_user_timezone(),
             'lang' => $payload['lang'] ?? current_language(),
+            'site_url' => $CFG->wwwroot,
         ];
         switch (strtoupper($method)) {
             case 'GET':
