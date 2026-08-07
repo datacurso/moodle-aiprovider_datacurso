@@ -189,6 +189,23 @@ class provider extends \core_ai\provider {
     }
 
     /**
+     * Default per-window credit limit prefilled in the configuration form for a service.
+     *
+     * Set to the most expensive action a normal user can trigger for the service
+     * (e.g. an image on the provider, a course with image on the course creator).
+     *
+     * @param string $serviceid
+     * @return int
+     */
+    public static function get_default_window_limit(string $serviceid): int {
+        $defaults = [
+            'aiprovider_datacurso' => 30,
+            'local_coursegen' => 2000,
+        ];
+        return $defaults[$serviceid] ?? 10;
+    }
+
+    /**
      * Resolve the configured (worst-case) credit for a sub-action of a service.
      *
      * Reads the admin-saved JSON map `ratelimit_{sid}_creditperaction` ({key: credits}).
