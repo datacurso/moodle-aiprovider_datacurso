@@ -1,3 +1,26 @@
+## [1.4.2] - 2026-08-10
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Fixed
+- **File upload from the Moodle file storage API**
+  `upload_file()` declared a string path, but callers hold a `stored_file` and
+  Moodle keeps files in the file storage API, so uploading a syllabus threw a
+  `TypeError` before any request was made. It now takes the `stored_file`,
+  copies its content to a temporary file for the request, and removes that copy
+  even when the request fails. No caller changes were needed.
+
+  This behaviour was added in 1.2.x and was lost when `MOODLE_405_STABLE` was
+  merged into `dev`: that side was ahead everywhere else in the file, so its
+  older `upload_file` was kept along with the rest.
+
+### Added
+- **Tests for the upload contract**
+  Cover the signature and the behaviour that depends on it: the file argument
+  type, the position of the extra parameters, the name and MIME type sent with
+  the request, and the removal of the temporary copy on both success and
+  failure.
+
 ## [1.4.1] - 2025-07-25
 
 **Compatibility note:** This version is compatible only with **Moodle 4.5**.
