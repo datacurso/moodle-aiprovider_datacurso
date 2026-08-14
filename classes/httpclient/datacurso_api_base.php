@@ -170,6 +170,7 @@ class datacurso_api_base {
             'userid' => $payload['userid'] ?? $USER->id,
             'timezone' => \core_date::get_user_timezone(),
             'lang' => $payload['lang'] ?? current_language(),
+            'site_url' => $CFG->wwwroot,
         ];
         switch (strtoupper($method)) {
             case 'GET':
@@ -260,31 +261,43 @@ class datacurso_api_base {
     /**
      * Upload a file using multipart/form-data.
      *
+     * Takes a stored_file because that is what callers hold: Moodle keeps files in
+     * the file storage API, not on disk. The temporary copy needed by cURL is made
+     * and removed here so no caller has to manage it.
+     *
      * @param string $path Relative endpoint. Example: '/upload-file'.
-     * @param string $filepath Absolute path to the file to upload.
-     * @param string|null $mimetype MIME type of the file (falls back to PHP detection when null).
-     * @param string|null $filename Name to use for the uploaded file (defaults to basename of $filepath).
+     * @param \stored_file $file File to upload, from the Moodle file storage API.
      * @param array $extraparams Extra POST parameters to include in the upload request.
      * @return array|null Decoded response from the API.
-     * @throws \Exception If the local file does not exist or the request fails.
+     * @throws \coding_exception If the temporary copy cannot be created.
+     * @throws \Exception If the request fails.
      */
     public function upload_file(
         string $path,
-        string $filepath,
-        ?string $mimetype = null,
-        ?string $filename = null,
+        \stored_file $file,
         array $extraparams = []
     ): ?array {
-        if (!file_exists($filepath)) {
-            $filename = basename($filepath);
-            throw new \coding_exception("File not found: {$filename}");
+        // Create a temporary copy of the file content on disk.
+        $filepath = $file->copy_content_to_temp();
+        $filename = $file->get_filename();
+        $mimetype = $file->get_mimetype();
+
+        if (!$filepath || !file_exists($filepath)) {
+            throw new \coding_exception('Temporary file could not be created for upload.');
         }
 
-        $postdata = array_merge($extraparams, [
-            'file' => new \CURLFile($filepath, $mimetype, $filename),
-        ]);
+        try {
+            $postdata = array_merge($extraparams, [
+                'file' => new \CURLFile($filepath, $mimetype, $filename),
+            ]);
 
-        return $this->send_request('UPLOAD', $path, $postdata);
+            return $this->send_request('UPLOAD', $path, $postdata);
+        } finally {
+            // Always clean up the temporary file, including when the request throws.
+            if (file_exists($filepath)) {
+                @unlink($filepath);
+            }
+        }
     }
 
     /**

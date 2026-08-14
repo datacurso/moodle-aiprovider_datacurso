@@ -168,7 +168,8 @@ class config_form extends \moodleform {
             $enable[$sid] = (int) get_config('aiprovider_datacurso', "ratelimit_{$sid}_enable") === 1 ? 1 : 0;
 
             $storedlimit = get_config('aiprovider_datacurso', "ratelimit_{$sid}_limit");
-            $limit[$sid] = ($storedlimit === false || $storedlimit === '') ? 10 : (int) $storedlimit;
+            $defaultlimit = provider::get_default_window_limit($sid);
+            $limit[$sid] = ($storedlimit === false || $storedlimit === '') ? $defaultlimit : (int) $storedlimit;
 
             // Credits per action: stored JSON map, falling back to the catalog default per key.
             $stored = json_decode((string) get_config('aiprovider_datacurso', "ratelimit_{$sid}_creditperaction"), true);
