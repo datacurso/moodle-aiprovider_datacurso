@@ -1,3 +1,19 @@
+## [1.4.3] - 2026-08-14
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Changed
+- **Course creator API endpoint**
+  The course generation service now points to `https://course-ai-v2.datacurso.com/api/v1` for both the standard and EU regions.
+- **Default per-window rate limit**
+  The rate limit configuration form now prefills the credit limit per service from `provider::get_default_window_limit()` instead of a flat `10` for every service, so each service starts with a sensible default based on its most expensive action.
+- **Site URL in outgoing payloads**
+  Requests to the Datacurso API now include `site_url` so the service can identify the originating site.
+
+### Fixed
+- **Service user cleanup on upgrade**
+  The upgrade step that removes artifacts from the deprecated Datacurso webservice setup now also deletes the `datacursows` service account, instead of leaving it for a site administrator to remove manually.
+
 ## [1.4.2] - 2026-08-10
 
 **Compatibility note:** This version is compatible only with **Moodle 4.5**.
