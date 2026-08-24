@@ -1,6 +1,6 @@
-## [1.4.3] - 2026-08-14
+## [1.4.3-wp] - 2026-08-14
 
-**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+**Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.
 
 ### Changed
 - **Course creator API endpoint**
