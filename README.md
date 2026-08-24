@@ -161,140 +161,6 @@ In this section we will find global reports and configurations from our provider
 
 ![Config](./_docs/images/aiprovider_datacurso_5_link_section.png)
 
-
-## Datacurso webservice setup
-
-### ⚠️IMPORTANT: 
-
-Without completing this setup, the following Datacurso AI plugins will not function correctly in your Moodle site:
-
-- Forum AI: [https://docs.datacurso.com/index.php?title=Forum_AI](https://docs.datacurso.com/index.php?title=Forum_AI)
-- Assign AI: [https://docs.datacurso.com/index.php?title=Assign_AI](https://docs.datacurso.com/index.php?title=Assign_AI)
-- Tutor AI: [https://docs.datacurso.com/index.php?title=Tutor_AI](https://docs.datacurso.com/index.php?title=Tutor_AI)
-
-You can find more information about these plugins in their respective documentations.
-
-### Description
-
-This feature allows you to automatically configure the Web Service used by Datacurso to fetch contextual information from your platform and improve AI responses.
-
-### What it does:
-- Enables Web services and the **REST** protocol if they are not already active.
-- Creates or reuses the service user `datacursows`.
-- Creates or reuses the `Datacurso web service` role and assigns it to the user at the system context with the required capabilities.
-- Creates or reuses the external service `Datacurso web service`, enables it, and restricts it to authorized users.
-- Adds default functions to the service (for example, `core_course_get_contents`, `mod_assign_get_submissions`).
-- Authorizes the user to use the external service.
-- Generates (or reuses) a permanent token for the user/service.
-- Registers the site in Datacurso by securely sending the token.
-
-#### Role capabilities configured
-
-The following capabilities are configured for the `Datacurso web service` role:
-
-- `webservice/rest:use`
-- `moodle/category:viewhiddencategories`
-- `moodle/course:enrolreview`
-- `moodle/course:view`
-- `moodle/course:viewhiddencourses`
-- `moodle/course:viewhiddensections`
-- `moodle/course:viewparticipants`
-- `moodle/course:viewhiddenactivities`
-- `mod/forum:viewdiscussion`
-- `mod/forum:viewqandawithoutposting`
-- `mod/wiki:viewpage`
-- `mod/glossary:view`
-- `mod/book:read`
-- `mod/lesson:view`
-- `mod/choice:choose`
-- `mod/choice:readresponses`
-- `mod/feedback:view`
-- `mod/feedback:viewanalysepage`
-- `mod/scorm:viewreport`
-- `mod/scorm:viewscores`
-- `mod/h5pactivity:view`
-- `mod/h5pactivity:reviewattempts`
-- `mod/resource:view`
-- `mod/page:view`
-- `mod/assign:view`
-- `mod/assign:viewgrades`
-- `mod/data:viewentry`
-- `mod/data:view`
-- `mod/folder:view`
-- `mod/label:view`
-- `mod/url:view`
-- `mod/workshop:view`
-
-#### Web service functions enabled for AI context
-
-The following functions are added to the `Datacurso web service` external service:
-
-- `core_course_get_contents`
-- `core_course_get_courses_by_field`
-- `mod_forum_get_forums_by_courses`
-- `mod_forum_get_forum_discussions`
-- `mod_forum_get_discussion_posts`
-- `mod_wiki_get_wikis_by_courses`
-- `mod_wiki_get_subwikis`
-- `mod_wiki_get_subwiki_pages`
-- `mod_wiki_get_page_contents`
-- `mod_wiki_get_subwiki_files`
-- `mod_glossary_get_glossaries_by_courses`
-- `mod_glossary_get_entries_by_search`
-- `mod_glossary_get_entry_by_id`
-- `mod_book_get_books_by_courses`
-- `mod_lesson_get_lessons_by_courses`
-- `mod_lesson_get_pages`
-- `mod_lesson_get_page_data`
-- `mod_choice_get_choices_by_courses`
-- `mod_choice_get_choice_options`
-- `mod_choice_get_choice_results`
-- `mod_feedback_get_feedbacks_by_courses`
-- `mod_feedback_get_items`
-- `mod_feedback_get_finished_responses`
-- `mod_feedback_get_analysis`
-- `mod_scorm_get_scorms_by_courses`
-- `mod_scorm_get_scorm_scoes`
-- `mod_scorm_get_scorm_user_data`
-- `mod_scorm_get_scorm_sco_tracks`
-- `mod_h5pactivity_get_h5pactivities_by_courses`
-- `mod_h5pactivity_get_attempts`
-- `mod_h5pactivity_get_results`
-- `mod_resource_get_resources_by_courses`
-- `mod_resource_view_resource`
-- `mod_page_get_pages_by_courses`
-- `mod_assign_get_assignments`
-- `mod_assign_view_assign`
-- `mod_assign_get_submission_status`
-- `mod_data_get_databases_by_courses`
-- `mod_data_get_entries`
-- `mod_data_get_fields`
-- `mod_folder_get_folders_by_courses`
-- `mod_folder_view_folder`
-- `mod_label_get_labels_by_courses`
-- `mod_url_get_urls_by_courses`
-- `mod_url_view_url`
-- `mod_workshop_get_workshops_by_courses`
-- `mod_workshop_view_workshop`
-- `mod_workshop_get_submissions`
-
-### Interface:
-- Shows the current status (web services/REST, user, role, service, token, registration).
-  
-  ![Webservice Status](./_docs/images/aiprovider_datacurso_webservice_status.png)
-
-- Buttons: **Configure webservice** (configure everything), **Retry** (retry registration/send), **Regenerate token** (regenerate token and resend registration).
-  
-  ![Webservice Buttons](./_docs/images/aiprovider_datacurso_webservice_buttons.png)
-
-- Includes a live activity log with the steps performed.
-
-   ![Webservice Log](./_docs/images/aiprovider_datacurso_webservice_log.png)
-
-- Si el proceso de registro sale bien nos deberia aparecer algo como lo siguiente:
-
-   ![Webservice Success](./_docs/images/aiprovider_datacurso_webservice_success.png)
-
 ## Actions
 
 From the same configuration page of the **Datacurso AI Provider**, you can enable and customize the following Moodle AI-powered actions, seamlessly integrated with Moodle’s native capabilities:
@@ -309,7 +175,7 @@ From the same configuration page of the **Datacurso AI Provider**, you can enabl
 
 In this section you can monitor credit usage in detail for each action performed in each plugin of the Datacurso suite, including totals, trends, and distribution by service.
 
-To view the reports, go to `Site administration > Datacurso AI Provider`.
+To view the reports, go to `Site administration > Reports > General report Datacurso AI`.
 
 ![Report Link](./_docs/images/aiprovider_datacurso_page-general-report.png)
 
@@ -331,16 +197,6 @@ The second section displays information about credit usage through visual graphs
 The third section shows the list of Datacurso plugins that are compatible with the Datacurso AI provider.
 
 ![List plugins](./_docs/images/aiprovider_datacurso_page-report-listplugins.png)
-
-### Datacurso per-user credits limits
-
-This section is for create credits limits of use AI per user.
-
-![Credit limit user](./_docs/images/aiprovider_datacurso_credits_limits_user.png)
-
-### Provider configuration
-
-This section is the settings provider of tenant.
 
 ## License ##
 

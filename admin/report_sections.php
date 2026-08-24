@@ -42,11 +42,36 @@ $PAGE->set_url(new moodle_url('/ai/provider/datacurso/admin/report_sections.php'
 $PAGE->set_pagelayout('report');
 $PAGE->set_title(get_string('pluginname', 'aiprovider_datacurso'));
 
-// Get the current tab parameter.
-$tab = optional_param('tab', 'consumption', PARAM_ALPHAEXT);
+// Get the current tab parameter. Configuration is the default landing tab.
+$tab = optional_param('tab', 'config', PARAM_ALPHAEXT);
+
+// Process the configuration form BEFORE any output so we can redirect after saving.
+$configform = null;
+if ($tab === 'config') {
+    $configform = new \aiprovider_datacurso\form\config_form($PAGE->url);
+    if ($configform->is_cancelled()) {
+        redirect($PAGE->url);
+    } else if ($data = $configform->get_data()) {
+        \aiprovider_datacurso\form\config_form::save($data);
+        redirect(
+            $PAGE->url,
+            get_string('config_saved', 'aiprovider_datacurso'),
+            null,
+            \core\output\notification::NOTIFY_SUCCESS
+        );
+    } else {
+        $configform->set_data(\aiprovider_datacurso\form\config_form::current_data());
+    }
+}
 
 // Define tabs for navigation.
 $tabs = [];
+$tabs[] = new tabobject(
+    'config',
+    new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'config']),
+    get_string('link_config', 'aiprovider_datacurso')
+);
+
 $tabs[] = new tabobject(
     'consumption',
     new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'consumption']),
@@ -93,6 +118,12 @@ echo $OUTPUT->tabtree($tabs, $tab);
 
 // Load tab content.
 switch ($tab) {
+    case 'config':
+        // Render the per-plugin rate limit configuration form (native moodleform).
+        echo $OUTPUT->heading(get_string('config_heading', 'aiprovider_datacurso'));
+        $configform->display();
+        break;
+
     case 'consumption':
         // Render AI consumption history page.
         $page = new \aiprovider_datacurso\output\consumption_page();
