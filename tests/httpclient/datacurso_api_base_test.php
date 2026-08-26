@@ -16,6 +16,8 @@
 
 namespace aiprovider_datacurso\httpclient;
 
+defined('MOODLE_INTERNAL') || die();
+
 require_once(__DIR__ . '/../fixtures/test_upload_client.php');
 
 /**
