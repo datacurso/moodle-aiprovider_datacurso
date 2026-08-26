@@ -54,7 +54,6 @@ class config_form extends \moodleform {
             $unitoptions[$unit] = get_string($unit, 'aiprovider_datacurso');
         }
 
-
         // License key. Shares the same config setting as the native AI provider page
         // (aiprovider_datacurso/licensekey), so saving here updates it there and vice versa.
         $mform->addElement('passwordunmask', 'licensekey', get_string('licensekey', 'aiprovider_datacurso'));

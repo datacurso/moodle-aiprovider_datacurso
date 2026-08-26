@@ -16,6 +16,8 @@
 
 namespace aiprovider_datacurso\httpclient;
 
+require_once(__DIR__ . '/../fixtures/test_upload_client.php');
+
 /**
  * Tests for the Datacurso API HTTP client file upload.
  *
@@ -149,51 +151,5 @@ final class datacurso_api_base_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertFileDoesNotExist($client->temppath);
         }
-    }
-}
-
-/**
- * API client that captures the request instead of sending it.
- *
- * @package    aiprovider_datacurso
- * @category   test
- * @copyright  2026 Industria Elearning
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class test_upload_client extends datacurso_api_base {
-    /** @var string|null Method the request was sent with. */
-    public ?string $method = null;
-
-    /** @var string|null Endpoint the request was sent to. */
-    public ?string $path = null;
-
-    /** @var array Payload the request was sent with. */
-    public array $payload = [];
-
-    /** @var string|null Path of the temporary copy at request time. */
-    public ?string $temppath = null;
-
-    /** @var string|null Content of the temporary copy at request time. */
-    public ?string $contentatrequest = null;
-
-    /** @var \Throwable|null Exception to throw instead of returning. */
-    public ?\Throwable $failwith = null;
-
-    #[\Override]
-    protected function send_request(string $method, string $path, $payload = [], array $headers = []): ?array {
-        $this->method = $method;
-        $this->path = $path;
-        $this->payload = $payload;
-
-        if (isset($payload['file']) && $payload['file'] instanceof \CURLFile) {
-            $this->temppath = $payload['file']->getFilename();
-            $this->contentatrequest = file_get_contents($this->temppath);
-        }
-
-        if ($this->failwith !== null) {
-            throw $this->failwith;
-        }
-
-        return ['status' => 'ok'];
     }
 }
