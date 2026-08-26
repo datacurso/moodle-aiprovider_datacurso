@@ -42,8 +42,8 @@ $PAGE->set_url(new moodle_url('/ai/provider/datacurso/admin/report_sections.php'
 $PAGE->set_pagelayout('report');
 $PAGE->set_title('Datacurso AI Provider Reports');
 
-// Get the current tab parameter. Configuration is the default landing tab.
-$tab = optional_param('tab', 'config', PARAM_ALPHAEXT);
+// Get the current tab parameter. Consumption history is the default landing tab.
+$tab = optional_param('tab', 'consumption', PARAM_ALPHAEXT);
 
 // Process the configuration form BEFORE any output so we can redirect after saving.
 $configform = null;
@@ -67,12 +67,6 @@ if ($tab === 'config') {
 // Define tabs for navigation.
 $tabs = [];
 $tabs[] = new tabobject(
-    'config',
-    new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'config']),
-    get_string('link_config', 'aiprovider_datacurso')
-);
-
-$tabs[] = new tabobject(
     'consumption',
     new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'consumption']),
     get_string('link_consumptionhistory', 'aiprovider_datacurso')
@@ -88,6 +82,12 @@ $tabs[] = new tabobject(
     'pluginslist',
     new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'pluginslist']),
     get_string('link_listplugings', 'aiprovider_datacurso')
+);
+
+$tabs[] = new tabobject(
+    'config',
+    new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'config']),
+    get_string('link_config', 'aiprovider_datacurso')
 );
 
 // Render page header and navigation.
