@@ -133,17 +133,24 @@ final class upgrade_test extends \basic_testcase {
     }
 
     /**
-     * The highest savepoint in db/upgrade.php must equal $plugin->version from version.php.
-     * This is the gap left open by U1 deviation 3 — closing it is U5's whole purpose.
+     * No savepoint in db/upgrade.php may be newer than $plugin->version from version.php.
+     *
+     * Moodle only requires savepoints to be less than or equal to the plugin version: bumping
+     * version.php for a release without new upgrade steps is normal. A savepoint above the
+     * declared version, however, would never run on a fresh upgrade, so it is a genuine defect.
      */
-    public function test_highest_savepoint_matches_plugin_version(): void {
+    public function test_no_savepoint_is_newer_than_plugin_version(): void {
         $savepoints = $this->extract_savepoints();
         $highest = max($savepoints);
 
         $plugin = new \stdClass();
         include(self::VERSION_FILE);
 
-        $this->assertSame($plugin->version, $highest);
+        $this->assertLessThanOrEqual(
+            $plugin->version,
+            $highest,
+            "Highest savepoint {$highest} is newer than \$plugin->version {$plugin->version}"
+        );
     }
 
     /**

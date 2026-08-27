@@ -1,6 +1,6 @@
 ## [2.1.0] - 2026-08-26
 
-**Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.1**.
+**Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.
 
 ### Added
 - **Per-action credit fields on the provider-instance form**
