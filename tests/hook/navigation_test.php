@@ -30,8 +30,8 @@ use core\navigation\views\primary;
  * @category   test
  * @copyright  2026 Datacurso
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \aiprovider_datacurso\hook\navigation
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\aiprovider_datacurso\hook\navigation::class)]
 final class navigation_test extends \advanced_testcase {
     /**
      * Dispatch primary_extend on a fresh primary navigation view for the current user.

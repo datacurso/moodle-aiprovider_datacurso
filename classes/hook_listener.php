@@ -185,6 +185,11 @@ class hook_listener {
             $mform->setDefault($field, (int) $action['default']);
             $mform->addHelpButton($field, 'ratelimit_creditperaction', 'aiprovider_datacurso');
             $mform->hideIf($field, "ratelimit_{$sid}_enable", 'eq', 0);
+
+            // Core's ai_provider_form has no server-side validation() seam for hook-added
+            // fields (unlike 4.5's config_form::validation()), so credits-per-action must be
+            // validated client-side, mirroring the 4.5 form's "positive integer" check.
+            $mform->addRule($field, get_string('err_positiveint', 'form'), 'regex', '/^[1-9]\d*$/', 'client');
         }
     }
 

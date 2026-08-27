@@ -31,6 +31,8 @@ use aiprovider_datacurso\privacy\provider;
  * @copyright  2025 Wilber Narvaez <https://datacurso.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+#[\PHPUnit\Framework\Attributes\CoversMethod(\aiprovider_datacurso\privacy\provider::class, 'get_metadata')]
+#[\PHPUnit\Framework\Attributes\CoversMethod(\aiprovider_datacurso\privacy\provider::class, 'get_contexts_for_userid')]
 final class privacy_provider_test extends provider_testcase {
     /**
      * Test setup.
@@ -42,8 +44,6 @@ final class privacy_provider_test extends provider_testcase {
 
     /**
      * Metadata only declares the external location (no local tables).
-     *
-     * @covers \aiprovider_datacurso\privacy\provider::get_metadata
      */
     public function test_get_metadata(): void {
         $collection = provider::get_metadata(new collection('aiprovider_datacurso'));
@@ -53,8 +53,6 @@ final class privacy_provider_test extends provider_testcase {
 
     /**
      * With no local data, no user context is returned.
-     *
-     * @covers \aiprovider_datacurso\privacy\provider::get_contexts_for_userid
      */
     public function test_get_contexts_for_userid_is_empty(): void {
         $user = $this->getDataGenerator()->create_user();

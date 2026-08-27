@@ -29,8 +29,8 @@ use core_ai\hook\after_ai_provider_form_hook;
  * @category   test
  * @copyright  2026 Datacurso
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \aiprovider_datacurso\hook_listener
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\aiprovider_datacurso\hook_listener::class)]
 final class hook_listener_test extends \advanced_testcase {
     /**
      * Build a bare MoodleQuickForm and dispatch the hook handler on it directly
@@ -143,6 +143,41 @@ final class hook_listener_test extends \advanced_testcase {
         $vars = get_object_vars($element);
 
         $this->assertNotEmpty($vars['_helpbutton'] ?? null);
+    }
+
+    /**
+     * Credit fields carry a client-side positive-integer validation rule, mirroring the
+     * 4.5 config_form's validation() checks -- there is no server-side validation() seam on
+     * core_ai\form\ai_provider_form, so this must be a client rule registered via addRule().
+     */
+    public function test_credit_field_has_a_positive_integer_client_rule(): void {
+        $mform = $this->dispatch();
+
+        $sid = 'local_coursegen';
+        $action = provider::get_actions_for_service($sid)[0];
+        $field = "ratelimit_{$sid}_credit_{$action['key']}";
+
+        $reflection = new \ReflectionProperty(\MoodleQuickForm::class, '_rules');
+        $reflection->setAccessible(true);
+        $rules = $reflection->getValue($mform);
+
+        $this->assertArrayHasKey($field, $rules, "Missing validation rule(s) for {$field}");
+
+        $matching = array_filter(
+            $rules[$field],
+            static fn(array $rule): bool => $rule['type'] === 'regex' && $rule['validation'] === 'client'
+        );
+        $this->assertNotEmpty($matching, "Missing client-side regex rule for {$field}");
+
+        $rule = reset($matching);
+        $this->assertSame('/^[1-9]\d*$/', $rule['format']);
+
+        // The regex must accept positive integers and reject zero, negatives and non-numerics.
+        $this->assertSame(1, preg_match($rule['format'], '1'));
+        $this->assertSame(1, preg_match($rule['format'], '4321'));
+        $this->assertSame(0, preg_match($rule['format'], '0'));
+        $this->assertSame(0, preg_match($rule['format'], '-1'));
+        $this->assertSame(0, preg_match($rule['format'], 'abc'));
     }
 
     /**

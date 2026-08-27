@@ -32,8 +32,9 @@ require_once(__DIR__ . '/../fixtures/test_upload_client.php');
  * @category   test
  * @copyright  2026 Industria Elearning
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \aiprovider_datacurso\httpclient\datacurso_api_base::upload_file
  */
+#[\PHPUnit\Framework\Attributes\CoversMethod(\aiprovider_datacurso\httpclient\datacurso_api_base::class, 'upload_file')]
+#[\PHPUnit\Framework\Attributes\CoversMethod(\aiprovider_datacurso\httpclient\datacurso_api_base::class, 'get_site_uuid')]
 final class datacurso_api_base_test extends \advanced_testcase {
     /**
      * Seed an enabled provider instance with a license key.
@@ -174,5 +175,34 @@ final class datacurso_api_base_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertFileDoesNotExist($client->temppath);
         }
+    }
+
+    /**
+     * get_site_uuid() generates a UUID on first call and persists it in plugin config --
+     * the only legitimate get_config()/set_config() survivor in this plugin (design's
+     * removal-checklist grep gate: every other per-instance value moved to ai_providers.config).
+     */
+    public function test_get_site_uuid_generates_and_persists_a_uuid_on_first_call(): void {
+        $this->resetAfterTest();
+
+        $this->assertFalse((bool) get_config('aiprovider_datacurso', 'site_uuid'));
+
+        $uuid = datacurso_api_base::get_site_uuid();
+
+        $this->assertNotEmpty($uuid);
+        $this->assertSame($uuid, get_config('aiprovider_datacurso', 'site_uuid'));
+    }
+
+    /**
+     * Once generated, the same UUID is returned on every subsequent call (identifies the
+     * site to the remote token-manager; a changing value would look like a different site).
+     */
+    public function test_get_site_uuid_is_stable_across_calls(): void {
+        $this->resetAfterTest();
+
+        $first = datacurso_api_base::get_site_uuid();
+        $second = datacurso_api_base::get_site_uuid();
+
+        $this->assertSame($first, $second);
     }
 }

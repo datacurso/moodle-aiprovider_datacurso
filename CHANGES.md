@@ -7,6 +7,8 @@
   The provider-instance configuration form now exposes a credits-per-action field
   (`ratelimit_{service}_credit_{action}`) for every action of every service, next to the
   existing enable/limit/window fields, replacing the abandoned global credit-per-action setting.
+  Each field carries a client-side positive-integer validation rule, matching the 4.5 form's
+  check (there is no server-side `validation()` seam on the core provider-instance form).
 - **`execute_request()` test seam in the HTTP client**
   `datacurso_api_base::send_request()` now delegates the actual cURL dispatch to a protected
   `execute_request()` method, so tests can capture the outgoing request (including rate-limit
@@ -32,6 +34,10 @@
   `consumption`, `generalreport`, `pluginslist` and the "Provider configuration" link (pointing
   at the core AI provider-instance edit form) are unchanged; the CSV export and year filter are
   now available on the consumption and general report tabs.
+- **Reports access capability widened to the manager archetype**
+  The consumption/report page and its primary-navigation entry now gate on
+  `aiprovider/datacurso:viewreports` instead of `moodle/site:config`, so any user with the
+  manager role (not only admins) can reach AI usage reports.
 
 ### Removed
 - **Webservice self-configuration**: the admin page, the `aiprovider/datacurso:configurews`
@@ -52,6 +58,11 @@
   The body called `webservice_config::upgrade_sync_ws_and_capabilities()` inside a try/catch
   that only caught `\Exception`, so a missing class raised an uncatchable `\Error` and aborted
   the upgrade. The savepoint number is retained; the body is now a no-op.
+- **Upgrade step `2026082600` sweeps dead per-instance allowlist keys**
+  The 4.5-line global config cleanup (`unset_config()`) could not reach per-instance settings,
+  which live as JSON in `ai_providers.config`. This step strips the leftover
+  `ratelimit_*_allowedusers*` / `*_coursecreators` / `*_activitycreators` / `*_courseanalysts` /
+  `*_generalanalysts` keys from every Datacurso provider instance's stored configuration.
 - **`ratelimiter` constructor arity mismatch**
   Merging the header-forwarding rate-limit model against the 5.0 instance-scoped constructor
   left two call sites passing zero arguments to a constructor that requires one

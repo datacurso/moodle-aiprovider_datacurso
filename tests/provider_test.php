@@ -24,11 +24,10 @@ namespace aiprovider_datacurso;
  * @copyright  2026 Industria Elearning
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\aiprovider_datacurso\provider::class)]
 final class provider_test extends \basic_testcase {
     /**
      * Ensure provider no longer exposes legacy user-mapping API.
-     *
-     * @covers \aiprovider_datacurso\provider
      */
     public function test_provider_has_no_ratelimit_settings_mapping_method(): void {
         $this->assertFalse(method_exists(provider::class, 'get_ratelimit_settings_class'));
@@ -36,8 +35,6 @@ final class provider_test extends \basic_testcase {
 
     /**
      * Ensure provider services list still includes known AI consumers.
-     *
-     * @covers \aiprovider_datacurso\provider::get_services
      */
     public function test_get_services_contains_known_ids(): void {
         $serviceids = array_column(provider::get_services(), 'id');
@@ -65,8 +62,6 @@ final class provider_test extends \basic_testcase {
     /**
      * The instance-scoped flat key `ratelimit_{sid}_credit_{actionkey}` wins over the
      * catalogue default when present.
-     *
-     * @covers \aiprovider_datacurso\provider::get_credit_for_action
      */
     public function test_get_credit_for_action_reads_instance_config(): void {
         $instance = $this->make_instance([
@@ -78,8 +73,6 @@ final class provider_test extends \basic_testcase {
 
     /**
      * With no instance-config key set, the catalogue default for the action wins.
-     *
-     * @covers \aiprovider_datacurso\provider::get_credit_for_action
      */
     public function test_get_credit_for_action_falls_back_to_the_catalogue_default(): void {
         $instance = $this->make_instance([]);
@@ -90,8 +83,6 @@ final class provider_test extends \basic_testcase {
 
     /**
      * A zero or negative configured value never yields fewer than 1 credit.
-     *
-     * @covers \aiprovider_datacurso\provider::get_credit_for_action
      */
     public function test_get_credit_for_action_is_never_below_one(): void {
         $zero = $this->make_instance([
@@ -108,8 +99,6 @@ final class provider_test extends \basic_testcase {
     /**
      * get_credit_for_action() must be a public, non-static instance method: it reads
      * $this->config, which is only populated on a constructed provider instance.
-     *
-     * @covers \aiprovider_datacurso\provider::get_credit_for_action
      */
     public function test_get_credit_for_action_is_an_instance_method(): void {
         $method = new \ReflectionMethod(provider::class, 'get_credit_for_action');

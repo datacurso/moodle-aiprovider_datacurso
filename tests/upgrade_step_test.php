@@ -28,8 +28,8 @@ use aiprovider_datacurso\local\upgrade\allowlist_sweeper;
  * @category   test
  * @copyright  2026 Datacurso
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \aiprovider_datacurso\local\upgrade\allowlist_sweeper
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\aiprovider_datacurso\local\upgrade\allowlist_sweeper::class)]
 final class upgrade_step_test extends \advanced_testcase {
     /** @var string[] Dead per-instance allowlist keys that must be stripped. */
     private const DEAD_KEYS = [

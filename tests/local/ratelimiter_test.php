@@ -29,8 +29,8 @@ use aiprovider_datacurso\provider;
  * @category   test
  * @copyright  2026 Datacurso
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \aiprovider_datacurso\local\ratelimiter
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\aiprovider_datacurso\local\ratelimiter::class)]
 final class ratelimiter_test extends \advanced_testcase {
     /**
      * Build a provider instance with the given config, no DB writes.

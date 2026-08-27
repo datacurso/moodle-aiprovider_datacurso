@@ -29,6 +29,7 @@ namespace aiprovider_datacurso;
  * @copyright  2026 Datacurso
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+#[\PHPUnit\Framework\Attributes\CoversNothing]
 final class hooks_test extends \basic_testcase {
     /**
      * Load db/hooks.php in an isolated scope and return the declared $callbacks array.

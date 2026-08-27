@@ -19,6 +19,8 @@ namespace aiprovider_datacurso;
 use core_ai\aiactions\generate_text;
 use GuzzleHttp\Psr7\Response;
 
+defined('MOODLE_INTERNAL') || die();
+
 require_once(__DIR__ . '/fixtures/test_processor.php');
 
 /**
@@ -34,8 +36,8 @@ require_once(__DIR__ . '/fixtures/test_processor.php');
  * @category   test
  * @copyright  2026 Datacurso
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \aiprovider_datacurso\abstract_processor
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\aiprovider_datacurso\abstract_processor::class)]
 final class abstract_processor_test extends \advanced_testcase {
     /** @var provider The provider instance under test. */
     private provider $provider;

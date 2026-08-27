@@ -22,7 +22,7 @@
  */
 
 import Ajax from 'core/ajax';
-import { get_string as getString } from 'core/str';
+import { get_string as getString, getStrings } from 'core/str';
 import Templates from 'core/templates';
 import Notification from 'core/notification';
 import AutoComplete from 'core/form-autocomplete';
@@ -288,14 +288,14 @@ export const init = async () => {
     }
 
     const [hId, hUser, hAction, hService, hTokens, hBalance, hDate] =
-      await Promise.all([
-        getString("id", "aiprovider_datacurso"),
-        getString("user", "core"),
-        getString("action", "aiprovider_datacurso"),
-        getString("service", "aiprovider_datacurso"),
-        getString("tokensused", "aiprovider_datacurso"),
-        getString("remainingtokens", "aiprovider_datacurso"),
-        getString("date", "core"),
+      await getStrings([
+        {key: "id", component: "aiprovider_datacurso"},
+        {key: "user", component: "core"},
+        {key: "action", component: "aiprovider_datacurso"},
+        {key: "service", component: "aiprovider_datacurso"},
+        {key: "tokensused", component: "aiprovider_datacurso"},
+        {key: "remainingtokens", component: "aiprovider_datacurso"},
+        {key: "date", component: "core"},
       ]);
 
     const escape = (val) => `"${String(val ?? "").replace(/"/g, '""')}"`;

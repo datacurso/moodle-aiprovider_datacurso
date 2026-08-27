@@ -23,16 +23,18 @@
 
 import Ajax from 'core/ajax';
 import Chart from 'core/chartjs';
-import { get_string as getString } from 'core/str';
+import { get_string as getString, getStrings } from 'core/str';
 import Notification from 'core/notification';
 import AutoComplete from 'core/form-autocomplete';
 
 export const init = async () => {
 
-    const date = await getString('date', 'core');
-    const creditsConsumedMonth = await getString('tokensconsumedmonth', 'aiprovider_datacurso');
-    const creditsConsumedDay = await getString('tokensconsumedday', 'aiprovider_datacurso');
-    const creditsConsumed = await getString('tokensconsumed', 'aiprovider_datacurso');
+    const [date, creditsConsumedMonth, creditsConsumedDay, creditsConsumed] = await getStrings([
+        {key: 'date', component: 'core'},
+        {key: 'tokensconsumedmonth', component: 'aiprovider_datacurso'},
+        {key: 'tokensconsumedday', component: 'aiprovider_datacurso'},
+        {key: 'tokensconsumed', component: 'aiprovider_datacurso'},
+    ]);
 
     const tokensAvailable = document.getElementById('tokens-available');
     const tokensConsumed = document.getElementById('tokens-consumed');

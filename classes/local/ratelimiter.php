@@ -29,12 +29,16 @@ namespace aiprovider_datacurso\local;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class ratelimiter {
+    /** @var \aiprovider_datacurso\provider The Datacurso AI provider instance. */
+    protected \aiprovider_datacurso\provider $instanceprovider;
+
     /**
      * Constructor.
      *
      * @param \aiprovider_datacurso\provider $instanceprovider The Datacurso AI provider instance.
      */
-    public function __construct(protected \aiprovider_datacurso\provider $instanceprovider) {
+    public function __construct(\aiprovider_datacurso\provider $instanceprovider) {
+        $this->instanceprovider = $instanceprovider;
     }
 
     /**

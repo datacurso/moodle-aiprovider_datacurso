@@ -30,6 +30,7 @@ namespace aiprovider_datacurso;
  * @copyright  2026 Datacurso
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+#[\PHPUnit\Framework\Attributes\CoversNothing]
 final class upgrade_test extends \basic_testcase {
     /** @var string Absolute path to db/upgrade.php. */
     private const UPGRADE_FILE = __DIR__ . '/../db/upgrade.php';
