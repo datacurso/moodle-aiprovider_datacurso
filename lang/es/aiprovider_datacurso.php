@@ -199,7 +199,6 @@ $string['minutes'] = 'Minutos';
 $string['missing'] = 'Falta';
 $string['month'] = 'mes';
 $string['months'] = 'Meses';
-$string['nav_datacurso'] = 'Datacurso AI Provider';
 $string['needs_repair'] = 'Necesita reparación';
 $string['nodata'] = 'No se encontró información';
 $string['not_assigned'] = 'No asignado';

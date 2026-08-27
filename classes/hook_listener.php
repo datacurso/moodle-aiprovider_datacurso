@@ -107,36 +107,37 @@ class hook_listener {
                 'years' => get_string('years'),
             ];
 
-            $mform->addElement(
-                'text',
-                "ratelimit_{$sid}_window_value",
-                get_string('ratelimit_window_value', 'aiprovider_datacurso'),
-                ['size' => 5]
+            // Time window: value and unit grouped under a single label with one help button,
+            // mirroring the 4.5 configuration form. Element names are kept flat (no group
+            // prefix) so the stored instance config keys stay ratelimit_{sid}_window_value/_unit.
+            $window = [
+                $mform->createElement(
+                    'text',
+                    "ratelimit_{$sid}_window_value",
+                    get_string('ratelimit_window_value', 'aiprovider_datacurso'),
+                    ['size' => 5]
+                ),
+                $mform->createElement(
+                    'select',
+                    "ratelimit_{$sid}_window_unit",
+                    get_string('ratelimit_window_unit', 'aiprovider_datacurso'),
+                    $options
+                ),
+            ];
+            $mform->addGroup(
+                $window,
+                "ratelimit_{$sid}_window",
+                get_string('ratelimit_window', 'aiprovider_datacurso'),
+                ' ',
+                false
             );
             $mform->setType("ratelimit_{$sid}_window_value", PARAM_INT);
-
-            $mform->addElement(
-                'select',
-                "ratelimit_{$sid}_window_unit",
-                get_string('ratelimit_window_unit', 'aiprovider_datacurso'),
-                $options
-            );
             $mform->setType("ratelimit_{$sid}_window_unit", PARAM_ALPHANUMEXT);
+            $mform->setDefault("ratelimit_{$sid}_window_value", \aiprovider_datacurso\provider::get_default_window_limit($sid));
+            $mform->addHelpButton("ratelimit_{$sid}_window", 'ratelimit_window', 'aiprovider_datacurso');
+            $mform->hideIf("ratelimit_{$sid}_window", "ratelimit_{$sid}_enable", 'eq', 0);
 
-            $mform->hideIf("ratelimit_{$sid}_window_value", "ratelimit_{$sid}_enable", 'eq', 0);
-            $mform->hideIf("ratelimit_{$sid}_window_unit", "ratelimit_{$sid}_enable", 'eq', 0);
-
-            // Dynamic injection of Service-Specific elements.
-            $classname = "\\aiprovider_datacurso\\local\\ratelimit\\{$sid}";
-
-            // Check if a service-specific rate limit configuration class exists.
-            if (class_exists($classname)) {
-                $ratelimitserviceconfig = new $classname();
-
-                if (method_exists($ratelimitserviceconfig, 'add_form_elements')) {
-                    $ratelimitserviceconfig->add_form_elements($mform, $sid);
-                }
-            }
+            self::add_credit_per_action_fields($mform, $sid);
         }
 
         $mform->addElement(
@@ -146,6 +147,45 @@ class hook_listener {
         );
 
         $PAGE->requires->js_call_amd('aiprovider_datacurso/hiden_fields', 'init');
+    }
+
+    /**
+     * Add the "Credits per action" block for a service: a bold title and description,
+     * then one PARAM_INT text field per action of the service (flat-keyed per D1:
+     * `ratelimit_{sid}_credit_{actionkey}`), each with a help button and prefilled
+     * from the catalogue default, hidden together with the rest of the service's
+     * rate-limit fields when the service is disabled.
+     *
+     * @param \MoodleQuickForm $mform
+     * @param string $sid Service identifier.
+     */
+    private static function add_credit_per_action_fields(\MoodleQuickForm $mform, string $sid): void {
+        $mform->addElement(
+            'static',
+            "ratelimit_{$sid}_creditperaction_head",
+            \html_writer::tag(
+                'strong',
+                get_string('ratelimit_creditperaction', 'aiprovider_datacurso'),
+                ['class' => 'h5']
+            ),
+            \html_writer::tag(
+                'span',
+                get_string('ratelimit_creditperaction_desc', 'aiprovider_datacurso'),
+                ['class' => 'text-muted']
+            )
+        );
+        $mform->hideIf("ratelimit_{$sid}_creditperaction_head", "ratelimit_{$sid}_enable", 'eq', 0);
+
+        foreach (\aiprovider_datacurso\provider::get_actions_for_service($sid) as $action) {
+            $key = $action['key'];
+            $field = "ratelimit_{$sid}_credit_{$key}";
+
+            $mform->addElement('text', $field, (string) $action['name'], ['size' => 10]);
+            $mform->setType($field, PARAM_INT);
+            $mform->setDefault($field, (int) $action['default']);
+            $mform->addHelpButton($field, 'ratelimit_creditperaction', 'aiprovider_datacurso');
+            $mform->hideIf($field, "ratelimit_{$sid}_enable", 'eq', 0);
+        }
     }
 
     /**

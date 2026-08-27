@@ -97,7 +97,7 @@ abstract class abstract_processor extends process_base {
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
         // Resolve the sub-action (text vs image) so the look-ahead credit estimate is correct.
         $actionkey = \aiprovider_datacurso\local\ratelimiter::resolve_action_key($serviceid, $path);
-        $ratelimitheaders = (new \aiprovider_datacurso\local\ratelimiter())
+        $ratelimitheaders = (new \aiprovider_datacurso\local\ratelimiter($this->provider))
             ->get_rate_limit_header_map($serviceid, $actionkey);
 
         try {

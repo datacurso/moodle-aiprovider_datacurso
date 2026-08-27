@@ -107,7 +107,8 @@ class provider extends \core_ai\provider {
      *
      * Some services have several sub-actions with their own credit cost (e.g. the course creator).
      * Each entry is {key, name (lang string), default}. Single-action services expose one 'default'.
-     * Drives the configuration UI and the stored JSON map ratelimit_{service}_creditperaction.
+     * Drives the configuration UI and the flat instance-config keys
+     * ratelimit_{service}_credit_{actionkey} (see get_credit_for_action()).
      *
      * @return array<string, array<int, array{key: string, name: \lang_string|string, default: int}>>
      */

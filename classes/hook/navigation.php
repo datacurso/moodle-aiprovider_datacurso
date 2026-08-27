@@ -38,8 +38,9 @@ class navigation {
     public static function primary_extend(primary_extend_hook $hook): void {
         $sysctx = context_system::instance();
 
-        // Optional: Only admins should see this navigation entry.
-        if (!has_capability('moodle/site:config', $sysctx)) {
+        // Only users who can view the provider's consumption reports see this entry
+        // (manager archetype capability; narrower than requiring full site config).
+        if (!has_capability('aiprovider/datacurso:viewreports', $sysctx)) {
             return;
         }
 
