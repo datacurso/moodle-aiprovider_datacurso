@@ -46,9 +46,6 @@ export const init = async () => {
   let currentSortField = "";
   let currentSortDir = "asc";
 
-  // Rows currently shown in the table (current page), used for CSV export.
-  let currentConsumptions = [];
-
   // Select and input for limit and page
   const limitSelect = document.getElementById("filter-limit");
   const pageInput = document.getElementById("filter-page");
@@ -216,22 +213,14 @@ export const init = async () => {
     }
   };
 
-  // Get history with filters
-  const fetchData = async () => {
-    const serviceValue = filterService.value;
-    const actionValue = filterAction.value;
-    const userValue = filterUser.value;
-    const fromValue = filterFrom.value;
-    const toValue = filterTo.value;
-
+  // Build the filter/sort args shared by the table and the CSV export (no page/limit).
+  const buildBaseArgs = () => {
     const args = {
-      page: currentPage,
-      limit: currentLimit,
-      userid: userValue !== "" ? parseInt(userValue) : 0,
-      service: serviceValue !== "all" ? serviceValue : "",
-      action: actionValue !== "all" ? actionValue : "",
-      fromdate: fromValue || "",
-      todate: toValue || "",
+      userid: filterUser.value !== "" ? parseInt(filterUser.value) : 0,
+      service: filterService.value !== "all" ? filterService.value : "",
+      action: filterAction.value !== "all" ? filterAction.value : "",
+      fromdate: filterFrom.value || "",
+      todate: filterTo.value || "",
     };
 
     if (currentSortField) {
@@ -239,12 +228,18 @@ export const init = async () => {
       args.shordir = currentSortDir;
     }
 
+    return args;
+  };
+
+  // Get history with filters
+  const fetchData = async () => {
+    const args = { ...buildBaseArgs(), page: currentPage, limit: currentLimit };
+
     await renderTable([], { loading: true });
 
     const response = await getConsumptionHistory(args);
 
     const consumptions = response?.consumption || [];
-    currentConsumptions = consumptions;
     if (exportBtn) {
       exportBtn.disabled = consumptions.length === 0;
     }
@@ -271,57 +266,75 @@ export const init = async () => {
     }
   };
 
-  // Build and download a CSV of the rows currently shown in the table (current page only).
+  // Build and download a CSV of the FULL history: all rows, ignoring the table filters.
   const exportCsv = async () => {
-    if (!currentConsumptions.length) {
+    if (!exportBtn || exportBtn.disabled) {
       return;
     }
 
-    const [hId, hUser, hAction, hService, hTokens, hBalance, hDate] =
-      await Promise.all([
-        getString("id", "aiprovider_datacurso"),
-        getString("user", "core"),
-        getString("action", "aiprovider_datacurso"),
-        getString("service", "aiprovider_datacurso"),
-        getString("tokensused", "aiprovider_datacurso"),
-        getString("remainingtokens", "aiprovider_datacurso"),
-        getString("date", "core"),
-      ]);
+    const originalHtml = exportBtn.innerHTML;
+    exportBtn.disabled = true;
+    exportBtn.innerHTML = '<i class="fa fa-spinner fa-spin" aria-hidden="true"></i>';
 
-    const escape = (val) => `"${String(val ?? "").replace(/"/g, '""')}"`;
-    const lines = [[hId, hUser, hAction, hService, hTokens, hBalance, hDate].map(escape).join(",")];
-    currentConsumptions.forEach((c) => {
-      lines.push(
-        [
-          c.id_consumption,
-          c.username,
-          c.action,
-          c.id_service,
-          c.cant_tokens,
-          c.balance,
-          c.date,
-        ].map(escape).join(",")
-      );
-    });
+    try {
+      // limit 0 and no filters => the service walks every page and returns the whole history.
+      const response = await getConsumptionHistory({ page: 1, limit: 0 });
+      const rows = response?.consumption || [];
+      if (!rows.length) {
+        return;
+      }
 
-    // Prepend a UTF-8 BOM so Excel renders accents correctly.
-    const csv = "\uFEFF" + lines.join("\r\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
+      const [hId, hUser, hAction, hService, hTokens, hBalance, hDate] =
+        await Promise.all([
+          getString("id", "aiprovider_datacurso"),
+          getString("user", "core"),
+          getString("action", "aiprovider_datacurso"),
+          getString("service", "aiprovider_datacurso"),
+          getString("tokensused", "aiprovider_datacurso"),
+          getString("remainingtokens", "aiprovider_datacurso"),
+          getString("date", "core"),
+        ]);
 
-    const now = new Date();
-    const stamp =
-      `${now.getFullYear()}` +
-      `${String(now.getMonth() + 1).padStart(2, "0")}` +
-      `${String(now.getDate()).padStart(2, "0")}`;
+      const escape = (val) => `"${String(val ?? "").replace(/"/g, '""')}"`;
+      const lines = [[hId, hUser, hAction, hService, hTokens, hBalance, hDate].map(escape).join(",")];
+      rows.forEach((c) => {
+        lines.push(
+          [
+            c.id_consumption,
+            c.username,
+            c.action,
+            c.id_service,
+            c.cant_tokens,
+            c.balance,
+            c.date,
+          ].map(escape).join(",")
+        );
+      });
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `consumption-history-${stamp}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+      // Prepend a UTF-8 BOM so Excel renders accents correctly.
+      const csv = "\uFEFF" + lines.join("\r\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const now = new Date();
+      const stamp =
+        `${now.getFullYear()}` +
+        `${String(now.getMonth() + 1).padStart(2, "0")}` +
+        `${String(now.getDate()).padStart(2, "0")}`;
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `consumption-history-${stamp}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      Notification.exception(error);
+    } finally {
+      exportBtn.disabled = false;
+      exportBtn.innerHTML = originalHtml;
+    }
   };
 
   if (exportBtn) {
