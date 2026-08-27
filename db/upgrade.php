@@ -262,11 +262,15 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026071601, 'aiprovider', 'datacurso');
     }
 
-    // NOTE: step 2026082600 (per-instance dead allowlist key sweep, design obs 216/217) is
-    // intentionally NOT added here. It is U5's scope (a standalone follow-up commit) and must
-    // land together with version.php's version bump to that savepoint number, which this batch
-    // (U0+U1) does not perform. version.php currently reads 2026082600, matching the *release*
-    // version, but the highest upgrade savepoint stays 2026071601 until U5.
+    if ($oldversion < 2026082600) {
+        // Per-service user allowlists were removed in 2.1.0. Their global-scope keys were
+        // already cleaned up by step 2026042902 (unset_config()), but that call cannot reach
+        // the per-instance config JSON stored on each aiprovider_datacurso row in
+        // ai_providers.config. Strip them instance by instance.
+        \aiprovider_datacurso\local\upgrade\allowlist_sweeper::run($DB);
+
+        upgrade_plugin_savepoint(true, 2026082600, 'aiprovider', 'datacurso');
+    }
 
     return true;
 }
