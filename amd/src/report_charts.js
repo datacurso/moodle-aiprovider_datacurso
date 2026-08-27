@@ -40,17 +40,47 @@ export const init = async () => {
 
     let chartBar, chartPie, chartDay, chartUser;
     let cachedData = [];
+    let serviceMap = {};
 
-    Promise.all([
-        Ajax.call([{ methodname: 'aiprovider_datacurso_get_credits_balance', args: {} }])[0],
-        Ajax.call([{ methodname: 'aiprovider_datacurso_get_services', args: {} }])[0],
-        Ajax.call([{ methodname: 'aiprovider_datacurso_get_all_consumption', args: {} }])[0],
-    ])
-        .then(([balanceResponse, servicesResponse, consumptionResponse]) => {
+    // Year filter state. The report loads one year at a time (default: current year); the
+    // date range is sent to the endpoint so it only returns that year's data.
+    const START_YEAR = 2024;
+    const currentYear = new Date().getFullYear();
+    let selectedYear = currentYear;
+
+    const yearRange = (year) => ({
+        fromdate: `${year}-01-01`,
+        todate: `${year}-12-31`,
+    });
+
+    // Robust date source per record for grouping (created_at is always populated; fecha may be empty).
+    const dateStr = (c) => String(c.created_at || c.date || "");
+
+    // Load balance independently to avoid waiting for heavy chart data.
+    Ajax.call([{ methodname: 'aiprovider_datacurso_get_credits_balance', args: {} }])[0]
+        .then((balanceResponse) => {
             const balance = balanceResponse?.balance || 0;
             tokensAvailable.textContent = balance;
+        })
+        .catch(Notification.exception);
+
+    // Load chart dependencies separately.
+    Promise.all([
+        Ajax.call([{ methodname: 'aiprovider_datacurso_get_services', args: {} }])[0],
+        Ajax.call([{
+            methodname: 'aiprovider_datacurso_get_all_consumption',
+            // Send all optional params (not just the date range): Moodle maps VALUE_OPTIONAL
+            // args positionally, so omitting the leading ones would shift fromdate into $service.
+            args: { service: "", action: "", userid: 0, ...yearRange(selectedYear) }
+        }])[0],
+    ])
+        .then(([servicesResponse, consumptionResponse]) => {
             const services = servicesResponse?.services || [];
             cachedData = consumptionResponse?.consumption || [];
+            services.forEach(s => {
+                serviceMap[s.id] = s.name || s.fullname || s.id;
+            });
+
             initCharts(services);
         })
         .catch((e) => {
@@ -63,11 +93,23 @@ export const init = async () => {
 
     // Init graphs.
     const initCharts = async (services) => {
+        const filterYear = document.getElementById('filter-year');
         const filterBar = document.getElementById('filter-service-bar');
         const filterPie = document.getElementById('filter-service-pie');
         const filterUser = document.getElementById('filter-user-charts');
         const filterStart = document.getElementById('filter-start-date');
         const filterEnd = document.getElementById('filter-end-date');
+
+        // Populate the year selector (current year down to START_YEAR), current year selected.
+        for (let y = currentYear; y >= START_YEAR; y--) {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            if (y === selectedYear) {
+                opt.selected = true;
+            }
+            filterYear.appendChild(opt);
+        }
 
         const fillSelect = (select, items) => {
             if (items?.length) {
@@ -97,18 +139,15 @@ export const init = async () => {
             1
         );
 
-        // Render init used cachedData for others, but specific user data for UserChart
+        // cachedData already holds only the selected year's records (fetched with its date range).
         renderBarChart(cachedData);
         renderPieChart(cachedData);
         renderDayChart(cachedData);
 
-        if (filterUser.value) {
-            updateUserChart();
-        } else {
-            renderUserChart([]); // Empty chart if no user
-        }
+        updateUserChart();
 
         // Listeners filters
+        filterYear.addEventListener('change', () => updateYear());
         filterBar.addEventListener('change', () => updateBarChart());
         filterPie.addEventListener('change', () => updatePieChart());
         filterUser.addEventListener('change', () => updateUserChart());
@@ -122,8 +161,7 @@ export const init = async () => {
             service: "",
             action: "",
             userid: 0,
-            fromdate: "",
-            todate: ""
+            ...yearRange(selectedYear)
         };
         const finalParams = { ...defaults, ...params };
 
@@ -144,11 +182,21 @@ export const init = async () => {
         }
     };
 
+    // Reload the year's data from the endpoint and re-render every chart, respecting active filters.
+    const updateYear = async () => {
+        selectedYear = parseInt(document.getElementById('filter-year').value, 10) || currentYear;
+        cachedData = await fetchConsumptionData();
+        updateBarChart();
+        updatePieChart();
+        updateDayChart();
+        updateUserChart();
+    };
+
     // grafic bar
     const renderBarChart = (data) => {
         const byMonth = {};
         data.forEach(c => {
-            const month = c.date.substring(0, 7);
+            const month = dateStr(c).substring(0, 7);
             byMonth[month] = (byMonth[month] || 0) + c.cant_tokens;
         });
 
@@ -239,7 +287,7 @@ export const init = async () => {
     const renderDayChart = (data) => {
         const byDay = {};
         data.forEach(c => {
-            const day = c.date.substring(0, 10);
+            const day = dateStr(c).substring(0, 10);
             byDay[day] = (byDay[day] || 0) + c.cant_tokens;
         });
 
@@ -297,7 +345,8 @@ export const init = async () => {
 
         // Group by service ID and sum tokens
         data.forEach(c => {
-            const serviceName = c.service || c.id_service;
+            const serviceId = c.service || c.id_service;
+            const serviceName = serviceMap[serviceId] || serviceId;
             byService[serviceName] = (byService[serviceName] || 0) + (c.cant_tokens || 0);
             total += (c.cant_tokens || 0);
         });

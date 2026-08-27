@@ -33,7 +33,7 @@ use external_function_parameters;
 use external_value;
 use external_single_structure;
 use external_multiple_structure;
-use aiprovider_datacurso\httpclient\datacurso_api;
+use aiprovider_datacurso\local\service\consumption_history_service;
 
 /**
  * External web service to fetch Datacurso API consumption history.
@@ -100,129 +100,21 @@ class get_consumption_history extends \external_api {
             'shordir' => $shordir,
         ]);
 
-        $page = max(1, (int)$params['page']);
-        $limit = max(1, (int)$params['limit']);
-
         $context = \context_system::instance();
         self::validate_context($context);
         require_capability('aiprovider/datacurso:viewreports', $context);
 
-        $client = new datacurso_api();
-
-        // Prepare query parameters for API request.
-        $queryparams = [
-            'page' => $page,
-            'limit' => $limit,
-            'userid' => $params['userid'],
-            'servicio' => $params['service'],
-            'accion' => $params['action'],
-            'fecha_desde' => $params['fromdate'],
-            'fecha_hasta' => $params['todate'],
-            'shor' => $params['shor'],
-            'shordir' => $params['shordir'],
-        ];
-
-        try {
-            // Perform API request.
-            $response = $client->get('/tokens/historial-consumos', $queryparams);
-
-            if (isset($response['status']) && $response['status'] === 'success') {
-                global $DB;
-                $users = $response['usuarios'] ?? [];
-                $consumptions = [];
-
-                // Get available actions from provider.
-                $actions = \aiprovider_datacurso\provider::get_actions();
-                $actionmap = [];
-
-                $services = \aiprovider_datacurso\provider::get_services();
-                $servicesmap = [];
-
-                foreach ($services as $s) {
-                    $servicesmap[$s['id']] = $s['name'];
-                }
-
-                foreach ($actions as $a) {
-                    $actionmap[$a['id']] = $a['name'];
-                }
-
-                // Collect all userids to fetch user data in batch.
-                $userids = [];
-                foreach ($users as $user) {
-                    if (!empty($user['consumos'])) {
-                        foreach ($user['consumos'] as $consumption) {
-                            $userid = $consumption['userid'] ?? 0;
-                            if ($userid > 0) {
-                                $userids[$userid] = $userid;
-                            }
-                        }
-                    }
-                }
-
-                // Fetch all user records at once for better performance.
-                $moodleusers = [];
-                if (!empty($userids)) {
-                    [$insql, $inparams] = $DB->get_in_or_equal(array_values($userids));
-                    $moodleusers = $DB->get_records_select('user', "id $insql", $inparams, '', 'id, firstname, lastname');
-                }
-
-                foreach ($users as $user) {
-                    if (!empty($user['consumos'])) {
-                        foreach ($user['consumos'] as $consumption) {
-                            $actionid = $consumption['accion'] ?? '';
-                            $actionname = $actionmap[$actionid] ?? $actionid;
-                            $serviceid = $consumption['id_servicio'] ?? '';
-                            $servicename = $servicesmap[$serviceid] ?? $serviceid;
-                            $userid = $consumption['userid'] ?? 0;
-
-                            // Get user's full name from Moodle.
-                            $username = '-';
-                            if ($userid > 0 && isset($moodleusers[$userid])) {
-                                $userobj = $moodleusers[$userid];
-                                $username = fullname($userobj);
-                            }
-
-                            $consumptions[] = [
-                                'id_consumption' => $consumption['id_consumo'] ?? 0,
-                                'userid' => $userid,
-                                'username' => $username,
-                                'action' => $actionname,
-                                'id_service' => $servicename,
-                                'cant_tokens' => $consumption['cantidad_tokens'] ?? 0,
-                                'balance' => $consumption['saldo_restante'] ?? 0,
-                                'date' => $consumption['created_at'] ?? '',
-                            ];
-                        }
-                    }
-                }
-
-                // Pagination normalization.
-                $pagination = $response['pagination'] ?? $response['paginacion'] ?? [];
-
-                return [
-                    'status' => 'success',
-                    'consumption' => $consumptions,
-                    'pagination' => [
-                        'current_page' => $pagination['current_page'] ?? $pagination['pagina_actual'] ?? $page,
-                        'limit' => $pagination['limit'] ?? $pagination['limite'] ?? $limit,
-                        'total' => $pagination['total'] ?? count($consumptions),
-                        'total_pages' => $pagination['total_pages'] ?? $pagination['total_paginas'] ?? 1,
-                    ],
-                ];
-            }
-
-            return [
-                'status' => 'error',
-                'message' => get_string('nodata', 'aiprovider_datacurso'),
-                'consumption' => [],
-            ];
-        } catch (\Exception $e) {
-            return [
-                'status' => 'error',
-                'message' => $e->getMessage(),
-                'consumption' => [],
-            ];
-        }
+        return consumption_history_service::get_consumption_history(
+            (int) $params['page'],
+            (int) $params['limit'],
+            !empty($params['userid']) ? (int) $params['userid'] : null,
+            !empty($params['service']) ? $params['service'] : null,
+            !empty($params['action']) ? $params['action'] : null,
+            !empty($params['fromdate']) ? $params['fromdate'] : null,
+            !empty($params['todate']) ? $params['todate'] : null,
+            !empty($params['shor']) ? $params['shor'] : null,
+            !empty($params['shordir']) ? $params['shordir'] : null
+        );
     }
 
     /**

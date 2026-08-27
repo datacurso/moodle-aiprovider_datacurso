@@ -15,18 +15,16 @@
 // along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and other meta-data are defined here.
+ * Scheduled task definitions for Datacurso AI Provider
  *
- * @package     aiprovider_datacurso
- * @copyright   Josue <josue@datacurso.com>
- * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * Documentation: {@link https://moodledev.io/docs/apis/subsystems/task/scheduled}
+ *
+ * @package    aiprovider_datacurso
+ * @category   task
+ * @copyright  2026 Datacurso
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'aiprovider_datacurso';
-$plugin->release = '2.1.0';
-$plugin->supported = [500, 501];
-$plugin->version = 2026082600;
-$plugin->requires = 2025041400;
-$plugin->maturity = MATURITY_STABLE;
+$tasks = [];

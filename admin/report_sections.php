@@ -42,7 +42,7 @@ $PAGE->set_url(new moodle_url('/ai/provider/datacurso/admin/report_sections.php'
 $PAGE->set_pagelayout('report');
 $PAGE->set_title(get_string('pluginname', 'aiprovider_datacurso'));
 
-// Get the current tab parameter.
+// Get the current tab parameter. Consumption history is the default landing tab.
 $tab = optional_param('tab', 'consumption', PARAM_ALPHAEXT);
 
 // Define tabs for navigation.
@@ -63,18 +63,6 @@ $tabs[] = new tabobject(
     'pluginslist',
     new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'pluginslist']),
     get_string('link_listplugings', 'aiprovider_datacurso')
-);
-
-$tabs[] = new tabobject(
-    'configwebservice',
-    new moodle_url('/ai/provider/datacurso/admin/webservice_config.php'),
-    get_string('link_webservice_config', 'aiprovider_datacurso')
-);
-
-$tabs[] = new tabobject(
-    'usertokenlimits',
-    new moodle_url('/ai/provider/datacurso/admin/user_token_limits.php'),
-    get_string('link_usertokenlimits', 'aiprovider_datacurso')
 );
 
 global $DB;
@@ -173,8 +161,8 @@ switch ($tab) {
             [
                 'name' => get_string('pluginname_smartrules', 'aiprovider_datacurso'),
                 'description' => get_string('plugindesc_smartrules', 'aiprovider_datacurso'),
-                'component' => 'local_smartrules',
-                'url' => 'https://moodle.org/plugins/local_smartrules',
+                'component' => 'local_coursedynamicrules',
+                'url' => 'https://moodle.org/plugins/local_coursedynamicrules',
             ],
         ];
 

@@ -29,6 +29,7 @@ use core_external\external_function_parameters;
 use core_external\external_value;
 use core_external\external_single_structure;
 use core_external\external_multiple_structure;
+use aiprovider_datacurso\local\service\user_service;
 
 /**
  * Get users available in the system.
@@ -52,60 +53,16 @@ class get_users extends external_api {
      * @return array
      */
     public static function execute(string $search = ''): array {
-        global $DB;
-
-        // Validate context.
         $context = \context_system::instance();
         self::validate_context($context);
 
-        // Check capability.
         require_capability('aiprovider/datacurso:viewreports', $context);
 
-        try {
-            $params = self::validate_parameters(self::execute_parameters(), [
-                'search' => $search,
-            ]);
+        $params = self::validate_parameters(self::execute_parameters(), [
+            'search' => $search,
+        ]);
 
-            // Get all active users (not deleted, not suspended).
-            $where = "u.deleted = 0 AND u.suspended = 0 AND u.id > 1";
-            $sqlparams = [];
-
-            if (!empty($params['search'])) {
-                $searchsql = $DB->sql_like('u.firstname', ':search1', false, false) . ' OR ' .
-                             $DB->sql_like('u.lastname', ':search2', false, false) . ' OR ' .
-                             $DB->sql_like($DB->sql_fullname('u.firstname', 'u.lastname'), ':search3', false, false);
-                $where .= " AND ($searchsql)";
-                $sqlparams['search1'] = '%' . $params['search'] . '%';
-                $sqlparams['search2'] = '%' . $params['search'] . '%';
-                $sqlparams['search3'] = '%' . $params['search'] . '%';
-            }
-
-            $sql = "SELECT DISTINCT u.id, u.firstname, u.lastname
-                    FROM {user} u
-                    WHERE $where
-                    ORDER BY u.firstname ASC, u.lastname ASC";
-
-            $users = $DB->get_records_sql($sql, $sqlparams, 0, 20); // Limit to 20 for autocomplete.
-
-            $result = [];
-            foreach ($users as $user) {
-                $result[] = [
-                    'id' => $user->id,
-                    'fullname' => fullname($user),
-                ];
-            }
-
-            return [
-                'status' => 'success',
-                'users' => $result,
-            ];
-        } catch (\Exception $e) {
-            return [
-                'status' => 'error',
-                'message' => $e->getMessage(),
-                'users' => [],
-            ];
-        }
+        return user_service::get_users($params['search']);
     }
 
     /**

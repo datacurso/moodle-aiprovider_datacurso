@@ -23,48 +23,6 @@
 import Ajax from 'core/ajax';
 
 /**
- * Setup the webservice for Datacurso.
- */
-export function webserviceSetup() {
-    return Ajax.call([{
-        methodname: 'aiprovider_datacurso_webservice_setup',
-        args: {}
-    }])[0];
-}
-
-/**
- * Delete a user token limit by id.
- * @param {number} id
- * @returns {Promise<{success: boolean, message: string}>}
- */
-export function deleteUserTokenLimit(id) {
-    return Ajax.call([{
-        methodname: 'aiprovider_datacurso_delete_user_token_limit',
-        args: { id: Number(id) }
-    }])[0];
-}
-
-/**
- * Regenerate the webservice token for Datacurso.
- */
-export function webserviceRegenerateToken() {
-    return Ajax.call([{
-        methodname: 'aiprovider_datacurso_webservice_regenerate_token',
-        args: {}
-    }])[0];
-}
-
-/**
- * Get current Datacurso webservice status.
- */
-export function webserviceGetStatus() {
-    return Ajax.call([{
-        methodname: 'aiprovider_datacurso_webservice_get_status',
-        args: {}
-    }])[0];
-}
-
-/**
  * Get consumption history for Datacurso.
  * @param {Object} args - The arguments for the consumption history.
  */
@@ -115,16 +73,4 @@ export function processResults(selector, response) {
         value: user.id,
         label: user.fullname
     }));
-}
-
-/**
- * Reset usage counters for a user token limit record by id.
- * @param {number} id
- * @returns {Promise<{success: boolean, message: string}>}
- */
-export function resetUserTokenUsage(id) {
-    return Ajax.call([{
-        methodname: 'aiprovider_datacurso_reset_user_token_usage',
-        args: { id: Number(id) }
-    }])[0];
 }
