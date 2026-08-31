@@ -116,6 +116,7 @@ $string['enableglobalratelimit'] = 'Habilitar límite global';
 $string['enableglobalratelimit_desc'] = 'Si está habilitado, se aplicará un límite de solicitudes global por hora para todos los usuarios.';
 $string['enableuserratelimit'] = 'Habilitar límite por usuario';
 $string['enableuserratelimit_desc'] = 'Si está habilitado, cada usuario tendrá un límite de solicitudes por hora.';
+$string['entity_consumption'] = 'Consumo de créditos';
 $string['error_ratelimit_exceeded'] = 'Se ha superado el límite de consumos permitidos. Por favor, inténtalo de nuevo el {$a}.';
 $string['errorgetbalancecredits'] = 'No se pudo recuperar el saldo de créditos de la API externa';
 $string['errorinitinformation'] = 'No se pudo obtener la información inicial.';

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="ai/provider/datacurso/db" VERSION="2026090100" COMMENT="XMLDB file for Moodle ai/provider/datacurso"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="aiprovider_datacurso_consumption" COMMENT="Local mirror of the external Datacurso credit consumption history, synced on demand for reporting.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="externalid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Consumption record id in the external Datacurso service (id_consumo)."/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Moodle user who triggered the consumption."/>
+        <FIELD NAME="service" TYPE="char" LENGTH="100" NOTNULL="true" DEFAULT="" SEQUENCE="false" COMMENT="Service identifier (e.g. local_coursegen)."/>
+        <FIELD NAME="action" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="" SEQUENCE="false" COMMENT="Action identifier."/>
+        <FIELD NAME="credits" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Credits consumed."/>
+        <FIELD NAME="balance" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Remaining balance after the consumption."/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Consumption timestamp (parsed from the external created_at)."/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+        <KEY NAME="externalid" TYPE="unique" FIELDS="externalid"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="timecreated" UNIQUE="false" FIELDS="timecreated"/>
+        <INDEX NAME="service" UNIQUE="false" FIELDS="service"/>
+        <INDEX NAME="action" UNIQUE="false" FIELDS="action"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>
