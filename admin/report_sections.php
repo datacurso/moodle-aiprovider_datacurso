@@ -98,13 +98,19 @@ echo $OUTPUT->tabtree($tabs, $tab);
 // Load tab content.
 switch ($tab) {
     case 'consumption':
-        // Render AI consumption history page.
-        $page = new \aiprovider_datacurso\output\consumption_page();
-        echo $OUTPUT->render($page);
-        $PAGE->requires->js_call_amd('aiprovider_datacurso/consumption', 'init');
+        // Sync the local mirror from the external API, then render the Report Builder system report.
+        \aiprovider_datacurso\local\sync\consumption_sync::sync();
+        $report = \core_reportbuilder\system_report_factory::create(
+            \aiprovider_datacurso\reportbuilder\local\systemreports\consumption_history::class,
+            $context
+        );
+        echo $report->output();
         break;
 
     case 'generalreport':
+        // Keep the local mirror fresh so the charts read up-to-date data from it (not the shop).
+        \aiprovider_datacurso\local\sync\consumption_sync::sync();
+
         // Render general statistics and charts.
         $page = new \aiprovider_datacurso\output\report_page();
         echo $OUTPUT->render($page);

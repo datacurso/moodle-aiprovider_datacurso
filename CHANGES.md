@@ -1,3 +1,41 @@
+## [2.2.0] - 2026-09-01
+
+**Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.
+
+### Added
+- **Local consumption mirror table and Report Builder integration**
+  A new `aiprovider_datacurso_consumption` table locally mirrors the external Datacurso credit
+  consumption history (`externalid`, `userid`, `service`, `action`, `credits`, `balance`,
+  `timecreated`). `consumption_sync` keeps it up to date on demand (page-load-driven, lock-guarded,
+  watermarked on `MAX(externalid)`); the consumption history tab now renders it through a Report
+  Builder system report (`consumption_history`), which provides filtering, sorting, pagination and
+  download (CSV/Excel/ODS) for free.
+- **`aiprovider_datacurso_get_consumption_summary` web service**
+  New AJAX-callable external function returning server-side aggregated credit totals (grouped by
+  month, day, action or service) for the general report charts, backed by
+  `consumption_service::get_summary()` reading from the local mirror table.
+- **Privacy metadata for the consumption mirror table**
+  `classes/privacy/provider.php` now declares `aiprovider_datacurso_consumption` and maps it to
+  the owning user, so it participates in data export/deletion requests.
+
+### Changed
+- **Consumption report download now honors active filters and columns**
+  Downloading the consumption history now goes through Report Builder, so the exported file
+  reflects whatever filters, sorting and visible columns are currently applied — replacing the
+  previous single "export full history" CSV button, which always ignored active filters.
+- **General report charts read from the local mirror, not the external API**
+  `report_charts.js` now fetches pre-aggregated totals from
+  `aiprovider_datacurso_get_consumption_summary` instead of downloading and grouping raw
+  consumption rows client-side, reducing payload size and client-side processing.
+
+### Removed
+- **Legacy consumption history table UI**: `amd/src/consumption.js`, the
+  `get_consumption_history` external function and its backing service, the
+  `output/consumption_page` renderable, and the `consumption_page`/`consumption_row` Mustache
+  templates — all superseded by the Report Builder system report above.
+- **`get_all_consumption` external function**: superseded by the aggregated
+  `get_consumption_summary` endpoint; the report charts no longer need the full raw history.
+
 ## [2.1.0] - 2026-08-26
 
 **Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.

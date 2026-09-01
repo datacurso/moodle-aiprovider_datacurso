@@ -103,6 +103,16 @@ class provider extends \core_ai\provider {
     }
 
     /**
+     * Build a lazy plugin language string.
+     *
+     * @param string $id Language-string key.
+     * @return \lang_string
+     */
+    private static function lang(string $id): \lang_string {
+        return new \lang_string($id, 'aiprovider_datacurso');
+    }
+
+    /**
      * Per-service "credits per action" catalog.
      *
      * Some services have several sub-actions with their own credit cost (e.g. the course creator).
@@ -113,39 +123,38 @@ class provider extends \core_ai\provider {
      * @return array<string, array<int, array{key: string, name: \lang_string|string, default: int}>>
      */
     public static function get_service_actions(): array {
-        $s = static fn(string $id): \lang_string => new \lang_string($id, 'aiprovider_datacurso');
         return [
             'local_coursegen' => [
-                ['key' => 'course_image', 'name' => $s('action_course_image'), 'default' => 2000],
-                ['key' => 'course_noimage', 'name' => $s('action_course_noimage'), 'default' => 1000],
-                ['key' => 'activity_image', 'name' => $s('action_activity_image'), 'default' => 100],
-                ['key' => 'activity_noimage', 'name' => $s('action_activity_noimage'), 'default' => 50],
+                ['key' => 'course_image', 'name' => self::lang('action_course_image'), 'default' => 2000],
+                ['key' => 'course_noimage', 'name' => self::lang('action_course_noimage'), 'default' => 1000],
+                ['key' => 'activity_image', 'name' => self::lang('action_activity_image'), 'default' => 100],
+                ['key' => 'activity_noimage', 'name' => self::lang('action_activity_noimage'), 'default' => 50],
             ],
             'aiprovider_datacurso' => [
-                ['key' => 'text', 'name' => $s('action_text'), 'default' => 1],
-                ['key' => 'image', 'name' => $s('action_image'), 'default' => 30],
+                ['key' => 'text', 'name' => self::lang('action_text'), 'default' => 1],
+                ['key' => 'image', 'name' => self::lang('action_image'), 'default' => 30],
             ],
             'local_coursedynamicrules' => [
-                ['key' => 'activity_image', 'name' => $s('action_activity_image'), 'default' => 100],
-                ['key' => 'activity_noimage', 'name' => $s('action_activity_noimage'), 'default' => 50],
+                ['key' => 'activity_image', 'name' => self::lang('action_activity_image'), 'default' => 100],
+                ['key' => 'activity_noimage', 'name' => self::lang('action_activity_noimage'), 'default' => 50],
             ],
             'local_datacurso_ratings' => [
-                ['key' => 'default', 'name' => $s('action_default'), 'default' => 1],
+                ['key' => 'default', 'name' => self::lang('action_default'), 'default' => 1],
             ],
             'local_socialcert' => [
-                ['key' => 'default', 'name' => $s('action_default'), 'default' => 1],
+                ['key' => 'default', 'name' => self::lang('action_default'), 'default' => 1],
             ],
             'local_forum_ai' => [
-                ['key' => 'default', 'name' => $s('action_default'), 'default' => 3],
+                ['key' => 'default', 'name' => self::lang('action_default'), 'default' => 3],
             ],
             'report_lifestory' => [
-                ['key' => 'default', 'name' => $s('action_default'), 'default' => 5],
+                ['key' => 'default', 'name' => self::lang('action_default'), 'default' => 5],
             ],
             'local_assign_ai' => [
-                ['key' => 'default', 'name' => $s('action_default'), 'default' => 3],
+                ['key' => 'default', 'name' => self::lang('action_default'), 'default' => 3],
             ],
             'local_dttutor' => [
-                ['key' => 'default', 'name' => $s('action_default'), 'default' => 2],
+                ['key' => 'default', 'name' => self::lang('action_default'), 'default' => 2],
             ],
         ];
     }
@@ -215,14 +224,21 @@ class provider extends \core_ai\provider {
     }
 
     /**
+     * Build an activity-type action entry whose id and language-string key are identical.
+     *
+     * @param string $id Action identifier (also used as the language-string key).
+     * @return array{id: string, name: string}
+     */
+    private static function make_action(string $id): array {
+        return ['id' => $id, 'name' => get_string($id, 'aiprovider_datacurso')];
+    }
+
+    /**
      * Return all available AI actions for this provider.
      *
      * @return array
      */
     public static function get_actions(): array {
-        // Activity-type actions share the same id and language-string key.
-        $act = static fn(string $id): array => ['id' => $id, 'name' => get_string($id, 'aiprovider_datacurso')];
-
         return [
             ['id' => '/provider/chat/completions', 'name' => get_string('generate_text', 'aiprovider_datacurso')],
             ['id' => '/provider/images/generations', 'name' => get_string('generate_image', 'aiprovider_datacurso')],
@@ -247,44 +263,44 @@ class provider extends \core_ai\provider {
             ['id' => '/smartrules/create-mod', 'name' => get_string('generate_ai_reinforcement_activity', 'aiprovider_datacurso')],
             ['id' => '/chat/message', 'name' => get_string('generate_chat_message', 'aiprovider_datacurso')],
             // Moodle activity types.
-            $act('create_activity_assign_image'),
-            $act('create_activity_assign_noimage'),
-            $act('create_activity_quiz_image'),
-            $act('create_activity_quiz_noimage'),
-            $act('create_activity_lesson_image'),
-            $act('create_activity_lesson_noimage'),
-            $act('create_activity_workshop_image'),
-            $act('create_activity_workshop_noimage'),
-            $act('create_activity_h5pactivity_image'),
-            $act('create_activity_h5pactivity_noimage'),
-            $act('create_activity_scorm_image'),
-            $act('create_activity_scorm_noimage'),
-            $act('create_activity_feedback_image'),
-            $act('create_activity_feedback_noimage'),
-            $act('create_activity_choice_image'),
-            $act('create_activity_choice_noimage'),
-            $act('create_activity_data_image'),
-            $act('create_activity_data_noimage'),
-            $act('create_activity_book_image'),
-            $act('create_activity_book_noimage'),
-            $act('create_activity_page_image'),
-            $act('create_activity_page_noimage'),
-            $act('create_activity_resource_image'),
-            $act('create_activity_resource_noimage'),
-            $act('create_activity_url_image'),
-            $act('create_activity_url_noimage'),
-            $act('create_activity_folder_image'),
-            $act('create_activity_folder_noimage'),
-            $act('create_activity_label_image'),
-            $act('create_activity_label_noimage'),
-            $act('create_activity_imscp_image'),
-            $act('create_activity_imscp_noimage'),
-            $act('create_activity_forum_image'),
-            $act('create_activity_forum_noimage'),
-            $act('create_activity_glossary_image'),
-            $act('create_activity_glossary_noimage'),
-            $act('create_activity_wiki_image'),
-            $act('create_activity_wiki_noimage'),
+            self::make_action('create_activity_assign_image'),
+            self::make_action('create_activity_assign_noimage'),
+            self::make_action('create_activity_quiz_image'),
+            self::make_action('create_activity_quiz_noimage'),
+            self::make_action('create_activity_lesson_image'),
+            self::make_action('create_activity_lesson_noimage'),
+            self::make_action('create_activity_workshop_image'),
+            self::make_action('create_activity_workshop_noimage'),
+            self::make_action('create_activity_h5pactivity_image'),
+            self::make_action('create_activity_h5pactivity_noimage'),
+            self::make_action('create_activity_scorm_image'),
+            self::make_action('create_activity_scorm_noimage'),
+            self::make_action('create_activity_feedback_image'),
+            self::make_action('create_activity_feedback_noimage'),
+            self::make_action('create_activity_choice_image'),
+            self::make_action('create_activity_choice_noimage'),
+            self::make_action('create_activity_data_image'),
+            self::make_action('create_activity_data_noimage'),
+            self::make_action('create_activity_book_image'),
+            self::make_action('create_activity_book_noimage'),
+            self::make_action('create_activity_page_image'),
+            self::make_action('create_activity_page_noimage'),
+            self::make_action('create_activity_resource_image'),
+            self::make_action('create_activity_resource_noimage'),
+            self::make_action('create_activity_url_image'),
+            self::make_action('create_activity_url_noimage'),
+            self::make_action('create_activity_folder_image'),
+            self::make_action('create_activity_folder_noimage'),
+            self::make_action('create_activity_label_image'),
+            self::make_action('create_activity_label_noimage'),
+            self::make_action('create_activity_imscp_image'),
+            self::make_action('create_activity_imscp_noimage'),
+            self::make_action('create_activity_forum_image'),
+            self::make_action('create_activity_forum_noimage'),
+            self::make_action('create_activity_glossary_image'),
+            self::make_action('create_activity_glossary_noimage'),
+            self::make_action('create_activity_wiki_image'),
+            self::make_action('create_activity_wiki_noimage'),
         ];
     }
 }
