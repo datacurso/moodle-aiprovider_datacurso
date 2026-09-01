@@ -87,6 +87,9 @@ final class datacurso_api_base_test extends \advanced_testcase {
      * A stored_file is uploaded with its own name and MIME type, plus the extras.
      */
     public function test_upload_file_sends_the_file_with_its_name_and_mimetype(): void {
+        global $CFG;
+        require_once("{$CFG->dirroot}/ai/provider/datacurso/tests/fixtures/test_upload_client.php");
+
         $this->resetAfterTest();
 
         $client = new test_upload_client('https://example.invalid');
@@ -108,6 +111,9 @@ final class datacurso_api_base_test extends \advanced_testcase {
      * The temporary copy holds the file content while the request is in flight.
      */
     public function test_the_temporary_copy_holds_the_file_content(): void {
+        global $CFG;
+        require_once("{$CFG->dirroot}/ai/provider/datacurso/tests/fixtures/test_upload_client.php");
+
         $this->resetAfterTest();
 
         $client = new test_upload_client('https://example.invalid');
@@ -122,6 +128,9 @@ final class datacurso_api_base_test extends \advanced_testcase {
      * The temporary copy is removed once the request completes.
      */
     public function test_the_temporary_copy_is_removed_afterwards(): void {
+        global $CFG;
+        require_once("{$CFG->dirroot}/ai/provider/datacurso/tests/fixtures/test_upload_client.php");
+
         $this->resetAfterTest();
 
         $client = new test_upload_client('https://example.invalid');
@@ -138,6 +147,9 @@ final class datacurso_api_base_test extends \advanced_testcase {
      * syllabus is not small.
      */
     public function test_the_temporary_copy_is_removed_when_the_request_fails(): void {
+        global $CFG;
+        require_once("{$CFG->dirroot}/ai/provider/datacurso/tests/fixtures/test_upload_client.php");
+
         $this->resetAfterTest();
 
         $client = new test_upload_client('https://example.invalid');
