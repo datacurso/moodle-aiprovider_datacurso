@@ -119,6 +119,9 @@ switch ($tab) {
         break;
 
     case 'generalreport':
+        // Keep the local mirror fresh so the charts read up-to-date data from it (not the shop).
+        \aiprovider_datacurso\local\sync\consumption_sync::sync();
+
         // Render general statistics and charts.
         $page = new \aiprovider_datacurso\output\report_page();
         echo $OUTPUT->render($page);

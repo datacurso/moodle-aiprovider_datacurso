@@ -16,21 +16,23 @@
 
 namespace aiprovider_datacurso\local\service;
 
-use aiprovider_datacurso\httpclient\datacurso_api;
-
 /**
- * Service class for retrieving all consumption records from Datacurso API.
+ * Service class providing consumption data for the report charts.
+ *
+ * Reads from the local mirror table {aiprovider_datacurso_consumption} (kept up to date by
+ * {@see \aiprovider_datacurso\local\sync\consumption_sync}) instead of hitting the external API,
+ * returning the row shape the report charts expect.
  *
  * @package    aiprovider_datacurso
  * @copyright  2025 Josue <https://datacurso.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class consumption_service {
-    /** @var int Number of records per page. */
-    private const LIMIT_PER_PAGE = 500;
+    /** @var string Local mirror table. */
+    private const TABLE = 'aiprovider_datacurso_consumption';
 
     /**
-     * Get all consumption records with pagination.
+     * Get all consumption records matching the given filters from the local mirror table.
      *
      * @param string|null $service Service filter.
      * @param string|null $action Action filter.
@@ -46,103 +48,173 @@ class consumption_service {
         ?string $fromdate = null,
         ?string $todate = null
     ): array {
-        $client = new datacurso_api();
+        global $DB;
 
-        $queryparams = [
-            'page' => 1,
-            'limit' => self::LIMIT_PER_PAGE,
-        ];
-
-        if (!empty($service) && $service !== 'all') {
-            $queryparams['servicio'] = $service;
-        }
-        if (!empty($action) && $action !== 'all') {
-            $queryparams['accion'] = $action;
-        }
-        if (!empty($userid)) {
-            $queryparams['userid'] = $userid;
-        }
-        if (!empty($fromdate)) {
-            $queryparams['fecha_desde'] = $fromdate;
-        }
-        if (!empty($todate)) {
-            $queryparams['fecha_hasta'] = $todate;
-        }
-
-        $firstresponse = $client->get('/tokens/historial-consumos', $queryparams);
-
-        if (empty($firstresponse) || $firstresponse['status'] !== 'success') {
-            return [
-                'status' => 'error',
-                'message' => get_string('errorinitinformation', 'aiprovider_datacurso'),
-                'total' => 0,
-                'consumption' => [],
-            ];
-        }
-
-        $actions = \aiprovider_datacurso\provider::get_actions();
         $actionmap = [];
-        foreach ($actions as $actionitem) {
+        foreach (\aiprovider_datacurso\provider::get_actions() as $actionitem) {
             $actionmap[$actionitem['id']] = $actionitem['name'];
         }
 
-        $pagination = $firstresponse['paginacion'] ?? [];
-        $totalrecords = (int)($pagination['total'] ?? 0);
-        $limitperpage = self::LIMIT_PER_PAGE;
-        $totalpages = ceil($totalrecords / $limitperpage);
+        [$wheresql, $params] = self::build_conditions($service, $action, $userid, $fromdate, $todate);
 
-        $allconsumptions = [];
+        $records = $DB->get_records_select(
+            self::TABLE,
+            $wheresql,
+            $params,
+            'timecreated DESC, externalid DESC'
+        );
 
-        $userdata = $firstresponse['usuarios'][0] ?? null;
-        $consumptions = $userdata['consumos'] ?? [];
-        foreach ($consumptions as $item) {
-            $rawaction = (string)($item['accion'] ?? '');
-            $translatedaction = $actionmap[$rawaction] ?? $rawaction;
-            $allconsumptions[] = [
-                'id_consumption' => (int)($item['id_consumo'] ?? 0),
-                'action' => $translatedaction,
-                'id_service' => (string)($item['id_servicio'] ?? ''),
-                'userid' => isset($item['userid']) ? (int)$item['userid'] : null,
-                'cant_tokens' => $item['cantidad_tokens'] ?? 0,
-                'balance' => $item['saldo_restante'] ?? 0,
-                'date' => (string)($item['fecha'] ?? ''),
-                'created_at' => (string)($item['created_at'] ?? ''),
+        $consumptions = [];
+        foreach ($records as $record) {
+            $consumptions[] = [
+                'id_consumption' => (int) $record->externalid,
+                'action' => $actionmap[$record->action] ?? $record->action,
+                'id_service' => (string) $record->service,
+                'userid' => (int) $record->userid,
+                'cant_tokens' => (float) $record->credits,
+                'balance' => (float) $record->balance,
+                'date' => date('Y-m-d', $record->timecreated),
+                'created_at' => date('Y-m-d H:i:s', $record->timecreated),
             ];
-        }
-
-        for ($page = 2; $page <= $totalpages; $page++) {
-            $queryparams['page'] = $page;
-            $queryparams['limit'] = $limitperpage;
-
-            $response = $client->get('/tokens/historial-consumos', $queryparams);
-
-            if (empty($response) || $response['status'] !== 'success') {
-                continue;
-            }
-
-            $userdata = $response['usuarios'][0] ?? null;
-            $consumptions = $userdata['consumos'] ?? [];
-
-            foreach ($consumptions as $item) {
-                $rawaction = (string)($item['accion'] ?? '');
-                $translatedaction = $actionmap[$rawaction] ?? $rawaction;
-                $allconsumptions[] = [
-                    'id_consumption' => (int)($item['id_consumo'] ?? 0),
-                    'action' => $translatedaction,
-                    'id_service' => (string)($item['id_servicio'] ?? ''),
-                    'userid' => isset($item['userid']) ? (int)$item['userid'] : null,
-                    'cant_tokens' => $item['cantidad_tokens'] ?? 0,
-                    'balance' => $item['saldo_restante'] ?? 0,
-                    'date' => (string)($item['fecha'] ?? ''),
-                    'created_at' => (string)($item['created_at'] ?? ''),
-                ];
-            }
         }
 
         return [
             'status' => 'success',
-            'total' => $totalrecords,
-            'consumption' => $allconsumptions,
+            'total' => count($consumptions),
+            'consumption' => $consumptions,
         ];
+    }
+
+    /**
+     * Get consumption credit totals aggregated by a single dimension, for the report charts.
+     *
+     * Only the aggregated buckets are returned (not the raw rows), so the charts receive a small
+     * payload and do no client-side grouping.
+     *
+     * @param string $groupby One of 'month', 'day', 'action', 'service'.
+     * @param string|null $service Service filter.
+     * @param string|null $action Action filter.
+     * @param int|null $userid User filter.
+     * @param string|null $fromdate Start date (YYYY-MM-DD).
+     * @param string|null $todate End date (YYYY-MM-DD).
+     * @return array
+     */
+    public static function get_summary(
+        string $groupby,
+        ?string $service = null,
+        ?string $action = null,
+        ?int $userid = null,
+        ?string $fromdate = null,
+        ?string $todate = null
+    ): array {
+        global $DB;
+
+        $groupby = in_array($groupby, ['month', 'day', 'action', 'service'], true) ? $groupby : 'month';
+
+        [$wheresql, $params] = self::build_conditions($service, $action, $userid, $fromdate, $todate);
+
+        $actionmap = [];
+        foreach (\aiprovider_datacurso\provider::get_actions() as $item) {
+            $actionmap[$item['id']] = $item['name'];
+        }
+        $servicemap = [];
+        foreach (\aiprovider_datacurso\provider::get_services() as $item) {
+            $servicemap[$item['id']] = $item['name'];
+        }
+
+        $recordset = $DB->get_recordset_select(
+            self::TABLE,
+            $wheresql,
+            $params,
+            'timecreated ASC',
+            'id, service, action, credits, timecreated'
+        );
+
+        $buckets = [];
+        $total = 0.0;
+        foreach ($recordset as $record) {
+            $credits = (float) $record->credits;
+            $total += $credits;
+
+            switch ($groupby) {
+                case 'day':
+                    $label = date('Y-m-d', $record->timecreated);
+                    break;
+                case 'action':
+                    $label = $actionmap[$record->action] ?? $record->action;
+                    break;
+                case 'service':
+                    $label = $servicemap[$record->service] ?? $record->service;
+                    break;
+                default:
+                    $label = date('Y-m', $record->timecreated);
+                    break;
+            }
+
+            $buckets[$label] = ($buckets[$label] ?? 0) + $credits;
+        }
+        $recordset->close();
+
+        // Chronological order for time buckets; largest first for categorical ones.
+        if ($groupby === 'month' || $groupby === 'day') {
+            ksort($buckets);
+        } else {
+            arsort($buckets);
+        }
+
+        $summary = [];
+        foreach ($buckets as $label => $sum) {
+            $summary[] = ['label' => (string) $label, 'total' => (float) $sum];
+        }
+
+        return [
+            'status' => 'success',
+            'total' => $total,
+            'summary' => $summary,
+        ];
+    }
+
+    /**
+     * Build the SQL WHERE clause and parameters for the consumption filters.
+     *
+     * @param string|null $service
+     * @param string|null $action
+     * @param int|null $userid
+     * @param string|null $fromdate
+     * @param string|null $todate
+     * @return array{0: string, 1: array}
+     */
+    private static function build_conditions(
+        ?string $service,
+        ?string $action,
+        ?int $userid,
+        ?string $fromdate,
+        ?string $todate
+    ): array {
+        $conditions = [];
+        $params = [];
+
+        if (!empty($service) && $service !== 'all') {
+            $conditions[] = 'service = :service';
+            $params['service'] = $service;
+        }
+        if (!empty($action) && $action !== 'all') {
+            $conditions[] = 'action = :action';
+            $params['action'] = $action;
+        }
+        if (!empty($userid)) {
+            $conditions[] = 'userid = :userid';
+            $params['userid'] = (int) $userid;
+        }
+        if (!empty($fromdate) && ($from = strtotime($fromdate . ' 00:00:00')) !== false) {
+            $conditions[] = 'timecreated >= :fromdate';
+            $params['fromdate'] = $from;
+        }
+        if (!empty($todate) && ($to = strtotime($todate . ' 23:59:59')) !== false) {
+            $conditions[] = 'timecreated <= :todate';
+            $params['todate'] = $to;
+        }
+
+        return [implode(' AND ', $conditions), $params];
     }
 }

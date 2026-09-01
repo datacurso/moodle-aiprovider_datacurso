@@ -39,11 +39,14 @@ export const init = async () => {
     const userTokensConsumed = document.getElementById('user-tokens-consumed');
 
     let chartBar, chartPie, chartDay, chartUser;
-    let cachedData = [];
-    let serviceMap = {};
 
-    // Year filter state. The report loads one year at a time (default: current year); the
-    // date range is sent to the endpoint so it only returns that year's data.
+    const pieColors = [
+        '#36A2EB', '#FF6384', '#f1d48bff', '#5ddcdcff', '#049930ff', '#0b6eb0ff',
+        '#d10f39ff', '#7c611dff', '#ee9610ff', '#a50562ff', '#022082ff', '#efef21ff',
+        '#3f4646ff', '#8f9191ff', '#0c361bff', '#bd836cff'
+    ];
+
+    // Year filter state. The report shows one year at a time (default: the current year).
     const START_YEAR = 2024;
     const currentYear = new Date().getFullYear();
     let selectedYear = currentYear;
@@ -53,35 +56,37 @@ export const init = async () => {
         todate: `${year}-12-31`,
     });
 
-    // Robust date source per record for grouping (created_at is always populated; fecha may be empty).
-    const dateStr = (c) => String(c.created_at || c.date || "");
+    // Fetch server-side aggregated totals for a single dimension (month/day/action/service).
+    // Returns { total, summary: [{ label, total }] }; the server does the grouping.
+    const fetchSummary = async (groupby, params = {}) => {
+        const args = { groupby, service: "", action: "", userid: 0, ...yearRange(selectedYear), ...params };
+        try {
+            const response = await Ajax.call([{
+                methodname: 'aiprovider_datacurso_get_consumption_summary',
+                args
+            }])[0];
 
-    // Load balance independently to avoid waiting for heavy chart data.
+            if (response.status !== 'success') {
+                return { total: 0, summary: [] };
+            }
+            return { total: response.total || 0, summary: response.summary || [] };
+        } catch (error) {
+            Notification.exception(error);
+            return { total: 0, summary: [] };
+        }
+    };
+
+    // Load the balance card independently.
     Ajax.call([{ methodname: 'aiprovider_datacurso_get_credits_balance', args: {} }])[0]
         .then((balanceResponse) => {
-            const balance = balanceResponse?.balance || 0;
-            tokensAvailable.textContent = balance;
+            tokensAvailable.textContent = balanceResponse?.balance || 0;
         })
         .catch(Notification.exception);
 
-    // Load chart dependencies separately.
-    Promise.all([
-        Ajax.call([{ methodname: 'aiprovider_datacurso_get_services', args: {} }])[0],
-        Ajax.call([{
-            methodname: 'aiprovider_datacurso_get_all_consumption',
-            // Send all optional params (not just the date range): Moodle maps VALUE_OPTIONAL
-            // args positionally, so omitting the leading ones would shift fromdate into $service.
-            args: { service: "", action: "", userid: 0, ...yearRange(selectedYear) }
-        }])[0],
-    ])
-        .then(([servicesResponse, consumptionResponse]) => {
-            const services = servicesResponse?.services || [];
-            cachedData = consumptionResponse?.consumption || [];
-            services.forEach(s => {
-                serviceMap[s.id] = s.name || s.fullname || s.id;
-            });
-
-            initCharts(services);
+    // Load the service list (for the bar/pie filter dropdowns), then build the charts.
+    Ajax.call([{ methodname: 'aiprovider_datacurso_get_services', args: {} }])[0]
+        .then((servicesResponse) => {
+            initCharts(servicesResponse?.services || []);
         })
         .catch(Notification.exception);
 
@@ -119,7 +124,7 @@ export const init = async () => {
         fillSelect(filterBar, services);
         fillSelect(filterPie, services);
 
-        // Enhance with Autocomplete for User Chart (AJAX)
+        // Enhance with Autocomplete for the user chart (AJAX).
         const placeholder = await getString('search', 'core');
         AutoComplete.enhance(
             '#filter-user-charts',
@@ -133,14 +138,12 @@ export const init = async () => {
             1
         );
 
-        // cachedData already holds only the selected year's records (fetched with its date range).
-        renderBarChart(cachedData);
-        renderPieChart(cachedData);
-        renderDayChart(cachedData);
-
+        updateBarChart();
+        updatePieChart();
+        updateDayChart();
         updateUserChart();
 
-        // Listeners filters
+        // Listeners filters.
         filterYear.addEventListener('change', () => updateYear());
         filterBar.addEventListener('change', () => updateBarChart());
         filterPie.addEventListener('change', () => updatePieChart());
@@ -149,54 +152,17 @@ export const init = async () => {
         filterEnd.addEventListener('change', () => updateDayChart());
     };
 
-    // functions ws
-    const fetchConsumptionData = async (params = {}) => {
-        const defaults = {
-            service: "",
-            action: "",
-            userid: 0,
-            ...yearRange(selectedYear)
-        };
-        const finalParams = { ...defaults, ...params };
-
-        try {
-            const response = await Ajax.call([{
-                methodname: 'aiprovider_datacurso_get_all_consumption',
-                args: finalParams
-            }])[0];
-
-            if (response.status !== 'success') {
-                return [];
-            }
-            return response.consumption || [];
-
-        } catch (error) {
-            Notification.exception(error);
-            return [];
-        }
-    };
-
-    // Reload the year's data from the endpoint and re-render every chart, respecting active filters.
-    const updateYear = async () => {
+    // Re-render every chart for the newly selected year, respecting each chart's active filter.
+    const updateYear = () => {
         selectedYear = parseInt(document.getElementById('filter-year').value, 10) || currentYear;
-        cachedData = await fetchConsumptionData();
         updateBarChart();
         updatePieChart();
         updateDayChart();
         updateUserChart();
     };
 
-    // grafic bar
-    const renderBarChart = (data) => {
-        const byMonth = {};
-        data.forEach(c => {
-            const month = dateStr(c).substring(0, 7);
-            byMonth[month] = (byMonth[month] || 0) + c.cant_tokens;
-        });
-
-        const totalTokens = data.reduce((sum, c) => sum + (c.cant_tokens || 0), 0);
-        tokensConsumed.textContent = totalTokens;
-
+    // Bar chart: credits by month.
+    const renderBarChart = (summary) => {
         const ctx = document.getElementById('chart-tokens-by-month');
         if (chartBar) {
             chartBar.destroy();
@@ -205,10 +171,10 @@ export const init = async () => {
         chartBar = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: Object.keys(byMonth),
+                labels: summary.map(s => s.label),
                 datasets: [{
                     label: creditsConsumedMonth,
-                    data: Object.values(byMonth),
+                    data: summary.map(s => s.total),
                     backgroundColor: '#0073e6',
                 }]
             },
@@ -218,20 +184,13 @@ export const init = async () => {
 
     const updateBarChart = async () => {
         const service = document.getElementById('filter-service-bar').value;
-        if (!service) {
-            return renderBarChart(cachedData);
-        }
-        const data = await fetchConsumptionData({ service });
-        renderBarChart(data);
+        const { total, summary } = await fetchSummary('month', service ? { service } : {});
+        tokensConsumed.textContent = Number(total).toFixed(2);
+        renderBarChart(summary);
     };
 
-    // grafic pie
-    const renderPieChart = (data) => {
-        const byAction = {};
-        data.forEach(c => {
-            byAction[c.action] = (byAction[c.action] || 0) + c.cant_tokens;
-        });
-
+    // Pie chart: credits by action.
+    const renderPieChart = (summary) => {
         const ctx = document.getElementById('chart-actions');
         if (chartPie) {
             chartPie.destroy();
@@ -240,27 +199,10 @@ export const init = async () => {
         chartPie = new Chart(ctx, {
             type: 'pie',
             data: {
-                labels: Object.keys(byAction),
+                labels: summary.map(s => s.label),
                 datasets: [{
-                    data: Object.values(byAction),
-                    backgroundColor: [
-                        '#36A2EB',
-                        '#FF6384',
-                        '#f1d48bff',
-                        '#5ddcdcff',
-                        '#049930ff',
-                        '#0b6eb0ff',
-                        '#d10f39ff',
-                        '#7c611dff',
-                        '#ee9610ff',
-                        '#a50562ff',
-                        '#022082ff',
-                        '#efef21ff',
-                        '#3f4646ff',
-                        '#8f9191ff',
-                        '#0c361bff',
-                        '#bd836cff'
-                    ],
+                    data: summary.map(s => s.total),
+                    backgroundColor: pieColors,
                 }]
             },
             options: { responsive: true, maintainAspectRatio: false }
@@ -269,25 +211,12 @@ export const init = async () => {
 
     const updatePieChart = async () => {
         const service = document.getElementById('filter-service-pie').value;
-        if (!service) {
-            return renderPieChart(cachedData);
-        }
-
-        const data = await fetchConsumptionData({ service });
-        renderPieChart(data);
+        const { summary } = await fetchSummary('action', service ? { service } : {});
+        renderPieChart(summary);
     };
 
-    // grafic day
-    const renderDayChart = (data) => {
-        const byDay = {};
-        data.forEach(c => {
-            const day = dateStr(c).substring(0, 10);
-            byDay[day] = (byDay[day] || 0) + c.cant_tokens;
-        });
-
-        const labels = Object.keys(byDay).sort((a, b) => new Date(a) - new Date(b));
-        const values = labels.map(day => byDay[day]);
-
+    // Day chart: credits by day.
+    const renderDayChart = (summary) => {
         const ctx = document.getElementById('chart-tokens-by-day');
         if (chartDay) {
             chartDay.destroy();
@@ -296,10 +225,10 @@ export const init = async () => {
         chartDay = new Chart(ctx, {
             type: 'line',
             data: {
-                labels,
+                labels: summary.map(s => s.label),
                 datasets: [{
                     label: creditsConsumedDay,
-                    data: values,
+                    data: summary.map(s => s.total),
                     borderColor: '#28a745',
                     backgroundColor: 'rgba(40,167,69,0.2)',
                     fill: true,
@@ -324,27 +253,20 @@ export const init = async () => {
         const fromdate = document.getElementById('filter-start-date').value;
         const todate = document.getElementById('filter-end-date').value;
 
-        if (!fromdate && !todate) {
-            return renderDayChart(cachedData);
+        const params = {};
+        if (fromdate) {
+            params.fromdate = fromdate;
+        }
+        if (todate) {
+            params.todate = todate;
         }
 
-        const data = await fetchConsumptionData({ fromdate, todate });
-        renderDayChart(data);
+        const { summary } = await fetchSummary('day', params);
+        renderDayChart(summary);
     };
 
-    // grafic user per service
-    const renderUserChart = (data) => {
-        const byService = {};
-        let total = 0;
-
-        // Group by service ID and sum tokens
-        data.forEach(c => {
-            const serviceId = c.service || c.id_service;
-            const serviceName = serviceMap[serviceId] || serviceId;
-            byService[serviceName] = (byService[serviceName] || 0) + (c.cant_tokens || 0);
-            total += (c.cant_tokens || 0);
-        });
-
+    // User chart: credits by service.
+    const renderUserChart = (summary, total) => {
         if (userTokensConsumed) {
             userTokensConsumed.textContent = total.toFixed(2);
         }
@@ -361,10 +283,10 @@ export const init = async () => {
         chartUser = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: Object.keys(byService),
+                labels: summary.map(s => s.label),
                 datasets: [{
                     label: creditsConsumed,
-                    data: Object.values(byService),
+                    data: summary.map(s => s.total),
                     backgroundColor: '#6c757d',
                 }]
             },
@@ -378,11 +300,7 @@ export const init = async () => {
 
     const updateUserChart = async () => {
         const userId = document.getElementById('filter-user-charts').value;
-        if (!userId) {
-            return renderUserChart(cachedData);
-        }
-
-        const data = await fetchConsumptionData({ userid: userId });
-        renderUserChart(data);
+        const { total, summary } = await fetchSummary('service', userId ? { userid: userId } : {});
+        renderUserChart(summary, total);
     };
 };
