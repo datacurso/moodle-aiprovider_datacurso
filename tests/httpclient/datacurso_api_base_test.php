@@ -87,6 +87,9 @@ final class datacurso_api_base_test extends \advanced_testcase {
      * A stored_file is uploaded with its own name and MIME type, plus the extras.
      */
     public function test_upload_file_sends_the_file_with_its_name_and_mimetype(): void {
+        global $CFG;
+        require_once("{$CFG->dirroot}/ai/provider/datacurso/tests/fixtures/test_upload_client.php");
+
         $this->resetAfterTest();
 
         $client = new test_upload_client('https://example.invalid');
@@ -108,6 +111,9 @@ final class datacurso_api_base_test extends \advanced_testcase {
      * The temporary copy holds the file content while the request is in flight.
      */
     public function test_the_temporary_copy_holds_the_file_content(): void {
+        global $CFG;
+        require_once("{$CFG->dirroot}/ai/provider/datacurso/tests/fixtures/test_upload_client.php");
+
         $this->resetAfterTest();
 
         $client = new test_upload_client('https://example.invalid');
@@ -122,6 +128,9 @@ final class datacurso_api_base_test extends \advanced_testcase {
      * The temporary copy is removed once the request completes.
      */
     public function test_the_temporary_copy_is_removed_afterwards(): void {
+        global $CFG;
+        require_once("{$CFG->dirroot}/ai/provider/datacurso/tests/fixtures/test_upload_client.php");
+
         $this->resetAfterTest();
 
         $client = new test_upload_client('https://example.invalid');
@@ -138,6 +147,9 @@ final class datacurso_api_base_test extends \advanced_testcase {
      * syllabus is not small.
      */
     public function test_the_temporary_copy_is_removed_when_the_request_fails(): void {
+        global $CFG;
+        require_once("{$CFG->dirroot}/ai/provider/datacurso/tests/fixtures/test_upload_client.php");
+
         $this->resetAfterTest();
 
         $client = new test_upload_client('https://example.invalid');
@@ -149,51 +161,5 @@ final class datacurso_api_base_test extends \advanced_testcase {
         } catch (\moodle_exception $e) {
             $this->assertFileDoesNotExist($client->temppath);
         }
-    }
-}
-
-/**
- * API client that captures the request instead of sending it.
- *
- * @package    aiprovider_datacurso
- * @category   test
- * @copyright  2026 Industria Elearning
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class test_upload_client extends datacurso_api_base {
-    /** @var string|null Method the request was sent with. */
-    public ?string $method = null;
-
-    /** @var string|null Endpoint the request was sent to. */
-    public ?string $path = null;
-
-    /** @var array Payload the request was sent with. */
-    public array $payload = [];
-
-    /** @var string|null Path of the temporary copy at request time. */
-    public ?string $temppath = null;
-
-    /** @var string|null Content of the temporary copy at request time. */
-    public ?string $contentatrequest = null;
-
-    /** @var \Throwable|null Exception to throw instead of returning. */
-    public ?\Throwable $failwith = null;
-
-    #[\Override]
-    protected function send_request(string $method, string $path, $payload = [], array $headers = []): ?array {
-        $this->method = $method;
-        $this->path = $path;
-        $this->payload = $payload;
-
-        if (isset($payload['file']) && $payload['file'] instanceof \CURLFile) {
-            $this->temppath = $payload['file']->getFilename();
-            $this->contentatrequest = file_get_contents($this->temppath);
-        }
-
-        if ($this->failwith !== null) {
-            throw $this->failwith;
-        }
-
-        return ['status' => 'ok'];
     }
 }
