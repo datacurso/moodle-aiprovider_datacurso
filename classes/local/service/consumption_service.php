@@ -32,60 +32,6 @@ class consumption_service {
     private const TABLE = 'aiprovider_datacurso_consumption';
 
     /**
-     * Get all consumption records matching the given filters from the local mirror table.
-     *
-     * @param string|null $service Service filter.
-     * @param string|null $action Action filter.
-     * @param int|null $userid User filter.
-     * @param string|null $fromdate Start date (YYYY-MM-DD).
-     * @param string|null $todate End date (YYYY-MM-DD).
-     * @return array
-     */
-    public static function get_all_consumption(
-        ?string $service = null,
-        ?string $action = null,
-        ?int $userid = null,
-        ?string $fromdate = null,
-        ?string $todate = null
-    ): array {
-        global $DB;
-
-        $actionmap = [];
-        foreach (\aiprovider_datacurso\provider::get_actions() as $actionitem) {
-            $actionmap[$actionitem['id']] = $actionitem['name'];
-        }
-
-        [$wheresql, $params] = self::build_conditions($service, $action, $userid, $fromdate, $todate);
-
-        $records = $DB->get_records_select(
-            self::TABLE,
-            $wheresql,
-            $params,
-            'timecreated DESC, externalid DESC'
-        );
-
-        $consumptions = [];
-        foreach ($records as $record) {
-            $consumptions[] = [
-                'id_consumption' => (int) $record->externalid,
-                'action' => $actionmap[$record->action] ?? $record->action,
-                'id_service' => (string) $record->service,
-                'userid' => (int) $record->userid,
-                'cant_tokens' => (float) $record->credits,
-                'balance' => (float) $record->balance,
-                'date' => date('Y-m-d', $record->timecreated),
-                'created_at' => date('Y-m-d H:i:s', $record->timecreated),
-            ];
-        }
-
-        return [
-            'status' => 'success',
-            'total' => count($consumptions),
-            'consumption' => $consumptions,
-        ];
-    }
-
-    /**
      * Get consumption credit totals aggregated by a single dimension, for the report charts.
      *
      * Only the aggregated buckets are returned (not the raw rows), so the charts receive a small

@@ -38,15 +38,6 @@ $functions = [
         'capabilities' => 'aiprovider/datacurso:viewreports',
 
     ],
-    'aiprovider_datacurso_get_all_consumption' => [
-        'classname'   => 'aiprovider_datacurso\external\get_all_consumption',
-        'methodname'  => 'execute',
-        'classpath'   => '',
-        'description' => 'Gets the complete history of token consumption from the local mirror',
-        'type'        => 'read',
-        'ajax'        => true,
-        'capabilities' => 'aiprovider/datacurso:viewreports',
-    ],
     'aiprovider_datacurso_get_consumption_summary' => [
         'classname'   => 'aiprovider_datacurso\external\get_consumption_summary',
         'methodname'  => 'execute',
