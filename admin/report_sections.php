@@ -36,14 +36,16 @@ $context = context_system::instance();
 require_login();
 require_capability('aiprovider/datacurso:viewreports', $context);
 
-// Set up page context and layout.
-$PAGE->set_context($context);
-$PAGE->set_url(new moodle_url('/ai/provider/datacurso/admin/report_sections.php'));
-$PAGE->set_pagelayout('report');
-$PAGE->set_title('Datacurso AI Provider Reports');
-
 // Get the current tab parameter. Consumption history is the default landing tab.
 $tab = optional_param('tab', 'consumption', PARAM_ALPHAEXT);
+
+// Set up page context and layout. The tab is part of the page URL so that the configuration
+// form posts back to its own tab and the post-save redirect returns to it; without it the
+// submission would fall back to the default tab and the save branch would never run.
+$PAGE->set_context($context);
+$PAGE->set_url(new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => $tab]));
+$PAGE->set_pagelayout('report');
+$PAGE->set_title('Datacurso AI Provider Reports');
 
 // Process the configuration form BEFORE any output so we can redirect after saving.
 $configform = null;
