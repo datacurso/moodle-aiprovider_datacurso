@@ -138,18 +138,18 @@ class config_form extends \moodleform {
 
         foreach (($data['limit'] ?? []) as $sid => $value) {
             if ((int) $value < 0) {
-                $errors["limit[{$sid}]"] = get_string('err_positive', 'form');
+                $errors["limit[{$sid}]"] = get_string('error_positivevalue', 'aiprovider_datacurso');
             }
         }
         foreach (($data['windowvalue'] ?? []) as $sid => $value) {
             if ((int) $value < 1) {
-                $errors["windowgroup_{$sid}"] = get_string('err_positive', 'form');
+                $errors["windowgroup_{$sid}"] = get_string('error_positivevalue', 'aiprovider_datacurso');
             }
         }
         foreach (($data['credit'] ?? []) as $sid => $map) {
             foreach ((array) $map as $key => $value) {
                 if ((int) $value < 0) {
-                    $errors["credit[{$sid}][{$key}]"] = get_string('err_positive', 'form');
+                    $errors["credit[{$sid}][{$key}]"] = get_string('error_positivevalue', 'aiprovider_datacurso');
                 }
             }
         }

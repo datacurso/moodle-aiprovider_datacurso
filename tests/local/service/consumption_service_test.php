@@ -43,7 +43,7 @@ final class consumption_service_test extends \advanced_testcase {
 
         // Mid-day timestamps so the server timezone cannot shift the calendar day.
         $rows = [
-            // externalid, service, action, credits, month, day.
+            // Columns: externalid, service, action, credits, month, day.
             [1, 'local_coursegen', '/provider/chat/completions', 10, 1, 15],
             [2, 'local_coursegen', '/provider/chat/completions', 5, 1, 20],
             [3, 'aiprovider_datacurso', '/provider/images/generations', 30, 2, 10],

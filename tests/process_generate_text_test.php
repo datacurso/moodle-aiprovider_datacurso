@@ -14,10 +14,19 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Tests for the text generation processor.
+ *
+ * @package    aiprovider_datacurso
+ * @category   test
+ * @copyright  2026 Datacurso
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 namespace aiprovider_datacurso;
 
 use core_ai\aiactions\generate_text;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
@@ -27,30 +36,6 @@ use GuzzleHttp\Psr7\Uri;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
-
-/**
- * Text processor subclass that returns a fixed endpoint, avoiding any network at construction.
- *
- * @package    aiprovider_datacurso
- * @copyright  2026 Datacurso
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class testable_process_generate_text extends process_generate_text {
-    #[\Override]
-    protected function get_endpoint(): UriInterface {
-        return new Uri('https://example.invalid/provider/chat/completions');
-    }
-
-    /**
-     * Public wrapper over the protected success parser, for direct unit testing.
-     *
-     * @param ResponseInterface $response
-     * @return array
-     */
-    public function expose_handle_api_success(ResponseInterface $response): array {
-        return $this->handle_api_success($response);
-    }
-}
 
 /**
  * Tests for the text generation processor.
@@ -83,13 +68,31 @@ final class process_generate_text_test extends \advanced_testcase {
     /**
      * Build a testable processor for a given prompt.
      *
+     * The processor is an anonymous subclass returning a fixed endpoint, avoiding any
+     * network at construction, and exposing the protected success parser for unit testing.
+     *
      * @param string $prompt
-     * @return testable_process_generate_text
+     * @return process_generate_text
      */
-    private function make_processor(string $prompt): testable_process_generate_text {
+    private function make_processor(string $prompt): process_generate_text {
         global $USER;
         $action = new generate_text(\context_system::instance()->id, (int) $USER->id, $prompt);
-        return new testable_process_generate_text(new provider(), $action);
+        return new class (new provider(), $action) extends process_generate_text {
+            #[\Override]
+            protected function get_endpoint(): UriInterface {
+                return new Uri('https://example.invalid/provider/chat/completions');
+            }
+
+            /**
+             * Public wrapper over the protected success parser, for direct unit testing.
+             *
+             * @param ResponseInterface $response
+             * @return array
+             */
+            public function expose_handle_api_success(ResponseInterface $response): array {
+                return $this->handle_api_success($response);
+            }
+        };
     }
 
     /**
@@ -181,10 +184,11 @@ final class process_generate_text_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
 
-        // ConnectException is not a RequestException in this Guzzle build, so it would not be caught;
-        // a RequestException exercises the processor's documented graceful-degradation path.
+        // A real connection failure throws ConnectException (a sibling of RequestException, both
+        // extending TransferException). The processor catches TransferException, so this proves the
+        // connect failure is surfaced gracefully instead of bubbling up.
         $this->set_mock_http([
-            new RequestException('down', new GuzzleRequest('POST', 'https://example.invalid')),
+            new ConnectException('down', new GuzzleRequest('POST', 'https://example.invalid')),
         ]);
 
         $response = $this->make_processor('hi')->process();

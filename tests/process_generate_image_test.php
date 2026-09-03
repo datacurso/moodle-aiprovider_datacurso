@@ -14,6 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Tests for the image generation processor.
+ *
+ * @package    aiprovider_datacurso
+ * @category   test
+ * @copyright  2026 Datacurso
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 namespace aiprovider_datacurso;
 
 use core_ai\aiactions\generate_image;
@@ -21,20 +30,6 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Uri;
 use Psr\Http\Message\UriInterface;
-
-/**
- * Image processor subclass returning a fixed endpoint to avoid network at construction.
- *
- * @package    aiprovider_datacurso
- * @copyright  2026 Datacurso
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class testable_process_generate_image extends process_generate_image {
-    #[\Override]
-    protected function get_endpoint(): UriInterface {
-        return new Uri('https://example.invalid/provider/images/generations');
-    }
-}
 
 /**
  * Tests for the image generation processor.
@@ -70,7 +65,12 @@ final class process_generate_image_test extends \advanced_testcase {
             1,
             'vivid'
         );
-        $processor = new testable_process_generate_image(new provider(), $action);
+        $processor = new class (new provider(), $action) extends process_generate_image {
+            #[\Override]
+            protected function get_endpoint(): UriInterface {
+                return new Uri('https://example.invalid/provider/images/generations');
+            }
+        };
 
         $this->expectException(\moodle_exception::class);
         $this->expectExceptionMessageMatches('/Empty prompt/');

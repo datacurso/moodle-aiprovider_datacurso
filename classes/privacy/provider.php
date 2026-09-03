@@ -43,8 +43,15 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             'userid' => 'privacy:metadata:aiprovider_datacurso:userid',
         ], 'privacy:metadata:aiprovider_datacurso:externalpurpose');
 
-        // No local database tables store personal data: the rate limit is now enforced and
-        // accumulated by the external Datacurso service (token-manager).
+        // Local mirror of the credit-consumption history used for the admin reports.
+        $collection->add_database_table('aiprovider_datacurso_consumption', [
+            'userid' => 'privacy:metadata:aiprovider_datacurso_consumption:userid',
+            'service' => 'privacy:metadata:aiprovider_datacurso_consumption:service',
+            'action' => 'privacy:metadata:aiprovider_datacurso_consumption:action',
+            'credits' => 'privacy:metadata:aiprovider_datacurso_consumption:credits',
+            'balance' => 'privacy:metadata:aiprovider_datacurso_consumption:balance',
+            'timecreated' => 'privacy:metadata:aiprovider_datacurso_consumption:timecreated',
+        ], 'privacy:metadata:aiprovider_datacurso_consumption');
 
         return $collection;
     }
@@ -167,7 +174,8 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
      * @return array<string,array<string,int>>
      */
     protected static function get_table_user_map(stdClass $user): array {
-        // No local tables store personal data anymore (rate limit moved to the external service).
-        return [];
+        return [
+            'aiprovider_datacurso_consumption' => ['userid' => (int) $user->id],
+        ];
     }
 }

@@ -14,6 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Tests for the text summarisation processor.
+ *
+ * @package    aiprovider_datacurso
+ * @category   test
+ * @copyright  2026 Datacurso
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
 namespace aiprovider_datacurso;
 
 use core_ai\aiactions\summarise_text;
@@ -24,20 +33,6 @@ use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\Uri;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\UriInterface;
-
-/**
- * Summarise processor subclass returning a fixed endpoint to avoid network at construction.
- *
- * @package    aiprovider_datacurso
- * @copyright  2026 Datacurso
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class testable_process_summarise_text extends process_summarise_text {
-    #[\Override]
-    protected function get_endpoint(): UriInterface {
-        return new Uri('https://example.invalid/provider/chat/completions');
-    }
-}
 
 /**
  * Tests for the text summarisation processor.
@@ -88,7 +83,13 @@ final class process_summarise_text_test extends \advanced_testcase {
         ]);
 
         $action = new summarise_text(\context_system::instance()->id, (int) $USER->id, 'Long text to summarise');
-        (new testable_process_summarise_text(new provider(), $action))->process();
+        $processor = new class (new provider(), $action) extends process_summarise_text {
+            #[\Override]
+            protected function get_endpoint(): UriInterface {
+                return new Uri('https://example.invalid/provider/chat/completions');
+            }
+        };
+        $processor->process();
 
         $payload = json_decode((string) $this->capturedbody, true);
         $systemcontents = [];

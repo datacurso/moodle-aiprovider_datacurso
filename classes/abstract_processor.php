@@ -18,7 +18,7 @@ namespace aiprovider_datacurso;
 
 use core\http_client;
 use core_ai\process_base;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\RequestOptions;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -115,7 +115,7 @@ abstract class abstract_processor extends process_base {
                     RequestOptions::HTTP_ERRORS => false,
                 ]
             );
-        } catch (RequestException $e) {
+        } catch (TransferException $e) {
             return [
                 'success' => false,
                 'errorcode' => (int)($e->getCode() ?: 500),

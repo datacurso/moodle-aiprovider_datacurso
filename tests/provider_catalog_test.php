@@ -53,7 +53,7 @@ final class provider_catalog_test extends \advanced_testcase {
      * MDL-UNIT-003: fallback to the service default cost for unknown keys.
      */
     public function test_credit_for_unknown_subaction_falls_back(): void {
-        // local_forum_ai exposes a single 'default' action with cost 3.
+        // The local_forum_ai fixture exposes a single 'default' action with cost 3.
         $cost = provider::get_credit_for_action('local_forum_ai', 'does_not_exist');
         $this->assertSame(3, $cost);
         $this->assertGreaterThanOrEqual(1, $cost);

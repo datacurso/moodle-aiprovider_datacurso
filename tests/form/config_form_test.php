@@ -52,11 +52,6 @@ final class config_form_test extends \advanced_testcase {
         $this->assertNotEmpty($errors['limit[local_coursegen]']);
         $this->assertNotEmpty($errors['windowgroup_local_coursegen']);
         $this->assertNotEmpty($errors['credit[local_coursegen][course_image]']);
-
-        // The production form references the missing core string 'err_positive' (the valid keys are
-        // 'err_numeric' / 'err_positiveint'), so each rejected field emits a get_string() debugging
-        // notice. That is a separate, minor production defect; this test asserts only the rejection.
-        $this->assertDebuggingCalledCount(3);
     }
 
     /**

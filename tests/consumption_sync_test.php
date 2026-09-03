@@ -94,7 +94,7 @@ final class consumption_sync_test extends \advanced_testcase {
     public function test_sync_date_parsing_has_no_seam(): void {
         $this->markTestSkipped(
             'consumption_sync::to_timestamp() is a private helper behind a static, network-coupled '
-            . 'sync() that instantiates `new datacurso_api()` inline; the pure date-parse logic is not '
+            . "sync() that instantiates 'new datacurso_api()' inline; the pure date-parse logic is not "
             . 'reachable via any public API without a production testability refactor.'
         );
     }
@@ -116,7 +116,7 @@ final class consumption_sync_test extends \advanced_testcase {
     public function test_sync_response_mapping_has_no_seam(): void {
         $this->markTestSkipped(
             'consumption_sync::map_record()/extract_items() are private inside a static sync() that '
-            . 'creates `new datacurso_api()` with no injection point; the mapping of the external '
+            . "creates 'new datacurso_api()' with no injection point; the mapping of the external "
             . 'payload to a local record cannot be exercised via public API without a refactor.'
         );
     }

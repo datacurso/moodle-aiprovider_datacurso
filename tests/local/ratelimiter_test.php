@@ -48,7 +48,7 @@ final class ratelimiter_test extends \advanced_testcase {
         $this->assertSame('100', $map['X-RateLimit-Limit']);
         // 2 hours => 7200 seconds.
         $this->assertSame('7200', $map['X-RateLimit-WindowSeconds']);
-        // course_image catalog default is 2000; the value is always a positive integer string.
+        // The course_image catalog default is 2000; the value is always a positive integer string.
         $this->assertSame('2000', $map['X-RateLimit-MaxPerAction']);
         $this->assertGreaterThanOrEqual(1, (int) $map['X-RateLimit-MaxPerAction']);
     }

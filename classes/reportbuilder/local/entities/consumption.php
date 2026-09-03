@@ -130,7 +130,7 @@ class consumption extends base {
             ->set_type(column::TYPE_TEXT)
             ->add_field("{$tablealias}.action")
             ->set_is_sortable(true)
-            ->add_callback(static function($value): string {
+            ->add_callback(static function ($value): string {
                 static $map = null;
                 if ($map === null) {
                     $map = self::action_names();
@@ -148,7 +148,7 @@ class consumption extends base {
             ->set_type(column::TYPE_TEXT)
             ->add_field("{$tablealias}.service")
             ->set_is_sortable(true)
-            ->add_callback(static function($value): string {
+            ->add_callback(static function ($value): string {
                 static $map = null;
                 if ($map === null) {
                     $map = self::service_names();
@@ -212,7 +212,7 @@ class consumption extends base {
             "{$tablealias}.service"
         ))
             ->add_joins($this->get_joins())
-            ->set_options_callback(static function(): array {
+            ->set_options_callback(static function (): array {
                 return self::service_names();
             });
 
@@ -225,7 +225,7 @@ class consumption extends base {
             "{$tablealias}.action"
         ))
             ->add_joins($this->get_joins())
-            ->set_options_callback(static function(): array {
+            ->set_options_callback(static function (): array {
                 return self::action_names();
             });
 
