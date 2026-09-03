@@ -66,6 +66,18 @@ class consumption_sync {
     }
 
     /**
+     * Build the API client used to read the consumption history.
+     *
+     * Declared as a substitution point so the synchronisation can be exercised with a client
+     * double, without reaching the network.
+     *
+     * @return datacurso_api
+     */
+    protected static function get_api_client(): datacurso_api {
+        return new datacurso_api();
+    }
+
+    /**
      * Fetch and store every record newer than the last one already stored.
      *
      * @param \moodle_database $db
@@ -73,7 +85,7 @@ class consumption_sync {
     private static function pull(\moodle_database $db): void {
         $lastid = (int) $db->get_field_sql('SELECT MAX(externalid) FROM {' . self::TABLE . '}');
 
-        $client = new datacurso_api();
+        $client = static::get_api_client();
         $newrecords = [];
         $seen = [];
         $reachedknown = false;
