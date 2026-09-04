@@ -23,36 +23,6 @@
 import Ajax from 'core/ajax';
 
 /**
- * Setup the webservice for Datacurso.
- */
-export function webserviceSetup() {
-    return Ajax.call([{
-        methodname: 'aiprovider_datacurso_webservice_setup',
-        args: {}
-    }])[0];
-}
-
-/**
- * Regenerate the webservice token for Datacurso.
- */
-export function webserviceRegenerateToken() {
-    return Ajax.call([{
-        methodname: 'aiprovider_datacurso_webservice_regenerate_token',
-        args: {}
-    }])[0];
-}
-
-/**
- * Get current Datacurso webservice status.
- */
-export function webserviceGetStatus() {
-    return Ajax.call([{
-        methodname: 'aiprovider_datacurso_webservice_get_status',
-        args: {}
-    }])[0];
-}
-
-/**
  * Get consumption history for Datacurso.
  * @param {Object} args - The arguments for the consumption history.
  */
