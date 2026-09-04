@@ -24,6 +24,7 @@ use core_privacy\local\request\userlist;
 use core_privacy\local\metadata\provider as metadata_provider;
 use core_privacy\local\request\core_userlist_provider;
 use core_privacy\local\request\plugin\provider as plugin_provider;
+use core_privacy\local\request\transform;
 use core_privacy\local\request\writer;
 use stdClass;
 
@@ -43,33 +44,18 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             'userid' => 'privacy:metadata:aiprovider_datacurso:userid',
         ], 'privacy:metadata:aiprovider_datacurso:externalpurpose');
 
-        $fields = [
-            'userid', 'serviceid', 'windowstart', 'tokensused', 'lastsync', 'timecreated', 'timemodified',
-        ];
-        $fielddata = [];
-        foreach ($fields as $field) {
-            $fielddata[$field] = get_string('privacy:metadata:aiprovider_datacurso_rlimit:' . $field, 'aiprovider_datacurso');
-        }
-        $collection->add_database_table(
-            'aiprovider_datacurso_rlimit',
-            $fielddata,
-            get_string('privacy:metadata:aiprovider_datacurso_rlimit', 'aiprovider_datacurso')
-        );
+        // The rate limit is enforced and accumulated by the external Datacurso service
+        // (token-manager); the consumption mirror table below only stores a local, synced-on-demand
+        // copy of that same external history for the Report Builder report.
+        $collection->add_database_table('aiprovider_datacurso_consumption', [
+            'userid' => 'privacy:metadata:aiprovider_datacurso_consumption:userid',
+            'service' => 'privacy:metadata:aiprovider_datacurso_consumption:service',
+            'action' => 'privacy:metadata:aiprovider_datacurso_consumption:action',
+            'credits' => 'privacy:metadata:aiprovider_datacurso_consumption:credits',
+            'balance' => 'privacy:metadata:aiprovider_datacurso_consumption:balance',
+            'timecreated' => 'privacy:metadata:aiprovider_datacurso_consumption:timecreated',
+        ], 'privacy:metadata:aiprovider_datacurso_consumption');
 
-        $userlimitfields = [
-            'userid' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:userid', 'aiprovider_datacurso'),
-            'tokenlimit' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:tokenlimit', 'aiprovider_datacurso'),
-            'tokensused' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:tokensused', 'aiprovider_datacurso'),
-            'countfrom' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:countfrom', 'aiprovider_datacurso'),
-            'lastsync' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:lastsync', 'aiprovider_datacurso'),
-            'timecreated' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:timecreated', 'aiprovider_datacurso'),
-            'timemodified' => get_string('privacy:metadata:aiprovider_datacurso_userlimit:timemodified', 'aiprovider_datacurso'),
-        ];
-        $collection->add_database_table(
-            'aiprovider_datacurso_userlimit',
-            $userlimitfields,
-            get_string('privacy:metadata:aiprovider_datacurso_userlimit', 'aiprovider_datacurso')
-        );
         return $collection;
     }
 
@@ -104,14 +90,27 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         $tables = static::get_table_user_map($user);
 
         foreach ($tables as $table => $filterparams) {
+            // Collect every row first and export them in a single call: export_data() writes to a
+            // path derived from the subcontext, so calling it once per record would make each row
+            // overwrite the previous one and only the last would survive in the export.
+            $rows = [];
             $records = $DB->get_recordset($table, $filterparams);
             foreach ($records as $record) {
-                writer::with_context($context)->export_data([
-                    get_string('privacy:metadata:aiprovider_datacurso', 'aiprovider_datacurso'),
-                    get_string('privacy:metadata:' . $table, 'aiprovider_datacurso'),
-                ], $record);
+                if (isset($record->timecreated)) {
+                    $record->timecreated = transform::datetime($record->timecreated);
+                }
+                $rows[] = $record;
             }
             $records->close();
+
+            if (empty($rows)) {
+                continue;
+            }
+
+            writer::with_context($context)->export_data([
+                get_string('privacy:metadata:aiprovider_datacurso', 'aiprovider_datacurso'),
+                get_string('privacy:metadata:' . $table, 'aiprovider_datacurso'),
+            ], (object) ['records' => $rows]);
         }
     }
 
@@ -192,8 +191,7 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
      */
     protected static function get_table_user_map(stdClass $user): array {
         return [
-            'aiprovider_datacurso_rlimit' => ['userid' => $user->id],
-            'aiprovider_datacurso_userlimit' => ['userid' => $user->id],
+            'aiprovider_datacurso_consumption' => ['userid' => $user->id],
         ];
     }
 }

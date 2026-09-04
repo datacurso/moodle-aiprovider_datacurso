@@ -42,7 +42,7 @@ $PAGE->set_url(new moodle_url('/ai/provider/datacurso/admin/report_sections.php'
 $PAGE->set_pagelayout('report');
 $PAGE->set_title(get_string('pluginname', 'aiprovider_datacurso'));
 
-// Get the current tab parameter.
+// Get the current tab parameter. Consumption history is the default landing tab.
 $tab = optional_param('tab', 'consumption', PARAM_ALPHAEXT);
 
 // Define tabs for navigation.
@@ -63,18 +63,6 @@ $tabs[] = new tabobject(
     'pluginslist',
     new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'pluginslist']),
     get_string('link_listplugings', 'aiprovider_datacurso')
-);
-
-$tabs[] = new tabobject(
-    'configwebservice',
-    new moodle_url('/ai/provider/datacurso/admin/webservice_config.php'),
-    get_string('link_webservice_config', 'aiprovider_datacurso')
-);
-
-$tabs[] = new tabobject(
-    'usertokenlimits',
-    new moodle_url('/ai/provider/datacurso/admin/user_token_limits.php'),
-    get_string('link_usertokenlimits', 'aiprovider_datacurso')
 );
 
 global $DB;
@@ -110,13 +98,19 @@ echo $OUTPUT->tabtree($tabs, $tab);
 // Load tab content.
 switch ($tab) {
     case 'consumption':
-        // Render AI consumption history page.
-        $page = new \aiprovider_datacurso\output\consumption_page();
-        echo $OUTPUT->render($page);
-        $PAGE->requires->js_call_amd('aiprovider_datacurso/consumption', 'init');
+        // Sync the local mirror from the external API, then render the Report Builder system report.
+        \aiprovider_datacurso\local\sync\consumption_sync::sync();
+        $report = \core_reportbuilder\system_report_factory::create(
+            \aiprovider_datacurso\reportbuilder\local\systemreports\consumption_history::class,
+            $context
+        );
+        echo $report->output();
         break;
 
     case 'generalreport':
+        // Keep the local mirror fresh so the charts read up-to-date data from it (not the shop).
+        \aiprovider_datacurso\local\sync\consumption_sync::sync();
+
         // Render general statistics and charts.
         $page = new \aiprovider_datacurso\output\report_page();
         echo $OUTPUT->render($page);
@@ -173,8 +167,8 @@ switch ($tab) {
             [
                 'name' => get_string('pluginname_smartrules', 'aiprovider_datacurso'),
                 'description' => get_string('plugindesc_smartrules', 'aiprovider_datacurso'),
-                'component' => 'local_smartrules',
-                'url' => 'https://moodle.org/plugins/local_smartrules',
+                'component' => 'local_coursedynamicrules',
+                'url' => 'https://moodle.org/plugins/local_coursedynamicrules',
             ],
         ];
 

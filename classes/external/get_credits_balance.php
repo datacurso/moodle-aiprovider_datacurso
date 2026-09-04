@@ -23,10 +23,10 @@ use external_api;
 use external_function_parameters;
 use external_single_structure;
 use external_value;
-use aiprovider_datacurso\httpclient\datacurso_api;
+use aiprovider_datacurso\local\service\credit_token_service;
 
 /**
- * Web service to get the credits balance.
+ * Web service to get current credits balance.
  *
  * @package    aiprovider_datacurso
  * @copyright  2025 Industria Elearning
@@ -41,30 +41,15 @@ class get_credits_balance extends external_api {
     }
 
     /**
-     * WS logic: makes the call to the external API and returns the array.
+     * WS logic: returns current credits balance.
      */
     public static function execute() {
         $params = self::validate_parameters(self::execute_parameters(), []);
         $context = \context_system::instance();
         self::validate_context($context);
         require_capability('aiprovider/datacurso:viewreports', $context);
-        $client = new datacurso_api();
 
-        $response = $client->get('/tokens/saldo');
-
-        if (empty($response) || !isset($response['status'])) {
-            return [
-                'status' => 'error',
-                'balance' => 0,
-                'message' => get_string('errorgetbalancecredits', 'aiprovider_datacurso'),
-            ];
-        }
-
-        return [
-            'status' => $response['status'] ?? 'error',
-            'balance' => (int) ($response['saldo_actual'] ?? 0),
-            'message' => $response['message'] ?? '',
-        ];
+        return credit_token_service::get_credits_balance();
     }
 
     /**
@@ -73,7 +58,7 @@ class get_credits_balance extends external_api {
     public static function execute_returns() {
         return new external_single_structure([
             'status' => new external_value(PARAM_TEXT, 'Request status (success/error)'),
-            'balance' => new external_value(PARAM_INT, 'Current credits balance'),
+            'balance' => new external_value(PARAM_INT, 'Current total credits balance'),
             'message' => new external_value(PARAM_RAW, 'Additional API message or error'),
         ]);
     }

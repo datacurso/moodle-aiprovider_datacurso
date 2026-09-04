@@ -28,14 +28,6 @@ require_once($CFG->libdir . '/filelib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class datacurso_api_base {
-    /** @var string $baseurl */
-    /** Services that depend on the local Moodle webservice. */
-    private const SERVICES_REQUIRING_WEBSERVICE = [
-        'local_assign_ai',
-        'local_forum_ai',
-        'local_dttutor',
-    ];
-
     /** @var string $baseurl The base URL for Datacurso API requests */
     protected $baseurl;
 
@@ -83,6 +75,26 @@ class datacurso_api_base {
     }
 
     /**
+     * Returns a persistent site UUID used to identify this Moodle site across the AI services.
+     *
+     * Unlike md5($CFG->wwwroot), this UUID is stable even if the site URL changes, and is what the
+     * services use as `site_id` to isolate per-user rate-limit counters between sites that share the
+     * same license (Moodle user ids are only unique within a site).
+     *
+     * @return string
+     */
+    public static function get_site_uuid(): string {
+        $siteuuid = get_config('aiprovider_datacurso', 'site_uuid');
+        if (!empty($siteuuid)) {
+            return (string) $siteuuid;
+        }
+
+        $siteuuid = \core\uuid::generate();
+        set_config('site_uuid', $siteuuid, 'aiprovider_datacurso');
+        return $siteuuid;
+    }
+
+    /**
      * Download a file from Datacurso API.
      *
      * @param string $endpoint The API endpoint for the file download.
@@ -112,6 +124,7 @@ class datacurso_api_base {
 
         $fileinfo = array_merge($fileinfo, $filerecord);
 
+        $options = [];
         $options['headers'] = [
             'License-Key: ' . $this->licensekey,
         ];
@@ -140,86 +153,55 @@ class datacurso_api_base {
             $path = '/' . $path;
         }
 
-        // Rate limit.
-        // Enforce per-user, per-service rate limit using cached DB pre-check.
-        // Service could be null if the path is not mapped.
+        // Resolve the configured service for this path; null when the path is not mapped.
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
-        $this->enforce_webservice_requirements($serviceid);
-        $userid = (string)($payload['userid'] ?? $USER->id);
-        $ratelimiter = new \aiprovider_datacurso\local\ratelimiter($this->instanceprovider);
-
-        // Validate if user is allowed to make this request.
-        if (!empty($serviceid) && !$ratelimiter->is_user_allowed($serviceid, $userid, $path)) {
-            throw new \moodle_exception('notallowed', 'aiprovider_datacurso');
-        }
-
-         // Enforce user global quota (across services) first.
-        if (!$ratelimiter->precheck_user_quota($userid)) {
-            $snapshot = $ratelimiter->get_user_quota_snapshot($userid);
-            $details = '';
-            if (is_array($snapshot) && ($snapshot['limit'] ?? 0) > 0) {
-                $details = $snapshot['used'] . '/' . $snapshot['limit'];
-            }
-            throw new \moodle_exception('error_usertokenlimit_exceeded', 'aiprovider_datacurso', '', $details);
-        }
-
-        if (!empty($serviceid) && !$ratelimiter->precheck($serviceid, $userid)) {
-            $remaining = $ratelimiter->get_time_until_next_window((string)$serviceid, (int)$userid);
-            $retrytimestamp = time() + max(0, (int)$remaining);
-            $retryat = userdate($retrytimestamp, get_string('strftimedatetime', 'langconfig'));
-            throw new \moodle_exception('error_ratelimit_exceeded', 'aiprovider_datacurso', '', $retryat);
-        }
 
         $curl = new \curl();
         $baseheaders = [
             'License-Key: ' . $this->licensekey,
         ];
 
-        $headers = array_merge($baseheaders, $headers);
+        // Forward the configured per-service rate limit to the Python service, which enforces it
+        // centrally against the user's accumulated credit consumption within the window. The
+        // resolved sub-action determines the look-ahead credit estimate (X-RateLimit-MaxPerAction).
+        $actionkey = \aiprovider_datacurso\local\ratelimiter::resolve_action_key(
+            $serviceid,
+            $path,
+            is_array($payload) ? $payload : []
+        );
+        $ratelimiter = new \aiprovider_datacurso\local\ratelimiter($this->instanceprovider);
+        $baseheaders = array_merge($baseheaders, $ratelimiter->get_rate_limit_headers($serviceid, $actionkey));
 
-        $options = [
-            'CURLOPT_RETURNTRANSFER' => true,
-            'CURLOPT_HTTPHEADER' => $headers,
-        ];
+        $headers = array_merge($baseheaders, $headers);
 
         $url = $this->baseurl . $path;
 
         $defaultpayload = [
-            'site_id' => md5($CFG->wwwroot),
-            'userid' => $userid,
+            'site_id' => self::get_site_uuid(),
+            'userid' => $payload['userid'] ?? $USER->id,
             'timezone' => \core_date::get_user_timezone(),
             'lang' => $payload['lang'] ?? current_language(),
+            'site_url' => $CFG->wwwroot,
         ];
 
         switch (strtoupper($method)) {
-            case 'GET':
-                $response = $curl->get($url, $payload, $options);
-                break;
-
             case 'POST':
-                $payload = array_merge($payload, $defaultpayload);
-                $response = $curl->post($url, json_encode($payload), $options);
-                // Store response in log file in moodledata/temp/datacurso_api.log.
-                file_put_contents($CFG->dataroot . '/temp/datacurso_api.log', $response, FILE_APPEND);
+                // Encode here (not in execute_request()) so the raw multibyte text (accented
+                // characters, etc.) is preserved: JSON_UNESCAPED_UNICODE must be set on the
+                // encode call that actually produces the wire body.
+                $payload = json_encode(array_merge($payload, $defaultpayload), JSON_UNESCAPED_UNICODE);
                 break;
 
             case 'PUT':
-                $payload = array_merge($payload, $defaultpayload);
-                $response = $curl->put($url, $payload, $options);
-                break;
-
-            case 'DELETE':
-                $response = $curl->delete($url, $payload, $options);
-                break;
-
             case 'UPLOAD':
                 $payload = array_merge($payload, $defaultpayload);
-                $response = $curl->post($url, $payload, $options);
                 break;
 
             default:
-                throw new \coding_exception('Invalid HTTP method: ' . $method);
+                break;
         }
+
+        $response = $this->execute_request($curl, $method, $url, $payload, $headers);
 
         if (!$response) {
             debugging('Empty response from Datacurso API', DEBUG_DEVELOPER);
@@ -237,38 +219,91 @@ class datacurso_api_base {
         if ($httpcode == 403) {
             $decodedresponse = json_decode($response, true);
 
-            if (($decodedresponse['detail'] ?? '') === 'tokens_not_sufficient') {
+            $detail = $decodedresponse['detail'] ?? '';
+            if ($detail === 'rate_limit_exceeded') {
+                $resetat = (int)($decodedresponse['reset_at'] ?? 0);
+                $retryat = $resetat > 0
+                    ? userdate($resetat, get_string('strftimedatetime', 'langconfig'))
+                    : '';
+                debugging('Rate limit exceeded for this service', DEBUG_DEVELOPER);
+                throw new \moodle_exception('error_ratelimit_exceeded', 'aiprovider_datacurso', '', $retryat);
+            }
+            if ($detail === 'tokens_not_sufficient') {
+                debugging('Not enough tokens to make this request', DEBUG_DEVELOPER);
                 throw new \moodle_exception('notenoughtokens', 'aiprovider_datacurso');
             }
-
-            if (($decodedresponse['detail'] ?? '') === 'license_not_allowed') {
+            if ($detail === 'license_not_allowed') {
+                debugging('License not allowed to make this request', DEBUG_DEVELOPER);
                 throw new \moodle_exception('license_not_allowed', 'aiprovider_datacurso');
             }
 
+            debugging('Unknown error from Datacurso API', DEBUG_DEVELOPER);
             throw new \moodle_exception('forbidden', 'aiprovider_datacurso');
         }
 
         if ($httpcode >= 400) {
             debugging("HTTP error {$httpcode} from Datacurso API: {$response}", DEBUG_DEVELOPER);
-            debugging("PAYLOAD: {$payload}", DEBUG_DEVELOPER);
+            debugging('PAYLOAD: ' . json_encode($payload), DEBUG_DEVELOPER);
             throw new \moodle_exception('httperror', 'aiprovider_datacurso', '', $httpcode);
         }
 
         $decodedresponse = json_decode($response, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            debugging('JSON decode error: ' . json_last_error_msg(), DEBUG_DEVELOPER);
+            debugging('JSON decode error: ' . json_last_error_msg() . '. Response: ' . $response, DEBUG_DEVELOPER);
             throw new \moodle_exception('jsondecodeerror', 'aiprovider_datacurso', '', json_last_error_msg());
         }
 
-        // Post-success syncs: only after a valid, non-error response.
-        if (!empty($serviceid)) {
-            $ratelimiter->sync_after_success($serviceid, $userid, $path);
-        }
-        $ratelimiter->sync_user_quota_after_success($userid, $path);
-
-        $ratelimiter->sync_user_quota_after_success($userid, $path);
         return $decodedresponse;
+    }
+
+    /**
+     * Execute the already-built request against the API and return the raw response.
+     *
+     * Isolated from send_request() so tests can override just the cURL boundary (see
+     * tests/fixtures/test_header_client.php) while the rest of send_request() -- including
+     * rate-limit header construction -- still executes for real.
+     *
+     * @param \curl $curl cURL client to execute the request with.
+     * @param string $method The HTTP method (GET, POST, PUT, DELETE, UPLOAD).
+     * @param string $url Full request URL.
+     * @param mixed $payload Request body or GET parameters, already merged with defaults.
+     * @param array $headers Request headers, including the rate limit headers.
+     * @return string|null Raw response body, or null on failure.
+     */
+    protected function execute_request(\curl $curl, string $method, string $url, $payload, array $headers): ?string {
+        $options = [
+            'CURLOPT_RETURNTRANSFER' => true,
+            'CURLOPT_HTTPHEADER' => $headers,
+        ];
+
+        switch (strtoupper($method)) {
+            case 'GET':
+                $response = $curl->get($url, $payload, $options);
+                break;
+
+            case 'POST':
+                // $payload is already an encoded JSON string here (see send_request()).
+                $response = $curl->post($url, $payload, $options);
+                break;
+
+            case 'PUT':
+                $response = $curl->put($url, $payload, $options);
+                break;
+
+            case 'DELETE':
+                $response = $curl->delete($url, $payload, $options);
+                break;
+
+            case 'UPLOAD':
+                $response = $curl->post($url, $payload, $options);
+                break;
+
+            default:
+                throw new \coding_exception('Invalid HTTP method: ' . $method);
+        }
+
+        return $response;
     }
 
     /**
@@ -287,48 +322,42 @@ class datacurso_api_base {
     /**
      * Upload a file using multipart/form-data.
      *
-     * @param string $path The API path/endpoint for the upload.
-     * @param string $filepath The local path to the file to be uploaded.
-     * @param string|null $mimetype The MIME type of the file.
-     * @param string|null $filename The desired filename for the upload.
-     * @param array $extraparams Additional parameters to send in the form data.
-     * @return array|null The decoded JSON response array, or null on failure.
+     * Takes a stored_file because that is what callers hold: Moodle keeps files in
+     * the file storage API, not on disk. The temporary copy needed by cURL is made
+     * and removed here so no caller has to manage it.
+     *
+     * @param string $path Relative endpoint. Example: '/upload-file'.
+     * @param \stored_file $file File to upload, from the Moodle file storage API.
+     * @param array $extraparams Extra POST parameters to include in the upload request.
+     * @return array|null Decoded response from the API.
+     * @throws \coding_exception If the temporary copy cannot be created.
+     * @throws \Exception If the request fails.
      */
     public function upload_file(
         string $path,
-        string $filepath,
-        ?string $mimetype = null,
-        ?string $filename = null,
+        \stored_file $file,
         array $extraparams = []
     ): ?array {
+        // Create a temporary copy of the file content on disk.
+        $filepath = $file->copy_content_to_temp();
+        $filename = $file->get_filename();
+        $mimetype = $file->get_mimetype();
 
-        if (!file_exists($filepath)) {
-            $filename = basename($filepath);
-            throw new \coding_exception("File not found: {$filename}");
+        if (!$filepath || !file_exists($filepath)) {
+            throw new \coding_exception('Temporary file could not be created for upload.');
         }
 
-        $postdata = array_merge($extraparams, [
-            'file' => new \CURLFile($filepath, $mimetype, $filename),
-        ]);
+        try {
+            $postdata = array_merge($extraparams, [
+                'file' => new \CURLFile($filepath, $mimetype, $filename),
+            ]);
 
-        return $this->send_request('UPLOAD', $path, $postdata);
-    }
-
-    /**
-     * Ensure the Datacurso webservice is fully configured when required by the service.
-     *
-     * @param string|null $serviceid
-     * @return void
-     */
-    private function enforce_webservice_requirements(?string $serviceid): void {
-        if (empty($serviceid) || !in_array($serviceid, self::SERVICES_REQUIRING_WEBSERVICE, true)) {
-            return;
-        }
-
-        if (!\aiprovider_datacurso\webservice_config::is_configured()) {
-            $setupurl = \aiprovider_datacurso\webservice_config::get_url();
-            $messageparams = (object)['url' => $setupurl->out(false)];
-            throw new \moodle_exception('error_webservice_not_configured', 'aiprovider_datacurso', '', $messageparams);
+            return $this->send_request('UPLOAD', $path, $postdata);
+        } finally {
+            // Always clean up the temporary file, including when the request throws.
+            if (file_exists($filepath)) {
+                @unlink($filepath);
+            }
         }
     }
 
