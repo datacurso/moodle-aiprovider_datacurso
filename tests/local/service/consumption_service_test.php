@@ -16,6 +16,8 @@
 
 namespace aiprovider_datacurso\local\service;
 
+use aiprovider_datacurso\provider;
+
 defined('MOODLE_INTERNAL') || die();
 
 /**
@@ -187,5 +189,53 @@ final class consumption_service_test extends \advanced_testcase {
 
         $this->assertSame($month['summary'], $bogus['summary']);
         $this->assertEqualsWithDelta($month['total'], $bogus['total'], 0.001);
+    }
+
+    /**
+     * Action ids resolve to their catalogued human name; an unknown action id passes through
+     * verbatim instead of breaking the aggregation.
+     *
+     * Ported from 4.5's tests/local/service/consumption_service_test.php::test_action_ids_resolve_to_human_names.
+     */
+    public function test_action_ids_resolve_to_human_names(): void {
+        $this->seed_dataset();
+        $this->insert_consumption('ghost_service', 'ghost_action', 3, '2026-02-11 08:00:00');
+
+        $result = consumption_service::get_summary('action');
+
+        $actionmap = [];
+        foreach (provider::get_actions() as $item) {
+            $actionmap[$item['id']] = $item['name'];
+        }
+
+        $labels = array_column($result['summary'], 'label');
+
+        $this->assertContains($actionmap['/provider/chat/completions'], $labels);
+        $this->assertContains($actionmap['/course/execute'], $labels);
+        // Unknown id is shown verbatim without breaking the aggregation.
+        $this->assertContains('ghost_action', $labels);
+    }
+
+    /**
+     * Service ids resolve to their plugin name; an unknown service id passes through verbatim.
+     *
+     * Ported from 4.5's tests/local/service/consumption_service_test.php::test_service_ids_resolve_to_plugin_names.
+     */
+    public function test_service_ids_resolve_to_plugin_names(): void {
+        $this->seed_dataset();
+        $this->insert_consumption('ghost_service', 'ghost_action', 3, '2026-02-11 08:00:00');
+
+        $result = consumption_service::get_summary('service');
+
+        $servicemap = [];
+        foreach (provider::get_services() as $item) {
+            $servicemap[$item['id']] = $item['name'];
+        }
+
+        $labels = array_column($result['summary'], 'label');
+
+        $this->assertContains($servicemap['local_coursegen'], $labels);
+        $this->assertContains($servicemap['aiprovider_datacurso'], $labels);
+        $this->assertContains('ghost_service', $labels);
     }
 }

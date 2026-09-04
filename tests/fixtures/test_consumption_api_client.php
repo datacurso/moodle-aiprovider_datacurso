@@ -28,12 +28,12 @@ class test_consumption_api_client extends datacurso_api {
     /** @var array<int, array> Canned response keyed by the requested page number. */
     public array $responsesbypage = [];
 
-    /** @var array<int, array> Every set of params this client was called with, in order. */
+    /** @var array<int, array{endpoint: string, params: array}> Every call this client received, in order. */
     public array $calls = [];
 
     #[\Override]
     public function get(string $endpoint, array $params = []): array {
-        $this->calls[] = $params;
+        $this->calls[] = ['endpoint' => $endpoint, 'params' => $params];
         $page = (int)($params['page'] ?? 1);
 
         return $this->responsesbypage[$page] ?? ['status' => 'error'];

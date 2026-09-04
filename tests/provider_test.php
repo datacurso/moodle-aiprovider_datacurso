@@ -106,4 +106,15 @@ final class provider_test extends \basic_testcase {
         $this->assertFalse($method->isStatic());
         $this->assertTrue($method->isPublic());
     }
+
+    /**
+     * The default window limit is the most expensive action per catalogued service, else 10.
+     *
+     * Ported from 4.5's tests/provider_catalog_test.php::test_default_window_limit.
+     */
+    public function test_default_window_limit_catalogue_values(): void {
+        $this->assertSame(30, provider::get_default_window_limit('aiprovider_datacurso'));
+        $this->assertSame(2000, provider::get_default_window_limit('local_coursegen'));
+        $this->assertSame(10, provider::get_default_window_limit('service_without_catalog'));
+    }
 }

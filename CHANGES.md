@@ -1,3 +1,32 @@
+## [2.3.0] - 2026-09-04
+
+**Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.
+
+### Added
+- **Jenkins CI onboarding**: new `Jenkinsfile.moodleplugin` pins `moodlePluginCI` to
+  `MOODLE_500_STABLE`, so the plugin can run through the shared Jenkins pipeline in addition to
+  GitHub Actions.
+- **Expanded automated test coverage**: the sync contract (duplicate external id rejection, the
+  `/tokens/historial-consumos` request shape, and empty/garbage date parsing), the consumption
+  history report's active columns, action/service id-to-name resolution (with unknown ids passing
+  through verbatim), and privacy export with seeded data.
+
+### Fixed
+- **Admin-configured system instruction is now honored**: `generate_text` and `summarise_text`
+  requests previously ignored the instance form's system instruction and always sent the
+  hardcoded per-action default; the resolved value is now used.
+- **Privacy export no longer drops rows**: exporting a user's consumption history returned only
+  the last database row instead of the full history.
+- **POST payloads no longer escape non-ASCII characters**: accented and multibyte text now
+  reaches the API as raw UTF-8 instead of `\uXXXX` sequences.
+- **Rate-limit form defaults corrected**: the instance form's credit-budget default was wired to
+  the window-length field instead of the limit field, and the window unit had no default at all.
+- **Connection failures are handled gracefully**: network-level errors (DNS, timeout, refused) now
+  return the same graceful error response as an API-level failure, instead of an uncaught
+  exception.
+- **Removed a dead per-request debug log file** written to moodledata on every POST call with no
+  rotation.
+
 ## [2.2.0] - 2026-09-01
 
 **Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.

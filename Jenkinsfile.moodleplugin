@@ -1,0 +1,2 @@
+@Library('moodle-ci') _
+moodlePluginCI(moodleBranch: 'MOODLE_500_STABLE')

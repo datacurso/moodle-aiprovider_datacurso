@@ -29,7 +29,13 @@ class ai_course_api extends datacurso_api_base {
     /** Default base URL for the standard DataCurso course AI service. */
     private const DEFAULT_BASE_URL = 'https://course-ai-v2.datacurso.com/api/v1';
 
-    /** Default base URL for the EU-hosted DataCurso course AI service. */
+    /**
+     * Base URL for the EU-hosted DataCurso course AI service.
+     *
+     * The course-creation service does NOT yet have a separate EU deployment, so this
+     * intentionally resolves to the same host as the standard region. Selecting the EU
+     * region has no routing effect for this service until a dedicated EU endpoint exists.
+     */
     private const DEFAULT_BASE_URL_EU = 'https://course-ai-v2.datacurso.com/api/v1';
 
     /**

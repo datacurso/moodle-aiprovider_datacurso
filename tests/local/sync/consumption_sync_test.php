@@ -234,4 +234,78 @@ final class consumption_sync_test extends \advanced_testcase {
         $this->assertSame(31, (int) $second->externalid);
         $this->assertSame(strtotime('2026-08-28 11:30:00'), (int) $second->timecreated);
     }
+
+    /**
+     * The unique index on `externalid` makes it impossible to store two rows for the same
+     * external consumption record, which is what keeps repeated syncs idempotent even if the
+     * service-layer watermark check were ever bypassed.
+     *
+     * Ported from 4.5's tests/consumption_sync_test.php::test_duplicate_external_id_is_rejected.
+     */
+    public function test_duplicate_external_id_is_rejected_by_the_unique_index(): void {
+        global $DB;
+
+        $record = new \stdClass();
+        $record->externalid = 555;
+        $record->userid = 0;
+        $record->service = 'aiprovider_datacurso';
+        $record->action = '/provider/chat/completions';
+        $record->credits = 10;
+        $record->balance = 990;
+        $record->timecreated = 1000;
+        $DB->insert_record(self::TABLE, $record);
+
+        // A second row with the same external id violates the unique index.
+        $this->expectException(\dml_exception::class);
+        $DB->insert_record(self::TABLE, $record);
+    }
+
+    /**
+     * The sync requests the newest-first page of the full 500-row page size, sorted by
+     * consumption id descending, so the watermark walk can stop as soon as it finds a known
+     * record without ever requesting more than it needs.
+     *
+     * Ported from 4.5's tests/consumption_sync_test.php::test_response_payload_maps_to_local_record
+     * (request-shape assertions only; field-mapping is already covered above).
+     */
+    public function test_requests_the_historial_consumos_endpoint_with_the_expected_params(): void {
+        $client = new test_consumption_api_client();
+        $client->responsesbypage[1] = $this->make_page([$this->make_consumption(1)]);
+
+        consumption_sync::sync($client);
+
+        $this->assertCount(1, $client->calls);
+        $this->assertSame('/tokens/historial-consumos', $client->calls[0]['endpoint']);
+        $this->assertSame('id_consumo', $client->calls[0]['params']['shor']);
+        $this->assertSame('desc', $client->calls[0]['params']['shor_dir']);
+        $this->assertSame(500, $client->calls[0]['params']['limit']);
+    }
+
+    /**
+     * An empty or unparseable `created_at` becomes a timestamp of zero instead of raising an
+     * error, while a valid date is still parsed correctly.
+     *
+     * Ported from 4.5's tests/consumption_sync_test.php::test_date_parsing_of_external_values.
+     */
+    public function test_date_parsing_handles_empty_and_garbage_values_without_error(): void {
+        global $DB;
+
+        $client = new test_consumption_api_client();
+        $client->responsesbypage[1] = $this->make_page([
+            $this->make_consumption(3, 'created_at', '2026-03-10 14:45:00'),
+            $this->make_consumption(2, 'created_at', ''),
+            $this->make_consumption(1, 'created_at', 'not a date at all'),
+        ]);
+
+        consumption_sync::sync($client);
+
+        $bytimestamp = [];
+        foreach ($DB->get_records(self::TABLE) as $row) {
+            $bytimestamp[(int) $row->externalid] = (int) $row->timecreated;
+        }
+
+        $this->assertSame(strtotime('2026-03-10 14:45:00'), $bytimestamp[3]);
+        $this->assertSame(0, $bytimestamp[2]);
+        $this->assertSame(0, $bytimestamp[1]);
+    }
 }
