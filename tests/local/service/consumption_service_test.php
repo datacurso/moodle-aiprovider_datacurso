@@ -127,10 +127,10 @@ final class consumption_service_test extends \advanced_testcase {
 
         $result = consumption_service::get_summary('action');
 
-        // local_coursegen's /course/execute (20 credits) outweighs the chat action (15 credits),
-        // and categorical buckets must be sorted descending by total.
+        // The local_coursegen /course/execute action (20 credits) outweighs the chat action
+        // (15 credits), and categorical buckets must be sorted descending by total.
         $totals = array_column($result['summary'], 'total');
-        $this->assertSame($totals, array_values((function() use ($totals) {
+        $this->assertSame($totals, array_values((function () use ($totals) {
             $sorted = $totals;
             rsort($sorted);
             return $sorted;

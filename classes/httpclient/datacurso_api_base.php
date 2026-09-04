@@ -283,7 +283,7 @@ class datacurso_api_base {
                 break;
 
             case 'POST':
-                // $payload is already an encoded JSON string here (see send_request()).
+                // The payload is already an encoded JSON string here (see send_request()).
                 $response = $curl->post($url, $payload, $options);
                 break;
 

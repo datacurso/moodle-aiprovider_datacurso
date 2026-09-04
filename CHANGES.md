@@ -1,4 +1,4 @@
-## [2.3.0] - 2026-09-04
+## [2.1.2] - 2026-09-04
 
 **Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.
 
@@ -27,7 +27,7 @@
 - **Removed a dead per-request debug log file** written to moodledata on every POST call with no
   rotation.
 
-## [2.2.0] - 2026-09-01
+## [2.1.1] - 2026-09-01
 
 **Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.
 

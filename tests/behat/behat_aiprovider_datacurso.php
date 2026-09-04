@@ -54,7 +54,7 @@ class behat_aiprovider_datacurso extends behat_base {
      * Assert every row of the "Datacurso plugins list" table shows one of the two given
      * installation status values in its "Installed" column.
      *
-     * @Then /^each listed plugin should show an installation status of "(?P<status1>(?:[^"]|\\")*)" or "(?P<status2>(?:[^"]|\\")*)"$/
+     * @Then /^each listed plugin should show an installation status of "(?P<status1>[^"]*)" or "(?P<status2>[^"]*)"$/
      *
      * @param string $status1 First accepted status value (e.g. "Yes").
      * @param string $status2 Second accepted status value (e.g. "No").
