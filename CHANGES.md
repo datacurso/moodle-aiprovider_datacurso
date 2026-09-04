@@ -1,3 +1,45 @@
+## [1.5.0] - 2026-09-03
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Added
+- **Consumption history built on Moodle Report Builder**
+  The credit consumption history is now a native Moodle report backed by a local mirror table, with filters by user, service, action and date range, column sorting, pagination and downloads in standard formats (CSV, Excel, ODS). The mirror is refreshed when the page is opened, pulling only the records created after the last known consumption, so no scheduled task is required.
+- **License key in the plugin configuration tab**
+  The configuration tab now exposes the license key and shares the same setting as the native AI provider page, so saving it in either place updates the other.
+- **Year filter and aggregated data in the general report**
+  A year selector, defaulting to the current year, scopes the credit cards and every chart. The chart data is now produced by a dedicated aggregation endpoint.
+- **Privacy coverage for the local consumption store**
+  The per-user consumption mirror is declared in the plugin privacy metadata and is exported and deleted together with the rest of the user's personal data.
+- **Automated test suite**
+  PHPUnit coverage for the rate limiter, the service catalogue, the configuration form, the consumption service and its synchronisation, the AI processors and the privacy provider, plus Behat feature definitions for the four report tabs and the access control.
+
+### Changed
+- **Charts read from the local mirror with server-side aggregation**
+  The general report no longer fetches the full history from the external service on every load; it reads pre-aggregated buckets from the local mirror, reducing the transferred payload substantially.
+- **Default tab and tab order**
+  Consumption history is now the landing tab and Configuration was moved to the last position.
+- **Downloads export the whole filtered set**
+  Exporting the consumption history returns every record of the filtered set instead of only the rows visible on the current page.
+- **Removal of the legacy consumption history service**
+  The previous custom history service, its output classes and the `get_all_consumption` endpoint were removed, superseded by the report and the aggregation endpoint.
+- **Substitutable client in the consumption synchronisation**
+  The synchronisation now builds its API client through a substitution point, so its payload mapping, incremental watermark and date handling are covered by automated tests without network access.
+- **GitHub Actions workflow runs on manual dispatch only**
+  The workflow is no longer triggered automatically on push and pull request.
+
+### Fixed
+- **System instruction never reached the model**
+  The instruction configured by the administrator was stored under `action_{action}_instruction` but read under a different setting name that nothing ever wrote, so the configured text had no effect on generation or summarisation. The processor now derives the setting name from the action, matching what the settings page writes.
+- **Configuration tab did not persist any change**
+  Saving reloaded the page on the default tab and discarded every change, because the page URL dropped the tab parameter and the save branch never ran. The tab is now part of the page URL, so the form posts back to its own tab and the redirect returns to it.
+- **Privacy export returned a single consumption record**
+  Every row was written to the same export subcontext and overwrote the previous one, so only the last record survived. All records are now exported together, with readable dates.
+- **Invalid validation message in the limits form**
+  The limit, window and cost validations referenced a language string that does not exist in Moodle, emitting debugging notices on every rejected field. They now use a plugin string.
+- **Connection failures were not handled**
+  Only request exceptions were caught, so a dropped connection to the AI service escaped the graceful degradation path. Transfer-level failures are now caught and reported with their code and message.
+
 ## [1.4.3] - 2026-08-14
 
 **Compatibility note:** This version is compatible only with **Moodle 4.5**.
