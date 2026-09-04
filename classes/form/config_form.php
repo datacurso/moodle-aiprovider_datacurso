@@ -54,6 +54,16 @@ class config_form extends \moodleform {
             $unitoptions[$unit] = get_string($unit, 'aiprovider_datacurso');
         }
 
+        // License key. Shares the same config setting as the native AI provider page
+        // (aiprovider_datacurso/licensekey), so saving here updates it there and vice versa.
+        $mform->addElement('passwordunmask', 'licensekey', get_string('licensekey', 'aiprovider_datacurso'));
+        $mform->setType('licensekey', PARAM_RAW);
+        $mform->addElement('static', 'licensekey_desc', '', \html_writer::tag(
+            'small',
+            get_string('licensekey_desc', 'aiprovider_datacurso'),
+            ['class' => 'text-muted']
+        ));
+
         $mform->addElement('html', \html_writer::tag(
             'p',
             get_string('config_desc', 'aiprovider_datacurso'),
@@ -128,18 +138,18 @@ class config_form extends \moodleform {
 
         foreach (($data['limit'] ?? []) as $sid => $value) {
             if ((int) $value < 0) {
-                $errors["limit[{$sid}]"] = get_string('err_positive', 'form');
+                $errors["limit[{$sid}]"] = get_string('error_positivevalue', 'aiprovider_datacurso');
             }
         }
         foreach (($data['windowvalue'] ?? []) as $sid => $value) {
             if ((int) $value < 1) {
-                $errors["windowgroup_{$sid}"] = get_string('err_positive', 'form');
+                $errors["windowgroup_{$sid}"] = get_string('error_positivevalue', 'aiprovider_datacurso');
             }
         }
         foreach (($data['credit'] ?? []) as $sid => $map) {
             foreach ((array) $map as $key => $value) {
                 if ((int) $value < 0) {
-                    $errors["credit[{$sid}][{$key}]"] = get_string('err_positive', 'form');
+                    $errors["credit[{$sid}][{$key}]"] = get_string('error_positivevalue', 'aiprovider_datacurso');
                 }
             }
         }
@@ -188,6 +198,7 @@ class config_form extends \moodleform {
         }
 
         return [
+            'licensekey' => (string) get_config('aiprovider_datacurso', 'licensekey'),
             'enable' => $enable,
             'limit' => $limit,
             'windowvalue' => $windowvalue,
@@ -205,6 +216,11 @@ class config_form extends \moodleform {
      * @param \stdClass $data Submitted data from get_data().
      */
     public static function save(\stdClass $data): void {
+        // License key: write the same setting the native AI provider page uses.
+        if (property_exists($data, 'licensekey')) {
+            set_config('licensekey', trim((string) $data->licensekey), 'aiprovider_datacurso');
+        }
+
         $validids = array_column(provider::get_services(), 'id');
 
         foreach ($validids as $sid) {

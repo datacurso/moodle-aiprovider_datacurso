@@ -36,14 +36,16 @@ $context = context_system::instance();
 require_login();
 require_capability('aiprovider/datacurso:viewreports', $context);
 
-// Set up page context and layout.
+// Get the current tab parameter. Consumption history is the default landing tab.
+$tab = optional_param('tab', 'consumption', PARAM_ALPHAEXT);
+
+// Set up page context and layout. The tab is part of the page URL so that the configuration
+// form posts back to its own tab and the post-save redirect returns to it; without it the
+// submission would fall back to the default tab and the save branch would never run.
 $PAGE->set_context($context);
-$PAGE->set_url(new moodle_url('/ai/provider/datacurso/admin/report_sections.php'));
+$PAGE->set_url(new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => $tab]));
 $PAGE->set_pagelayout('report');
 $PAGE->set_title('Datacurso AI Provider Reports');
-
-// Get the current tab parameter. Configuration is the default landing tab.
-$tab = optional_param('tab', 'config', PARAM_ALPHAEXT);
 
 // Process the configuration form BEFORE any output so we can redirect after saving.
 $configform = null;
@@ -67,12 +69,6 @@ if ($tab === 'config') {
 // Define tabs for navigation.
 $tabs = [];
 $tabs[] = new tabobject(
-    'config',
-    new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'config']),
-    get_string('link_config', 'aiprovider_datacurso')
-);
-
-$tabs[] = new tabobject(
     'consumption',
     new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'consumption']),
     get_string('link_consumptionhistory', 'aiprovider_datacurso')
@@ -88,6 +84,12 @@ $tabs[] = new tabobject(
     'pluginslist',
     new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'pluginslist']),
     get_string('link_listplugings', 'aiprovider_datacurso')
+);
+
+$tabs[] = new tabobject(
+    'config',
+    new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'config']),
+    get_string('link_config', 'aiprovider_datacurso')
 );
 
 // Render page header and navigation.
@@ -109,13 +111,19 @@ switch ($tab) {
         break;
 
     case 'consumption':
-        // Render AI consumption history page.
-        $page = new \aiprovider_datacurso\output\consumption_page();
-        echo $OUTPUT->render($page);
-        $PAGE->requires->js_call_amd('aiprovider_datacurso/consumption', 'init');
+        // Sync the local mirror from the external API, then render the Report Builder system report.
+        \aiprovider_datacurso\local\sync\consumption_sync::sync();
+        $report = \core_reportbuilder\system_report_factory::create(
+            \aiprovider_datacurso\reportbuilder\local\systemreports\consumption_history::class,
+            $context
+        );
+        echo $report->output();
         break;
 
     case 'generalreport':
+        // Keep the local mirror fresh so the charts read up-to-date data from it (not the shop).
+        \aiprovider_datacurso\local\sync\consumption_sync::sync();
+
         // Render general statistics and charts.
         $page = new \aiprovider_datacurso\output\report_page();
         echo $OUTPUT->render($page);
