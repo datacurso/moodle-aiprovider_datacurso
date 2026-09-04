@@ -95,6 +95,9 @@ class hook_listener {
                 ['size' => 10]
             );
             $mform->setType("ratelimit_{$sid}_limit", PARAM_INT);
+            // The credit budget enforced per window comes from the catalogue (e.g. 2000 credits
+            // for local_coursegen) -- it belongs on the "limit" field, not the window length.
+            $mform->setDefault("ratelimit_{$sid}_limit", \aiprovider_datacurso\provider::get_default_window_limit($sid));
             $mform->addHelpButton("ratelimit_{$sid}_limit", 'ratelimit_limit', 'aiprovider_datacurso');
             $mform->hideIf("ratelimit_{$sid}_limit", "ratelimit_{$sid}_enable", 'eq', 0);
 
@@ -133,7 +136,9 @@ class hook_listener {
             );
             $mform->setType("ratelimit_{$sid}_window_value", PARAM_INT);
             $mform->setType("ratelimit_{$sid}_window_unit", PARAM_ALPHANUMEXT);
-            $mform->setDefault("ratelimit_{$sid}_window_value", \aiprovider_datacurso\provider::get_default_window_limit($sid));
+            // Window length defaults to "1 hour", mirroring 4.5's config_form::current_data().
+            $mform->setDefault("ratelimit_{$sid}_window_value", 1);
+            $mform->setDefault("ratelimit_{$sid}_window_unit", 'hours');
             $mform->addHelpButton("ratelimit_{$sid}_window", 'ratelimit_window', 'aiprovider_datacurso');
             $mform->hideIf("ratelimit_{$sid}_window", "ratelimit_{$sid}_enable", 'eq', 0);
 

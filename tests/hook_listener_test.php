@@ -92,8 +92,11 @@ final class hook_listener_test extends \advanced_testcase {
     }
 
     /**
-     * The window value and unit are grouped into a single "Time window" control,
-     * mirroring the 4.5 form, and the value is prefilled from get_default_window_limit().
+     * The window value and unit are grouped into a single "Time window" control, mirroring the
+     * 4.5 form. The window VALUE defaults to 1 (e.g. "1 hour") -- the catalogue default
+     * (get_default_window_limit()) is a credit BUDGET (e.g. 2000 for local_coursegen), not a
+     * window length, and must be wired to the "limit" field instead (see
+     * test_limit_defaults_from_the_catalogue).
      */
     public function test_window_value_defaults_from_the_catalogue(): void {
         $mform = $this->dispatch();
@@ -110,10 +113,44 @@ final class hook_listener_test extends \advanced_testcase {
 
         $this->assertArrayHasKey("ratelimit_{$sid}_window_value", $elements);
         $this->assertArrayHasKey("ratelimit_{$sid}_window_unit", $elements);
+        $this->assertEquals(1, $elements["ratelimit_{$sid}_window_value"]->getValue());
+    }
+
+    /**
+     * The "limit" field -- the actual credit budget enforced per window -- is prefilled from the
+     * catalogue default (get_default_window_limit()), mirroring 4.5's config_form::current_data().
+     */
+    public function test_limit_defaults_from_the_catalogue(): void {
+        $mform = $this->dispatch();
+
+        $sid = 'local_coursegen';
+        $field = "ratelimit_{$sid}_limit";
+
+        $this->assertTrue($mform->elementExists($field), "Missing limit field {$field}");
         $this->assertEquals(
             provider::get_default_window_limit($sid),
-            $elements["ratelimit_{$sid}_window_value"]->getValue()
+            $mform->getElement($field)->getValue()
         );
+    }
+
+    /**
+     * The window unit defaults to 'hours', mirroring 4.5's config_form::current_data().
+     */
+    public function test_window_unit_defaults_to_hours(): void {
+        $mform = $this->dispatch();
+
+        $sid = 'local_coursegen';
+        $group = "ratelimit_{$sid}_window";
+
+        $elements = [];
+        foreach ($mform->getElement($group)->getElements() as $element) {
+            $elements[$element->getName()] = $element;
+        }
+
+        $this->assertArrayHasKey("ratelimit_{$sid}_window_unit", $elements);
+        // HTML_QuickForm_select::getValue() always wraps the selected value(s) in an array,
+        // even for a single, non-multiple select.
+        $this->assertSame(['hours'], $elements["ratelimit_{$sid}_window_unit"]->getValue());
     }
 
     /**

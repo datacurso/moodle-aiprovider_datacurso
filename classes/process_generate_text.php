@@ -42,7 +42,12 @@ class process_generate_text extends abstract_processor {
 
     #[\Override]
     protected function get_system_instruction(): string {
-        $instruction = $this->action->get_configuration('systeminstruction') ?? '';
+        // The provider-instance form (action_generate_text_form) stores the admin-configured
+        // instruction under the provider's actionconfig, not on the action itself --
+        // $this->action->get_configuration('systeminstruction') is always null here (same pattern
+        // as aiprovider_openai/aiprovider_azureai).
+        $settings = $this->provider->actionconfig[$this->action::class]['settings'] ?? [];
+        $instruction = $settings['systeminstruction'] ?? '';
         if (empty($instruction)) {
             return $this->action::get_system_instruction();
         }

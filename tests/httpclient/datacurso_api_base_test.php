@@ -19,6 +19,7 @@ namespace aiprovider_datacurso\httpclient;
 defined('MOODLE_INTERNAL') || die();
 
 require_once(__DIR__ . '/../fixtures/test_upload_client.php');
+require_once(__DIR__ . '/../fixtures/test_header_client.php');
 
 /**
  * Tests for the Datacurso API HTTP client file upload.
@@ -204,5 +205,27 @@ final class datacurso_api_base_test extends \advanced_testcase {
         $second = datacurso_api_base::get_site_uuid();
 
         $this->assertSame($first, $second);
+    }
+
+    /**
+     * POST bodies must not \u-escape multibyte characters: the API receives raw UTF-8 (a
+     * "ñ"/"á" in a course name, prompt, etc.), not "ñ"/"á" escape sequences.
+     */
+    public function test_post_body_does_not_escape_multibyte_characters(): void {
+        $this->resetAfterTest();
+
+        $client = new test_header_client('https://example.invalid', 'test-key');
+        $client->request('POST', '/provider/text', ['prompt' => 'Descripción con ñ y á']);
+
+        // Without JSON_UNESCAPED_UNICODE, json_encode() would emit the \u-escaped sequence for
+        // each of these characters instead of the raw UTF-8 bytes.
+        $escapedn = trim(json_encode('ñ'), '"');
+        $escapeda = trim(json_encode('á'), '"');
+
+        $this->assertIsString($client->capturedpayload);
+        $this->assertStringContainsString('ñ', $client->capturedpayload);
+        $this->assertStringContainsString('á', $client->capturedpayload);
+        $this->assertStringNotContainsString($escapedn, $client->capturedpayload);
+        $this->assertStringNotContainsString($escapeda, $client->capturedpayload);
     }
 }

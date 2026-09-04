@@ -124,6 +124,7 @@ class datacurso_api_base {
 
         $fileinfo = array_merge($fileinfo, $filerecord);
 
+        $options = [];
         $options['headers'] = [
             'License-Key: ' . $this->licensekey,
         ];
@@ -185,6 +186,12 @@ class datacurso_api_base {
 
         switch (strtoupper($method)) {
             case 'POST':
+                // Encode here (not in execute_request()) so the raw multibyte text (accented
+                // characters, etc.) is preserved: JSON_UNESCAPED_UNICODE must be set on the
+                // encode call that actually produces the wire body.
+                $payload = json_encode(array_merge($payload, $defaultpayload), JSON_UNESCAPED_UNICODE);
+                break;
+
             case 'PUT':
             case 'UPLOAD':
                 $payload = array_merge($payload, $defaultpayload);
@@ -230,19 +237,20 @@ class datacurso_api_base {
                 throw new \moodle_exception('license_not_allowed', 'aiprovider_datacurso');
             }
 
+            debugging('Unknown error from Datacurso API', DEBUG_DEVELOPER);
             throw new \moodle_exception('forbidden', 'aiprovider_datacurso');
         }
 
         if ($httpcode >= 400) {
             debugging("HTTP error {$httpcode} from Datacurso API: {$response}", DEBUG_DEVELOPER);
-            debugging("PAYLOAD: {$payload}", DEBUG_DEVELOPER);
+            debugging('PAYLOAD: ' . json_encode($payload), DEBUG_DEVELOPER);
             throw new \moodle_exception('httperror', 'aiprovider_datacurso', '', $httpcode);
         }
 
         $decodedresponse = json_decode($response, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            debugging('JSON decode error: ' . json_last_error_msg(), DEBUG_DEVELOPER);
+            debugging('JSON decode error: ' . json_last_error_msg() . '. Response: ' . $response, DEBUG_DEVELOPER);
             throw new \moodle_exception('jsondecodeerror', 'aiprovider_datacurso', '', json_last_error_msg());
         }
 
@@ -264,8 +272,6 @@ class datacurso_api_base {
      * @return string|null Raw response body, or null on failure.
      */
     protected function execute_request(\curl $curl, string $method, string $url, $payload, array $headers): ?string {
-        global $CFG;
-
         $options = [
             'CURLOPT_RETURNTRANSFER' => true,
             'CURLOPT_HTTPHEADER' => $headers,
@@ -277,9 +283,8 @@ class datacurso_api_base {
                 break;
 
             case 'POST':
-                $response = $curl->post($url, json_encode($payload), $options);
-                // Store response in log file in moodledata/temp/datacurso_api.log.
-                file_put_contents($CFG->dataroot . '/temp/datacurso_api.log', $response, FILE_APPEND);
+                // $payload is already an encoded JSON string here (see send_request()).
+                $response = $curl->post($url, $payload, $options);
                 break;
 
             case 'PUT':

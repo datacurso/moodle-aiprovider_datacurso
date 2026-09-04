@@ -17,6 +17,8 @@
 namespace aiprovider_datacurso;
 
 use core_ai\aiactions\generate_text;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 
 defined('MOODLE_INTERNAL') || die();
@@ -88,5 +90,26 @@ final class abstract_processor_test extends \advanced_testcase {
 
         $this->assertTrue($result['success']);
         $this->assertSame('ok', $result['generatedcontent']);
+    }
+
+    /**
+     * A connection-level failure (DNS/timeout/refused) throws Guzzle's ConnectException, not
+     * RequestException. query_ai_api() must catch the wider TransferException so this results in
+     * the graceful error response instead of an uncaught exception reaching the caller.
+     */
+    public function test_query_ai_api_returns_a_graceful_error_when_the_connection_fails(): void {
+        ['mock' => $mock] = $this->get_mocked_http_client();
+        $mock->append(new ConnectException(
+            'Could not resolve host',
+            new Request('POST', 'https://example.invalid/provider/chat/completions'),
+        ));
+
+        $processor = new test_processor($this->provider, $this->make_action());
+        $method = new \ReflectionMethod($processor, 'query_ai_api');
+
+        $result = $method->invoke($processor);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame('Could not resolve host', $result['errormessage']);
     }
 }

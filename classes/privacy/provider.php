@@ -24,6 +24,7 @@ use core_privacy\local\request\userlist;
 use core_privacy\local\metadata\provider as metadata_provider;
 use core_privacy\local\request\core_userlist_provider;
 use core_privacy\local\request\plugin\provider as plugin_provider;
+use core_privacy\local\request\transform;
 use core_privacy\local\request\writer;
 use stdClass;
 
@@ -89,14 +90,27 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         $tables = static::get_table_user_map($user);
 
         foreach ($tables as $table => $filterparams) {
+            // Collect every row first and export them in a single call: export_data() writes to a
+            // path derived from the subcontext, so calling it once per record would make each row
+            // overwrite the previous one and only the last would survive in the export.
+            $rows = [];
             $records = $DB->get_recordset($table, $filterparams);
             foreach ($records as $record) {
-                writer::with_context($context)->export_data([
-                    get_string('privacy:metadata:aiprovider_datacurso', 'aiprovider_datacurso'),
-                    get_string('privacy:metadata:' . $table, 'aiprovider_datacurso'),
-                ], $record);
+                if (isset($record->timecreated)) {
+                    $record->timecreated = transform::datetime($record->timecreated);
+                }
+                $rows[] = $record;
             }
             $records->close();
+
+            if (empty($rows)) {
+                continue;
+            }
+
+            writer::with_context($context)->export_data([
+                get_string('privacy:metadata:aiprovider_datacurso', 'aiprovider_datacurso'),
+                get_string('privacy:metadata:' . $table, 'aiprovider_datacurso'),
+            ], (object) ['records' => $rows]);
         }
     }
 
