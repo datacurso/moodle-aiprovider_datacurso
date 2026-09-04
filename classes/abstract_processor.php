@@ -18,7 +18,7 @@ namespace aiprovider_datacurso;
 
 use core\http_client;
 use core_ai\process_base;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\RequestOptions;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -90,19 +90,32 @@ abstract class abstract_processor extends process_base {
 
         $client = \core\di::get(http_client::class);
 
+        // Forward the per-service rate-limit config so plugins-ai-server enforces the credit limit
+        // for the provider's own actions (text/summary/image) and accumulates the window counter.
+        // Returns an empty array when the limit is disabled for this service.
+        $path = $this->get_endpoint()->getPath();
+        $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
+        // Resolve the sub-action (text vs image) so the look-ahead credit estimate is correct.
+        $actionkey = \aiprovider_datacurso\local\ratelimiter::resolve_action_key($serviceid, $path);
+        $ratelimitheaders = (new \aiprovider_datacurso\local\ratelimiter($this->provider))
+            ->get_rate_limit_header_map($serviceid, $actionkey);
+
         try {
             $response = $client->post(
                 $this->get_endpoint(),
                 [
-                    RequestOptions::HEADERS => [
-                        'Content-Type' => 'application/json',
-                        'License-Key' => $licensekey,
-                    ],
+                    RequestOptions::HEADERS => array_merge(
+                        [
+                            'Content-Type' => 'application/json',
+                            'License-Key' => $licensekey,
+                        ],
+                        $ratelimitheaders
+                    ),
                     RequestOptions::JSON => $this->build_request_body($userid),
                     RequestOptions::HTTP_ERRORS => false,
                 ]
             );
-        } catch (RequestException $e) {
+        } catch (TransferException $e) {
             return [
                 'success' => false,
                 'errorcode' => (int)($e->getCode() ?: 500),
@@ -129,9 +142,24 @@ abstract class abstract_processor extends process_base {
         $status = (int)$response->getStatusCode();
         $body = $response->getBody()->getContents();
 
+        $decoded = !empty($body) ? json_decode($body) : null;
+
+        // Per-plugin rate limit exceeded: show a clear, localized message with the retry time
+        // (same handling as datacurso_api_base for the other plugins).
+        if ($status === 403 && isset($decoded->detail) && $decoded->detail === 'rate_limit_exceeded') {
+            $resetat = (int)($decoded->reset_at ?? 0);
+            $retryat = $resetat > 0
+                ? userdate($resetat, get_string('strftimedatetime', 'langconfig'))
+                : '';
+            return [
+                'success' => false,
+                'errorcode' => 403,
+                'errormessage' => get_string('error_ratelimit_exceeded', 'aiprovider_datacurso', $retryat),
+            ];
+        }
+
         $message = 'Unknown error';
         if (!empty($body)) {
-            $decoded = json_decode($body);
             if (isset($decoded->error->message)) {
                 $message = $decoded->error->message;
             } else {

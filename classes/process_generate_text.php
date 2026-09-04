@@ -34,12 +34,20 @@ class process_generate_text extends abstract_processor {
      */
     #[\Override]
     protected function get_endpoint(): UriInterface {
-        return new Uri('https://plugins-ai.datacurso.com/provider/chat/completions');
+        // Use the provider's configured base URL (docker service in local, prod URL in production),
+        // consistent with the dttutor proxy — no hardcoded host.
+        $baseurl = rtrim((new \aiprovider_datacurso\httpclient\ai_services_api())->get_base_url(), '/');
+        return new Uri($baseurl . '/provider/chat/completions');
     }
 
     #[\Override]
     protected function get_system_instruction(): string {
-        $instruction = $this->action->get_configuration('systeminstruction') ?? '';
+        // The provider-instance form (action_generate_text_form) stores the admin-configured
+        // instruction under the provider's actionconfig, not on the action itself --
+        // $this->action->get_configuration('systeminstruction') is always null here (same pattern
+        // as aiprovider_openai/aiprovider_azureai).
+        $settings = $this->provider->actionconfig[$this->action::class]['settings'] ?? [];
+        $instruction = $settings['systeminstruction'] ?? '';
         if (empty($instruction)) {
             return $this->action::get_system_instruction();
         }
