@@ -156,11 +156,56 @@ final class process_generate_text_test extends \advanced_testcase {
     }
 
     /**
-     * A generic service error surfaces the received detail.
+     * A 403 credit exhaustion rejection surfaces the actionable localized message.
+     *
+     * MDL-UNIT-011: error handling (insufficient credits).
+     */
+    public function test_403_insufficient_credits_is_actionable(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $this->set_mock_http([
+            new Response(403, [], json_encode(['detail' => 'tokens_not_sufficient'])),
+        ]);
+
+        $response = $this->make_processor('hi')->process();
+
+        $this->assertFalse($response->get_success());
+        $this->assertSame(403, $response->get_errorcode());
+        $this->assertSame(get_string('notenoughtokens', 'aiprovider_datacurso'), $response->get_errormessage());
+        $this->assertStringNotContainsString('tokens_not_sufficient', $response->get_errormessage());
+    }
+
+    /**
+     * A 403 license rejection surfaces the actionable localized message.
+     *
+     * MDL-UNIT-011: error handling (license not allowed).
+     */
+    public function test_403_license_not_allowed_is_actionable(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $this->set_mock_http([
+            new Response(403, [], json_encode(['detail' => 'license_not_allowed'])),
+        ]);
+
+        $response = $this->make_processor('hi')->process();
+
+        $this->assertFalse($response->get_success());
+        $this->assertSame(403, $response->get_errorcode());
+        $this->assertSame(get_string('license_not_allowed', 'aiprovider_datacurso'), $response->get_errormessage());
+        $this->assertStringNotContainsString('license_not_allowed', $response->get_errormessage());
+    }
+
+    /**
+     * A generic service error must not leak the upstream detail to the end user.
+     *
+     * The localized httperror string is returned instead, and the upstream message only reaches
+     * the developer debugging channel.
      *
      * MDL-UNIT-011: error handling (generic service error).
      */
-    public function test_generic_service_error_surfaces_detail(): void {
+    public function test_generic_service_error_is_sanitized(): void {
         $this->resetAfterTest();
         $this->setAdminUser();
 
@@ -172,15 +217,48 @@ final class process_generate_text_test extends \advanced_testcase {
 
         $this->assertFalse($response->get_success());
         $this->assertSame(500, $response->get_errorcode());
-        $this->assertSame('boom', $response->get_errormessage());
+        $this->assertSame(get_string('httperror', 'aiprovider_datacurso', 500), $response->get_errormessage());
+        $this->assertStringNotContainsString('boom', $response->get_errormessage());
+
+        $debugmessages = $this->getDebuggingMessages();
+        $this->assertDebuggingCalledCount(1);
+        $this->assertStringContainsString('boom', $debugmessages[0]->message);
     }
 
     /**
-     * A network exception is caught and surfaced with a code and message.
+     * A non-JSON error body (e.g. a gateway HTML page) is never echoed to the end user.
+     *
+     * MDL-UNIT-011: error handling (non-JSON upstream body).
+     */
+    public function test_non_json_error_body_is_not_surfaced(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $this->set_mock_http([
+            new Response(502, ['Content-Type' => 'text/html'], '<html>gateway secret</html>'),
+        ]);
+
+        $response = $this->make_processor('hi')->process();
+
+        $this->assertFalse($response->get_success());
+        $this->assertSame(502, $response->get_errorcode());
+        $this->assertSame(get_string('httperror', 'aiprovider_datacurso', 502), $response->get_errormessage());
+        $this->assertStringNotContainsString('gateway secret', $response->get_errormessage());
+        $this->assertStringNotContainsString('<html>', $response->get_errormessage());
+
+        $debugmessages = $this->getDebuggingMessages();
+        $this->assertDebuggingCalledCount(1);
+        $this->assertStringContainsString('gateway secret', $debugmessages[0]->message);
+    }
+
+    /**
+     * A network exception is caught and surfaced with a code and a localized message only.
+     *
+     * The raw transport message (which may contain hostnames) is confined to debugging output.
      *
      * MDL-UNIT-011: error handling (network failure).
      */
-    public function test_network_error_is_surfaced(): void {
+    public function test_network_error_is_sanitized(): void {
         $this->resetAfterTest();
         $this->setAdminUser();
 
@@ -195,7 +273,12 @@ final class process_generate_text_test extends \advanced_testcase {
 
         $this->assertFalse($response->get_success());
         $this->assertSame(500, $response->get_errorcode());
-        $this->assertSame('down', $response->get_errormessage());
+        $this->assertSame(get_string('serviceunavailable', 'aiprovider_datacurso'), $response->get_errormessage());
+        $this->assertStringNotContainsString('down', $response->get_errormessage());
+
+        $debugmessages = $this->getDebuggingMessages();
+        $this->assertDebuggingCalledCount(1);
+        $this->assertStringContainsString('down', $debugmessages[0]->message);
     }
 
     /**
