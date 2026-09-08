@@ -178,6 +178,7 @@ From the same configuration page of the **Datacurso AI Provider**, you can enabl
 
 ![Actions](./_docs/images/aiprovider_datacurso_actions.png)
 
+> **Image delivery contract.** The AI service returns generated images inline (`b64_json`). If it returns an image URL instead, the plugin only downloads it over `https` from the same host as the AI service endpoint, with a `png`/`jpg`/`jpeg`/`webp` extension, without following redirects and up to 10 MiB; images hosted on a third-party CDN are rejected by design.
 
 ### History Consumption Credits 
 

@@ -110,6 +110,10 @@ final class abstract_processor_test extends \advanced_testcase {
         $result = $method->invoke($processor);
 
         $this->assertFalse($result['success']);
-        $this->assertSame('Could not resolve host', $result['errormessage']);
+        // The message shown to the end user must be the localized, generic string: the raw
+        // transport text (which may contain hostnames or other internals) must never surface.
+        $this->assertSame(get_string('serviceunavailable', 'aiprovider_datacurso'), $result['errormessage']);
+        $this->assertStringNotContainsString('Could not resolve host', $result['errormessage']);
+        $this->assertDebuggingCalled('Datacurso AI transport error: Could not resolve host');
     }
 }
