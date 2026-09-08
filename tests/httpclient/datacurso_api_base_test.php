@@ -19,9 +19,10 @@ namespace aiprovider_datacurso\httpclient;
 defined('MOODLE_INTERNAL') || die();
 
 require_once(__DIR__ . '/../fixtures/test_upload_client.php');
+require_once(__DIR__ . '/../fixtures/fake_curl.php');
 
 /**
- * Tests for the Datacurso API HTTP client file upload.
+ * Tests for the Datacurso API HTTP client: file upload and error reporting.
  *
  * The upload contract is shared with local_coursegen, which holds Moodle
  * stored_file objects and has no path on disk to give. That contract was lost
@@ -32,9 +33,128 @@ require_once(__DIR__ . '/../fixtures/test_upload_client.php');
  * @category   test
  * @copyright  2026 Industria Elearning
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \aiprovider_datacurso\httpclient\datacurso_api_base::upload_file
+ * @covers     \aiprovider_datacurso\httpclient\datacurso_api_base
  */
 final class datacurso_api_base_test extends \advanced_testcase {
+    /**
+     * Build a client whose transport is the given fake cURL wrapper.
+     *
+     * @param fake_curl $curl
+     * @return datacurso_api_base
+     */
+    private function make_client(fake_curl $curl): datacurso_api_base {
+        return new class ('https://example.invalid', 'test-key', $curl) extends datacurso_api_base {
+            /**
+             * Constructor.
+             *
+             * @param string $baseurl Base URL.
+             * @param string $licensekey License key.
+             * @param fake_curl $fakecurl Transport double.
+             */
+            public function __construct(
+                string $baseurl,
+                string $licensekey,
+                /** @var fake_curl Transport double. */
+                private fake_curl $fakecurl
+            ) {
+                parent::__construct($baseurl, $licensekey);
+            }
+
+            #[\Override]
+            protected function create_curl(): \curl {
+                return $this->fakecurl;
+            }
+        };
+    }
+
+    /**
+     * Run a GET expecting a moodle_exception, and return it for inspection.
+     *
+     * @param datacurso_api_base $client
+     * @return \moodle_exception
+     */
+    private function get_expecting_exception(datacurso_api_base $client): \moodle_exception {
+        try {
+            $client->request('GET', '/status');
+        } catch (\moodle_exception $e) {
+            return $e;
+        }
+        $this->fail('Expected a moodle_exception.');
+    }
+
+    /**
+     * An HTTP error is logged without the response body, and reported with the status code only.
+     */
+    public function test_http_error_debug_output_omits_response_body(): void {
+        $this->resetAfterTest();
+
+        $curl = new fake_curl();
+        $curl->enqueue('secret-body', 500);
+
+        $e = $this->get_expecting_exception($this->make_client($curl));
+
+        $this->assertSame('httperror', $e->errorcode);
+        $this->assertSame(500, $e->a);
+        $this->assertStringNotContainsString('secret-body', $e->getMessage());
+
+        $debugmessages = $this->getDebuggingMessages();
+        $this->assertNotEmpty($debugmessages);
+        foreach ($debugmessages as $debug) {
+            $this->assertStringNotContainsString('secret-body', $debug->message);
+        }
+        $this->resetDebugging();
+    }
+
+    /**
+     * An invalid JSON response is logged without the response body.
+     */
+    public function test_invalid_json_debug_output_omits_response_body(): void {
+        $this->resetAfterTest();
+
+        $curl = new fake_curl();
+        $curl->enqueue('<html>secret-body</html>', 200);
+
+        $e = $this->get_expecting_exception($this->make_client($curl));
+
+        $this->assertSame('jsondecodeerror', $e->errorcode);
+        $this->assertStringNotContainsString('secret-body', $e->getMessage());
+
+        $debugmessages = $this->getDebuggingMessages();
+        $this->assertNotEmpty($debugmessages);
+        foreach ($debugmessages as $debug) {
+            $this->assertStringNotContainsString('secret-body', $debug->message);
+        }
+        $this->resetDebugging();
+    }
+
+    /**
+     * A transport failure is reported with the cURL error number only: the raw libcurl text
+     * (which may contain hostnames) is confined to developer debugging output.
+     */
+    public function test_curl_failure_hides_transport_details(): void {
+        $this->resetAfterTest();
+        set_config('licensekey', 'KEY', 'aiprovider_datacurso');
+
+        $curl = new fake_curl();
+        // Moodle's curl wrapper hands back the error text as the response body on transport failure.
+        $errortext = 'Could not resolve host: course-ai-v2.datacurso.com';
+        $curl->enqueue($errortext, 0, $errortext, 6);
+
+        try {
+            $this->make_client($curl)->request('POST', '/course/execute', ['prompt' => 'hello']);
+            $this->fail('Expected a moodle_exception.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('curlerror', $e->errorcode);
+            $this->assertSame(6, $e->a);
+            $this->assertSame(get_string('curlerror', 'aiprovider_datacurso', 6), $e->getMessage());
+            $this->assertStringNotContainsString('course-ai-v2', $e->getMessage());
+        }
+
+        $debugmessages = $this->getDebuggingMessages();
+        $this->assertDebuggingCalledCount(1);
+        $this->assertStringContainsString('6', $debugmessages[0]->message);
+    }
+
     /**
      * Build a real stored_file in the draft area, as a caller would hold.
      *

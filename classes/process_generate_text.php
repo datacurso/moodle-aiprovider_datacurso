@@ -93,7 +93,7 @@ class process_generate_text extends abstract_processor {
 
         return new Request(
             'POST',
-            $this->get_endpoint(),
+            $this->resolve_endpoint(),
             [
                 'Content-Type' => 'application/json',
                 'License-Key' => $licensekey,

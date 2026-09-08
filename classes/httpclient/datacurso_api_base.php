@@ -116,6 +116,17 @@ class datacurso_api_base {
     }
 
     /**
+     * Create the cURL wrapper used for the requests.
+     *
+     * Seam for tests, so the transport can be replaced without touching the network.
+     *
+     * @return \curl
+     */
+    protected function create_curl(): \curl {
+        return new \curl();
+    }
+
+    /**
      * Generic handler for HTTP calls to Datacurso API.
      *
      * @param string $method HTTP method (GET, POST, PUT, DELETE, UPLOAD).
@@ -139,7 +150,7 @@ class datacurso_api_base {
         // Resolve the configured service for this path; null when the path is not mapped.
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
 
-        $curl = new \curl();
+        $curl = $this->create_curl();
         $baseheaders = [
             'License-Key: ' . $this->licensekey,
         ];
@@ -201,8 +212,9 @@ class datacurso_api_base {
         }
 
         if ($curl->error) {
-            debugging('cURL error (' . $curl->error . ')', DEBUG_DEVELOPER);
-            throw new \moodle_exception('curlerror', 'aiprovider_datacurso', '', $curl->error);
+            // The raw libcurl text may contain hostnames: keep it for developers only.
+            debugging('cURL error errno ' . $curl->errno . ' (' . $curl->error . ')', DEBUG_DEVELOPER);
+            throw new \moodle_exception('curlerror', 'aiprovider_datacurso', '', (int)$curl->errno);
         }
 
         $httpcode = $curl->get_info()['http_code'] ?? 0;
@@ -231,13 +243,14 @@ class datacurso_api_base {
         }
 
         if ($httpcode >= 400) {
-            debugging("HTTP error {$httpcode} from Datacurso API: {$response}", DEBUG_DEVELOPER);
+            // Never log the body: it may contain upstream internals. Log its size instead.
+            debugging("HTTP error {$httpcode} from Datacurso API (" . strlen($response) . ' bytes)', DEBUG_DEVELOPER);
             throw new \moodle_exception('httperror', 'aiprovider_datacurso', '', $httpcode);
         }
 
         $decodedresponse = json_decode($response, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
-            debugging('JSON decode error: ' . json_last_error_msg() . '. Response: ' . $response, DEBUG_DEVELOPER);
+            debugging('JSON decode error: ' . json_last_error_msg() . ' (' . strlen($response) . ' bytes)', DEBUG_DEVELOPER);
             throw new \moodle_exception('jsondecodeerror', 'aiprovider_datacurso', '', json_last_error_msg());
         }
 
