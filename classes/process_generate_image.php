@@ -18,8 +18,10 @@ namespace aiprovider_datacurso;
 
 use core\http_client;
 use core_ai\ai_image;
+use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Uri;
+use GuzzleHttp\RequestOptions;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
@@ -36,6 +38,28 @@ require_once($CFG->libdir . '/filelib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class process_generate_image extends abstract_processor {
+    /** @var int Maximum accepted size (bytes) for a generated image, on both the URL and base64 paths. */
+    private const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+    /** @var int Maximum accepted pixel area (25 MP; generated images are at most 1792x1024). */
+    private const MAX_IMAGE_PIXELS = 25000000;
+
+    /** @var int Chunk size (bytes) used while streaming a remote image. */
+    private const READ_CHUNK_BYTES = 64 * 1024;
+
+    /** @var int Timeout (seconds) for fetching a remote image. */
+    private const FETCH_TIMEOUT = 30;
+
+    /** @var string[] Path extensions accepted on the image URL fallback. */
+    private const ALLOWED_URL_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'];
+
+    /** @var array<int, string> Image types accepted by the binary gate, mapped to the stored extension. */
+    private const ALLOWED_IMAGE_TYPES = [
+        IMAGETYPE_PNG => 'png',
+        IMAGETYPE_JPEG => 'jpg',
+        IMAGETYPE_WEBP => 'webp',
+    ];
+
     /** @var int Number of images to generate. */
     private int $numberimages = 1;
 
@@ -112,14 +136,11 @@ class process_generate_image extends abstract_processor {
     protected function create_request_object(string $userid): RequestInterface {
         $body = json_encode($this->build_request_body($userid));
 
-        // Debug: Log the request body for development purposes.
-        debugging('Image generation request body: ' . $body, DEBUG_DEVELOPER);
-
         $licensekey = $this->provider->config['licensekey'] ?? null;
 
         return new Request(
             'POST',
-            $this->get_endpoint(),
+            $this->resolve_endpoint(),
             [
                 'Content-Type' => 'application/json',
                 'License-Key' => $licensekey,
@@ -167,8 +188,11 @@ class process_generate_image extends abstract_processor {
             $file = $this->save_to_draft_area($userid, $binary);
             $sourceurl = '';
         } else if (!empty($imageurl)) {
-            // Fallback: a hosted URL was provided (e.g. OpenAI-style responses).
-            $file = $this->download_file($imageurl, $userid);
+            // Fallback: a hosted URL was provided (e.g. OpenAI-style responses). The URL is only
+            // fetched when it is https, on the provider endpoint host and with an image extension;
+            // the fetched bytes are then validated exactly like the inline base64 path.
+            $binary = $this->fetch_remote_image((string)$imageurl);
+            $file = $binary !== null ? $this->save_to_draft_area($userid, $binary) : null;
             $sourceurl = $imageurl;
         } else {
             debugging('Invalid API response: no valid image format provided', DEBUG_DEVELOPER);
@@ -179,12 +203,12 @@ class process_generate_image extends abstract_processor {
             ];
         }
 
-        // Verify that file was successfully created.
+        // Every rejection (transport, size, host or image gate) is reported as an invalid image.
         if (!$file instanceof \stored_file) {
             return [
                 'success' => false,
-                'errorcode' => 500,
-                'errormessage' => get_string('responseinvalidaimagecreate', 'aiprovider_datacurso'),
+                'errorcode' => 400,
+                'errormessage' => get_string('responseinvalidaimage', 'aiprovider_datacurso'),
             ];
         }
 
@@ -198,55 +222,142 @@ class process_generate_image extends abstract_processor {
     }
 
     /**
-     * Downloads an image file from the Datacurso API and stores it in the user's draft area.
+     * Fetch a generated image from the AI service host, enforcing https, host pinning, an
+     * extension whitelist, no redirects and a hard size cap.
      *
-     * @param string $imageurl The full URL of the image to download.
-     * @param int $userid The ID of the user who owns the draft area.
-     * @return \stored_file|null The downloaded file, or null if it could not be created.
-     * @throws \Exception If the file cannot be created.
+     * Core's http_client already applies the site-wide cURL security helper (blocked hosts/ports).
+     *
+     * @param string $imageurl The image URL returned by the AI service.
+     * @return string|null The raw image bytes, or null when the URL or the response is rejected.
      */
-    public function download_file($imageurl, $userid): ?\stored_file {
-        $path = parse_url($imageurl, PHP_URL_PATH);
+    private function fetch_remote_image(string $imageurl): ?string {
+        $parts = parse_url($imageurl);
+        if ($parts === false || strtolower($parts['scheme'] ?? '') !== 'https') {
+            debugging('Rejected image URL: only https is allowed', DEBUG_DEVELOPER);
+            return null;
+        }
 
-        $filename = basename($path);
+        // Resolving the endpoint may hit the network (license check); a failure here must degrade
+        // to an invalid-image rejection, never to an exception after a successful AI response.
+        try {
+            $expectedhost = strtolower($this->resolve_endpoint()->getHost());
+        } catch (\Throwable $e) {
+            debugging('Image URL rejected: provider endpoint unavailable (' . get_class($e) . ')', DEBUG_DEVELOPER);
+            return null;
+        }
+        $host = strtolower($parts['host'] ?? '');
+        $port = $parts['port'] ?? null;
+        if ($host === '' || $host !== $expectedhost || ($port !== null && (int)$port !== 443)) {
+            debugging('Rejected image URL: host does not match the AI service endpoint', DEBUG_DEVELOPER);
+            return null;
+        }
 
-        $draftid = file_get_unused_draft_itemid();
+        $extension = strtolower(pathinfo(rawurldecode($parts['path'] ?? ''), PATHINFO_EXTENSION));
+        if (!in_array($extension, self::ALLOWED_URL_EXTENSIONS, true)) {
+            debugging('Rejected image URL: extension not allowed', DEBUG_DEVELOPER);
+            return null;
+        }
 
-        $fs = get_file_storage();
-        $context = \context_user::instance($userid);
-        $fileinfo = [
-            'contextid' => $context->id,
-            'component' => 'user',
-            'filearea' => 'draft',
-            'itemid' => $draftid,
-            'filepath' => '/',
-            'filename' => $filename,
-        ];
+        try {
+            $response = \core\di::get(http_client::class)->get($imageurl, [
+                RequestOptions::ALLOW_REDIRECTS => false,
+                RequestOptions::STREAM => true,
+                RequestOptions::HTTP_ERRORS => false,
+                RequestOptions::TIMEOUT => self::FETCH_TIMEOUT,
+            ]);
+        } catch (TransferException $e) {
+            debugging('Image fetch failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            return null;
+        }
 
-        $file = $fs->create_file_from_url($fileinfo, $imageurl, [], true);
-        return $file;
+        if ((int)$response->getStatusCode() !== 200) {
+            debugging('Image fetch rejected: HTTP ' . $response->getStatusCode(), DEBUG_DEVELOPER);
+            return null;
+        }
+
+        $contentlength = $response->getHeaderLine('Content-Length');
+        if ($contentlength !== '' && (int)$contentlength > self::MAX_IMAGE_BYTES) {
+            debugging('Image fetch rejected: declared Content-Length exceeds the size cap', DEBUG_DEVELOPER);
+            return null;
+        }
+
+        // Read in chunks so a missing or misleading Content-Length cannot bypass the cap.
+        $stream = $response->getBody();
+        $binary = '';
+        while (!$stream->eof()) {
+            $binary .= $stream->read(self::READ_CHUNK_BYTES);
+            if (strlen($binary) > self::MAX_IMAGE_BYTES) {
+                $stream->close();
+                debugging('Image fetch rejected: body exceeds the size cap', DEBUG_DEVELOPER);
+                return null;
+            }
+        }
+        $stream->close();
+
+        return $binary;
     }
 
     /**
-     * Store the generated image into the user's draft file area.
+     * Validate that a binary string is a supported raster image and return its extension.
+     *
+     * Headers, URL extensions and the AI service claims are not trusted: the bytes are sniffed
+     * with getimagesize(). Only PNG, JPEG and WEBP are accepted, up to MAX_IMAGE_PIXELS.
+     *
+     * @param string $binary Raw image bytes.
+     * @return string|null File extension for the detected type, or null if not a supported image.
+     */
+    private function validate_image_binary(string $binary): ?string {
+        if ($binary === '' || strlen($binary) > self::MAX_IMAGE_BYTES) {
+            return null;
+        }
+
+        $tempfile = make_request_directory() . DIRECTORY_SEPARATOR . 'datacurso_image_check';
+        file_put_contents($tempfile, $binary);
+        $info = @getimagesize($tempfile);
+        @unlink($tempfile);
+
+        if ($info === false) {
+            return null;
+        }
+
+        // Cap the declared pixel area so a tiny file cannot expand into a huge bitmap on decode.
+        $width = (int)$info[0];
+        $height = (int)$info[1];
+        if ($width <= 0 || $height <= 0 || $width * $height > self::MAX_IMAGE_PIXELS) {
+            debugging("Rejected generated image: dimensions {$width}x{$height} exceed the pixel cap", DEBUG_DEVELOPER);
+            return null;
+        }
+
+        return self::ALLOWED_IMAGE_TYPES[$info[2]] ?? null;
+    }
+
+    /**
+     * Validate the image bytes and store them into the user's draft file area.
      *
      * @param int $userid User ID that will own the draft file
-     * @param string $imagebinary Raw PNG binary string
-     * @return \stored_file Draft file reference
+     * @param string $imagebinary Raw image binary string
+     * @return \stored_file|null Draft file reference, or null if the bytes are not a supported image
      * @throws \file_exception If file creation fails
      */
-    private function save_to_draft_area(int $userid, string $imagebinary): \stored_file {
+    private function save_to_draft_area(int $userid, string $imagebinary): ?\stored_file {
         global $CFG;
 
         require_once("{$CFG->libdir}/filelib.php");
 
-        $filename = 'datacurso_image_' . time() . '.png';
+        $extension = $this->validate_image_binary($imagebinary);
+        if ($extension === null) {
+            debugging('Rejected generated image: not a supported PNG/JPEG/WEBP image', DEBUG_DEVELOPER);
+            return null;
+        }
+
+        $filename = 'datacurso_image_' . time() . '.' . $extension;
         $tempdst = make_request_directory() . DIRECTORY_SEPARATOR . $filename;
         file_put_contents($tempdst, $imagebinary);
 
         // Add watermark before saving to draft area. This is best-effort: it relies on GD compiled
-        // with FreeType (imagettfbbox/imagettftext). Where that is unavailable the watermark step
-        // throws; in that case we log and keep the un-watermarked image rather than failing the action.
+        // with FreeType (imagettfbbox/imagettftext) and ai_image does not support every type (WEBP).
+        // Where that is unavailable the watermark step throws; in that case we log and keep the
+        // un-watermarked (already validated) image rather than failing the action.
         try {
             $image = new ai_image($tempdst);
             $image->add_watermark()->save();

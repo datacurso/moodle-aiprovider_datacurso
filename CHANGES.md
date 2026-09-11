@@ -1,3 +1,35 @@
+## [2.1.3] - 2026-09-08
+
+**Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.
+
+### Security
+- **Upstream error responses are no longer shown to end users**
+  When the AI service failed (HTTP error or transport failure), the processors returned the raw upstream body or the transport message as `errormessage`, which Moodle core displays in the editor and persists in `ai_action_register`. They now return the localized `httperror` / `serviceunavailable` messages; the raw detail is only written to developer debugging output.
+- **Hardened image download fallback**
+  When the AI service returns an image URL instead of inline base64, the plugin now only fetches it over `https`, from the same host as the AI service endpoint, with an allowed image extension (`png`, `jpg`, `jpeg`, `webp`), without following redirects, within 30 seconds and up to 10 MiB (declared length and streamed length). The downloaded bytes, like inline base64 images, must sniff as PNG, JPEG or WEBP before being stored, and the stored name is always `datacurso_image_<timestamp>.<ext>`. Contract note: images hosted on a third-party CDN are rejected by design; the service must return `b64_json` (already the preferred format). The public `download_file()` method of the image processor was removed and the request body (including the prompt) is no longer written to debugging output.
+- **Shop client, API client and user lookup no longer leak internals**
+  The shop API client raises localized exceptions (`instance_disabled`, `licensekey_missing`, `curlerror`, `httperror`, `jsondecodeerror`) carrying only the cURL error number or the HTTP status, never the request URL or the response body; the base API client stops writing response bodies to debugging output; and the `get_users` web service returns a localized message instead of the database error text.
+- **AI service endpoint resolved once per request**
+  The processors resolve the AI service endpoint (which performs a license check against the shop) a single time per request instead of two or three times, and a failure while pinning the image host now degrades to the localized invalid-image error instead of raising an exception after a successful AI response.
+- **Base API client no longer exposes cURL error text**
+  `datacurso_api_base` reports transport failures with the cURL error number only; the raw libcurl message (which may contain hostnames) is confined to developer debugging output.
+- **Removed a request-payload debug log**
+  `datacurso_api_base` no longer writes the outgoing request payload (`PAYLOAD: ...`) to debugging output on every 4xx/5xx response; only the response size and status are logged.
+- **Pixel-area cap on generated images**
+  Generated images are rejected when their declared dimensions exceed 25 megapixels, so a small file cannot expand into a huge bitmap on decode.
+- **Actionable 403 messages in the processors**
+  Credit exhaustion (`tokens_not_sufficient`) and license rejections (`license_not_allowed`) from the AI service now surface the same localized, actionable messages used by the other Datacurso plugins instead of the generic HTTP 403 error.
+- **Course service rate-limit headers declared**
+  The privacy metadata for the course creation service now declares the rate-limit headers that are forwarded when the `local_coursegen` limit is enabled.
+- **Complete privacy metadata**
+  The privacy metadata now declares the three external Datacurso systems separately (`datacurso_ai_services`, `datacurso_course_service`, `datacurso_shop`) with every field actually transferred (messages, model, image size and count, site identifier and URL, timezone, language, uploaded files, license key header and rate-limit headers), declares the `externalid` column of the local consumption table, and the privacy statement no longer claims that no personal data is stored locally. The future remote erasure/export hook is documented in the privacy provider; it is not implemented because the services expose no privacy endpoints yet, so remote erasure requests are handled through Datacurso support.
+
+### Changed
+- **Privacy metadata language strings restructured**
+  Strings for the single generic external location (`privacy:metadata:aiprovider_datacurso:*`) were removed in every language; `privacy:metadata:aiprovider_datacurso` is kept as the export root label. The dead rate-limit and per-user quota strings (`privacy:metadata:aiprovider_datacurso_rlimit*` and `privacy:metadata:aiprovider_datacurso_userlimit*`, left over from tables removed in earlier releases) were also removed in every language.
+- **Testable transport in the HTTP clients**
+  `datacurso_api` and `datacurso_api_base` build their cURL wrapper through a `create_curl()` substitution point, and `user_service::get_users()` accepts an optional database instance, so error handling is covered by automated tests without network access.
+
 ## [2.1.2] - 2026-09-04
 
 **Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.
