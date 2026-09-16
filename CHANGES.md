@@ -11,6 +11,12 @@
   Requests to the Datacurso API now include `site_url` so the service can identify the originating site.
 
 ### Fixed
+- **Leftover webservice setup tab in the report page**
+  The report page still offered a "webservice setup" tab guarded by
+  `aiprovider/datacurso:configurews`, a capability removed in 1.3.0 together with
+  the page it linked to. The tab therefore never rendered, but the check made
+  Moodle log `Capability "aiprovider/datacurso:configurews" was not found!` on
+  every visit with debugging on. The dead block is gone.
 - **Tenant resolution on sites without Workplace tenancy**
   Every entry point resolved the current tenant by calling `\tool_tenant\tenancy`
   directly, so any site that does not provide that plugin — a plain Moodle install,
