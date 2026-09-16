@@ -14,7 +14,7 @@
       </FIELDS>
       <KEYS>
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-        <KEY NAME="plugin_tenant_name_uk" TYPE="unique" FIELDS="plugin, tenant_id, name"/>
+        <KEY NAME="plugin_tenant_name_uk" TYPE="unique" FIELDS="plugin,tenant_id,name"/>
       </KEYS>
     </TABLE>
   </TABLES>
