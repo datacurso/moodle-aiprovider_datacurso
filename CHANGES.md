@@ -11,6 +11,14 @@
   Requests to the Datacurso API now include `site_url` so the service can identify the originating site.
 
 ### Fixed
+- **Tenant resolution on sites without Workplace tenancy**
+  Every entry point resolved the current tenant by calling `\tool_tenant\tenancy`
+  directly, so any site that does not provide that plugin — a plain Moodle install,
+  or the environment where the test suite runs — fatally failed the moment an API
+  client was built. Tenant resolution now goes through
+  `local\tenant_resolver`, which falls back to a single implicit tenant (`0`) when
+  tenancy is unavailable, and tenant configuration then falls back to the site-wide
+  values.
 - **Service user cleanup on upgrade**
   The upgrade step that removes artifacts from the deprecated Datacurso webservice setup now also deletes the `datacursows` service account, instead of leaving it for a site administrator to remove manually.
 

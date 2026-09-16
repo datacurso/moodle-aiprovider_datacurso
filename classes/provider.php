@@ -249,7 +249,7 @@ class provider extends \core_ai\provider {
      * @return array
      */
     public static function get_actions(): array {
-        return [
+        $actions = [
             ['id' => '/provider/chat/completions', 'name' => get_string('generate_text', 'aiprovider_datacurso')],
             ['id' => '/provider/images/generations', 'name' => get_string('generate_image', 'aiprovider_datacurso')],
             ['id' => '/course/execute', 'name' => get_string('generate_creation_course', 'aiprovider_datacurso')],
@@ -272,45 +272,23 @@ class provider extends \core_ai\provider {
             ['id' => '/story/analysis', 'name' => get_string('generate_analysis_story_student', 'aiprovider_datacurso')],
             ['id' => '/smartrules/create-mod', 'name' => get_string('generate_ai_reinforcement_activity', 'aiprovider_datacurso')],
             ['id' => '/chat/message', 'name' => get_string('generate_chat_message', 'aiprovider_datacurso')],
-            // Moodle activity types.
-            ['id' => 'create_activity_assign_image', 'name' => get_string('create_activity_assign_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_assign_noimage', 'name' => get_string('create_activity_assign_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_quiz_image', 'name' => get_string('create_activity_quiz_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_quiz_noimage', 'name' => get_string('create_activity_quiz_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_lesson_image', 'name' => get_string('create_activity_lesson_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_lesson_noimage', 'name' => get_string('create_activity_lesson_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_workshop_image', 'name' => get_string('create_activity_workshop_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_workshop_noimage', 'name' => get_string('create_activity_workshop_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_h5pactivity_image', 'name' => get_string('create_activity_h5pactivity_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_h5pactivity_noimage', 'name' => get_string('create_activity_h5pactivity_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_scorm_image', 'name' => get_string('create_activity_scorm_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_scorm_noimage', 'name' => get_string('create_activity_scorm_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_feedback_image', 'name' => get_string('create_activity_feedback_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_feedback_noimage', 'name' => get_string('create_activity_feedback_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_choice_image', 'name' => get_string('create_activity_choice_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_choice_noimage', 'name' => get_string('create_activity_choice_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_data_image', 'name' => get_string('create_activity_data_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_data_noimage', 'name' => get_string('create_activity_data_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_book_image', 'name' => get_string('create_activity_book_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_book_noimage', 'name' => get_string('create_activity_book_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_page_image', 'name' => get_string('create_activity_page_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_page_noimage', 'name' => get_string('create_activity_page_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_resource_image', 'name' => get_string('create_activity_resource_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_resource_noimage', 'name' => get_string('create_activity_resource_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_url_image', 'name' => get_string('create_activity_url_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_url_noimage', 'name' => get_string('create_activity_url_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_folder_image', 'name' => get_string('create_activity_folder_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_folder_noimage', 'name' => get_string('create_activity_folder_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_label_image', 'name' => get_string('create_activity_label_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_label_noimage', 'name' => get_string('create_activity_label_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_imscp_image', 'name' => get_string('create_activity_imscp_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_imscp_noimage', 'name' => get_string('create_activity_imscp_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_forum_image', 'name' => get_string('create_activity_forum_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_forum_noimage', 'name' => get_string('create_activity_forum_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_glossary_image', 'name' => get_string('create_activity_glossary_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_glossary_noimage', 'name' => get_string('create_activity_glossary_noimage', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_wiki_image', 'name' => get_string('create_activity_wiki_image', 'aiprovider_datacurso')],
-            ['id' => 'create_activity_wiki_noimage', 'name' => get_string('create_activity_wiki_noimage', 'aiprovider_datacurso')],
         ];
+
+        // Every Moodle activity type the provider can create, with and without generated images.
+        $modnames = [
+            'assign', 'quiz', 'lesson', 'workshop', 'h5pactivity',
+            'scorm', 'feedback', 'choice', 'data', 'book',
+            'page', 'resource', 'url', 'folder', 'label',
+            'imscp', 'forum', 'glossary', 'wiki',
+        ];
+
+        foreach ($modnames as $modname) {
+            foreach (['image', 'noimage'] as $variant) {
+                $actionid = "create_activity_{$modname}_{$variant}";
+                $actions[] = ['id' => $actionid, 'name' => get_string($actionid, 'aiprovider_datacurso')];
+            }
+        }
+
+        return $actions;
     }
 }

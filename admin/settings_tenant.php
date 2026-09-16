@@ -39,7 +39,7 @@ require_capability('moodle/site:config', $context);
 global $PAGE, $OUTPUT, $USER;
 
 // Tenant resolution.
-$tenantid = \tool_tenant\tenancy::get_tenant_id($USER->id);
+$tenantid = \aiprovider_datacurso\local\tenant_resolver::get_tenant_id((int) $USER->id);
 
 // Page setup.
 $url = new moodle_url('/ai/provider/datacurso/admin/settings_tenant.php');

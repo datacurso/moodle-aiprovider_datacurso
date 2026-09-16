@@ -16,7 +16,6 @@
 
 namespace aiprovider_datacurso\local;
 
-use tool_tenant\tenancy;
 use aiprovider_datacurso\provider;
 
 /**
@@ -40,7 +39,7 @@ class ratelimiter {
      */
     public function __construct() {
         global $USER;
-        $this->tenantid = (int)tenancy::get_tenant_id($USER->id);
+        $this->tenantid = tenant_resolver::get_tenant_id((int) $USER->id);
     }
 
     /**

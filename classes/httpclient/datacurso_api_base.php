@@ -17,6 +17,7 @@
 namespace aiprovider_datacurso\httpclient;
 
 use aiprovider_datacurso\local\tenant_config;
+use aiprovider_datacurso\local\tenant_resolver;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -50,7 +51,7 @@ class datacurso_api_base {
     public function __construct(string $baseurl, ?string $licensekey = null, ?int $tenantid = null) {
         global $USER;
 
-        $resolvedtenantid = $tenantid ?? \tool_tenant\tenancy::get_tenant_id($USER->id);
+        $resolvedtenantid = $tenantid ?? tenant_resolver::get_tenant_id((int) $USER->id);
         $tenantlicense = tenant_config::get(
             'aiprovider_datacurso',
             $resolvedtenantid,
@@ -337,7 +338,7 @@ class datacurso_api_base {
     public static function is_license_for_ue(?string $licensekey = null, ?int $tenantid = null): bool {
         global $USER;
 
-        $resolvedtenantid = $tenantid ?? \tool_tenant\tenancy::get_tenant_id($USER->id);
+        $resolvedtenantid = $tenantid ?? tenant_resolver::get_tenant_id((int) $USER->id);
         $tenantlicense = tenant_config::get(
             'aiprovider_datacurso',
             $resolvedtenantid,
