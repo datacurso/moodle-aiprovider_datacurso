@@ -221,5 +221,27 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026071601, 'aiprovider', 'datacurso');
     }
 
+    if ($oldversion < 2026091601) {
+        // The plugin had no db/install.xml, so this table only ever existed on sites that
+        // reached it through an upgrade. A site that installed the plugin from scratch got
+        // no table at all and failed as soon as any tenant setting was read.
+        $table = new xmldb_table('aiprovider_datacurso_tenant_config');
+
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('plugin', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        $table->add_field('tenant_id', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('name', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        $table->add_field('value', XMLDB_TYPE_TEXT, null, null, null, null, null);
+
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('plugin_tenant_name_uk', XMLDB_KEY_UNIQUE, ['plugin', 'tenant_id', 'name']);
+
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2026091601, 'aiprovider', 'datacurso');
+    }
+
     return true;
 }

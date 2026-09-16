@@ -11,6 +11,13 @@
   Requests to the Datacurso API now include `site_url` so the service can identify the originating site.
 
 ### Fixed
+- **Missing database schema on a fresh install**
+  The plugin shipped no `db/install.xml`, so `aiprovider_datacurso_tenant_config`
+  was only ever created by an upgrade step. Sites that installed the plugin from
+  scratch got no table at all, and the tenant settings page died with
+  `La tabla "aiprovider_datacurso_tenant_config" no existe` the moment it read the
+  licence key. The install file now defines the table, and an upgrade step creates
+  it on sites that were installed while it was missing.
 - **Leftover webservice setup tab in the report page**
   The report page still offered a "webservice setup" tab guarded by
   `aiprovider/datacurso:configurews`, a capability removed in 1.3.0 together with

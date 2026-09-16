@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="ai/provider/datacurso/db" VERSION="20260916" COMMENT="XMLDB file for Moodle ai/provider/datacurso"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="aiprovider_datacurso_tenant_config" COMMENT="Plugin configuration stored per tenant instead of per site.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="plugin" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false" COMMENT="Component the setting belongs to."/>
+        <FIELD NAME="tenant_id" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Tenant the setting applies to."/>
+        <FIELD NAME="name" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false" COMMENT="Setting name."/>
+        <FIELD NAME="value" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Setting value."/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="plugin_tenant_name_uk" TYPE="unique" FIELDS="plugin, tenant_id, name"/>
+      </KEYS>
+    </TABLE>
+  </TABLES>
+</XMLDB>
