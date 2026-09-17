@@ -42,10 +42,14 @@ class tenant_config {
         int $tenantid,
         \stdClass $data
     ): void {
-        global $DB;
+        // Fields skipped here are either form plumbing (submitbutton/cancel) or grouped
+        // structures that need their own encoding logic instead of the generic
+        // array-to-CSV handling below (e.g. 'credit' is a per-action {key: value} map,
+        // saved explicitly by the caller via self::set() to preserve its keys).
+        $skip = ['submitbutton', 'cancel', 'credit'];
 
         foreach ((array)$data as $name => $value) {
-            if (in_array($name, ['submitbutton', 'cancel'], true)) {
+            if (in_array($name, $skip, true)) {
                 continue;
             }
 
@@ -57,31 +61,50 @@ class tenant_config {
                 $value = json_encode($value);
             }
 
-            $conditions = [
-                'plugin'    => $plugin,
-                'tenant_id' => $tenantid,
-                'name'      => $name,
-            ];
+            self::set($plugin, $tenantid, $name, $value);
+        }
+    }
 
-            $existingid = $DB->get_field(
-                self::TABLE,
-                'id',
-                $conditions,
-                IGNORE_MISSING
-            );
+    /**
+     * Save a single configuration value for a tenant.
+     *
+     * @param string $plugin
+     * @param int    $tenantid
+     * @param string $name
+     * @param mixed  $value
+     */
+    public static function set(
+        string $plugin,
+        int $tenantid,
+        string $name,
+        $value
+    ): void {
+        global $DB;
 
-            if ($existingid) {
-                $record = (object)$conditions;
-                $record->id    = $existingid;
-                $record->value = (string)$value;
+        $conditions = [
+            'plugin'    => $plugin,
+            'tenant_id' => $tenantid,
+            'name'      => $name,
+        ];
 
-                $DB->update_record(self::TABLE, $record);
-            } else {
-                $record = (object)$conditions;
-                $record->value = (string)$value;
+        $existingid = $DB->get_field(
+            self::TABLE,
+            'id',
+            $conditions,
+            IGNORE_MISSING
+        );
 
-                $DB->insert_record(self::TABLE, $record);
-            }
+        if ($existingid) {
+            $record = (object)$conditions;
+            $record->id    = $existingid;
+            $record->value = (string)$value;
+
+            $DB->update_record(self::TABLE, $record);
+        } else {
+            $record = (object)$conditions;
+            $record->value = (string)$value;
+
+            $DB->insert_record(self::TABLE, $record);
         }
     }
 
@@ -121,9 +144,11 @@ class tenant_config {
             return json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
         }
 
-        // Fallback to global plugin config.
+        // Fallback to global plugin config. An admin_setting with an empty-string default
+        // (e.g. licensekey) makes get_config() return '' rather than false when unset, which
+        // is not a meaningful value: treat it the same as "not set" and fall back to $default.
         $global = get_config($plugin, $name);
-        return $global !== false ? $global : $default;
+        return ($global !== false && $global !== '') ? $global : $default;
     }
 
     /**

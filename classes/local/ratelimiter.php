@@ -140,7 +140,7 @@ class ratelimiter {
             return [];
         }
 
-        $maxperaction = provider::get_credit_for_action($serviceid, $actionkey ?? 'default');
+        $maxperaction = provider::get_credit_for_action($serviceid, $actionkey ?? 'default', $this->tenantid);
 
         return [
             'X-RateLimit-Enable' => '1',

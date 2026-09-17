@@ -67,6 +67,28 @@ if ($data = $form->get_data()) {
         $data
     );
 
+    // Credits per action arrive as a nested {service: {key: value}} array, so they are
+    // saved explicitly here (as one JSON map per service) instead of through the generic
+    // save_from_form(), which would otherwise flatten the map and lose its keys.
+    foreach (array_column(\aiprovider_datacurso\provider::get_services(), 'id') as $sid) {
+        $validkeys = array_column(\aiprovider_datacurso\provider::get_actions_for_service($sid), 'key');
+        $submitted = (array) ($data->credit[$sid] ?? []);
+
+        $map = [];
+        foreach ($validkeys as $key) {
+            if (isset($submitted[$key])) {
+                $map[$key] = max(0, (int) $submitted[$key]);
+            }
+        }
+
+        \aiprovider_datacurso\local\tenant_config::set(
+            'aiprovider_datacurso',
+            $tenantid,
+            "ratelimit_{$sid}_creditperaction",
+            json_encode($map)
+        );
+    }
+
     redirect(
         $url,
         get_string('changessaved'),

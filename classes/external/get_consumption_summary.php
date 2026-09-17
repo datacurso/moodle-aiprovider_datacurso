@@ -27,14 +27,14 @@ use external_value;
 use aiprovider_datacurso\local\service\consumption_service;
 
 /**
- * External web service to fetch all Datacurso API consumption history.
+ * External web service returning aggregated consumption totals for the report charts.
  *
  * @package    aiprovider_datacurso
  * @category   external
- * @copyright  2025 Industria Elearning
+ * @copyright  2025 Josue <https://datacurso.com>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class get_all_consumption extends external_api {
+class get_consumption_summary extends external_api {
     /**
      * Defines input parameters.
      *
@@ -42,32 +42,36 @@ class get_all_consumption extends external_api {
      */
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'service' => new external_value(PARAM_TEXT, 'Service filter', VALUE_OPTIONAL),
-            'action' => new external_value(PARAM_TEXT, 'Action filter', VALUE_OPTIONAL),
-            'userid' => new external_value(PARAM_INT, 'User filter', VALUE_OPTIONAL),
-            'fromdate' => new external_value(PARAM_RAW, 'Start date (YYYY-MM-DD)', VALUE_OPTIONAL),
-            'todate' => new external_value(PARAM_RAW, 'End date (YYYY-MM-DD)', VALUE_OPTIONAL),
+            'groupby' => new external_value(PARAM_ALPHA, 'Aggregation dimension: month, day, action or service'),
+            'service' => new external_value(PARAM_TEXT, 'Service filter', VALUE_DEFAULT, ''),
+            'action' => new external_value(PARAM_TEXT, 'Action filter', VALUE_DEFAULT, ''),
+            'userid' => new external_value(PARAM_INT, 'User filter', VALUE_DEFAULT, 0),
+            'fromdate' => new external_value(PARAM_RAW, 'Start date (YYYY-MM-DD)', VALUE_DEFAULT, ''),
+            'todate' => new external_value(PARAM_RAW, 'End date (YYYY-MM-DD)', VALUE_DEFAULT, ''),
         ]);
     }
 
     /**
-     * Executes the web service to retrieve all consumption records.
+     * Return the aggregated consumption totals for the requested dimension.
      *
-     * @param string|null $service Service filter.
-     * @param string|null $action Action filter.
-     * @param int|null $userid User filter.
-     * @param string|null $fromdate Start date (YYYY-MM-DD).
-     * @param string|null $todate End date (YYYY-MM-DD).
-     * @return array Returns the status, total, and list of consumption records.
+     * @param string $groupby Aggregation dimension.
+     * @param string $service Service filter.
+     * @param string $action Action filter.
+     * @param int $userid User filter.
+     * @param string $fromdate Start date.
+     * @param string $todate End date.
+     * @return array
      */
     public static function execute(
-        ?string $service = null,
-        ?string $action = null,
-        ?int $userid = null,
-        ?string $fromdate = null,
-        ?string $todate = null
+        string $groupby,
+        string $service = '',
+        string $action = '',
+        int $userid = 0,
+        string $fromdate = '',
+        string $todate = ''
     ): array {
         $params = self::validate_parameters(self::execute_parameters(), [
+            'groupby' => $groupby,
             'service' => $service,
             'action' => $action,
             'userid' => $userid,
@@ -79,12 +83,13 @@ class get_all_consumption extends external_api {
         self::validate_context($context);
         require_capability('aiprovider/datacurso:viewreports', $context);
 
-        return consumption_service::get_all_consumption(
-            $params['service'],
-            $params['action'],
-            $params['userid'],
-            $params['fromdate'],
-            $params['todate']
+        return consumption_service::get_summary(
+            $params['groupby'],
+            $params['service'] !== '' ? $params['service'] : null,
+            $params['action'] !== '' ? $params['action'] : null,
+            !empty($params['userid']) ? (int) $params['userid'] : null,
+            $params['fromdate'] !== '' ? $params['fromdate'] : null,
+            $params['todate'] !== '' ? $params['todate'] : null
         );
     }
 
@@ -96,17 +101,11 @@ class get_all_consumption extends external_api {
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
             'status' => new external_value(PARAM_TEXT, 'Request status (success/error)'),
-            'total' => new external_value(PARAM_INT, 'Total number of consumption records found'),
-            'consumption' => new external_multiple_structure(
+            'total' => new external_value(PARAM_FLOAT, 'Sum of credits over the filtered set'),
+            'summary' => new external_multiple_structure(
                 new external_single_structure([
-                    'id_consumption' => new external_value(PARAM_INT, 'Consumption record ID'),
-                    'action' => new external_value(PARAM_TEXT, 'Performed action'),
-                    'id_service' => new external_value(PARAM_TEXT, 'Used service'),
-                    'userid' => new external_value(PARAM_INT, 'Moodle user ID', VALUE_OPTIONAL),
-                    'cant_tokens' => new external_value(PARAM_FLOAT, 'Number of tokens consumed'),
-                    'balance' => new external_value(PARAM_FLOAT, 'Remaining token balance'),
-                    'date' => new external_value(PARAM_RAW, 'Consumption date (YYYY-MM-DD)'),
-                    'created_at' => new external_value(PARAM_RAW, 'Record creation date in the API'),
+                    'label' => new external_value(PARAM_RAW, 'Group label'),
+                    'total' => new external_value(PARAM_FLOAT, 'Credits consumed for this group'),
                 ])
             ),
         ]);
