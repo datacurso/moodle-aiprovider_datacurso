@@ -144,9 +144,11 @@ class tenant_config {
             return json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
         }
 
-        // Fallback to global plugin config.
+        // Fallback to global plugin config. An admin_setting with an empty-string default
+        // (e.g. licensekey) makes get_config() return '' rather than false when unset, which
+        // is not a meaningful value: treat it the same as "not set" and fall back to $default.
         $global = get_config($plugin, $name);
-        return $global !== false ? $global : $default;
+        return ($global !== false && $global !== '') ? $global : $default;
     }
 
     /**
