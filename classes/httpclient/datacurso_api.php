@@ -17,6 +17,7 @@
 namespace aiprovider_datacurso\httpclient;
 
 use aiprovider_datacurso\local\tenant_config;
+use aiprovider_datacurso\local\tenant_resolver;
 use moodle_exception;
 use moodle_url;
 
@@ -48,7 +49,7 @@ class datacurso_api {
 
         $this->baseurl    = 'https://shop.datacurso.com/index.php?m=tokens_manager&api=';
 
-        $tenantid = \tool_tenant\tenancy::get_tenant_id($USER->id);
+        $tenantid = tenant_resolver::get_tenant_id((int) $USER->id);
         $tenantlicense = tenant_config::get(
             'aiprovider_datacurso',
             $tenantid,

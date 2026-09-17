@@ -45,19 +45,30 @@ if ($hassiteconfig) {
                 get_string('link_provider_config_tenant', 'aiprovider_datacurso')
             )
         ));
+
+        // License key.
+        $settings->add(new admin_setting_configpasswordunmask(
+            'aiprovider_datacurso/licensekey',
+            new lang_string('licensekey', 'aiprovider_datacurso'),
+            new lang_string('licensekey_desc', 'aiprovider_datacurso'),
+            ''
+        ));
+
+        // Per-plugin rate limit settings now live in the dedicated Configuration page
+        // (Datacurso AI Provider → Configuration), which is the single source of truth.
+        $settings->add(new admin_setting_description(
+            'aiprovider_datacurso/ratelimits_moved',
+            new lang_string('ratelimits_heading', 'aiprovider_datacurso'),
+            new lang_string('ratelimits_moved_desc', 'aiprovider_datacurso', (object) [
+                'url' => (new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'config']))->out(),
+            ])
+        ));
     }
 
     $ADMIN->add('reports', new admin_externalpage(
         'aiprovider_datacurso_reports',
         get_string('link_generalreport_datacurso', 'aiprovider_datacurso'),
         new moodle_url('/ai/provider/datacurso/admin/report_sections.php'),
-        'moodle/site:config'
-    ));
-
-    $ADMIN->add('server', new admin_externalpage(
-        'aiprovider_datacurso_webservice',
-        get_string('link_webservice_config', 'aiprovider_datacurso'),
-        new moodle_url('/ai/provider/datacurso/admin/webservice_config.php'),
         'moodle/site:config'
     ));
 }

@@ -157,7 +157,7 @@ class settings_tenant_form extends \moodleform {
 
         $data = new \stdClass();
 
-        $tenantid = \tool_tenant\tenancy::get_tenant_id($USER->id);
+        $tenantid = \aiprovider_datacurso\local\tenant_resolver::get_tenant_id((int) $USER->id);
 
         $data->licensekey =
             \aiprovider_datacurso\local\tenant_config::get(

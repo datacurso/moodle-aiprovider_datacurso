@@ -43,18 +43,8 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             'userid' => 'privacy:metadata:aiprovider_datacurso:userid',
         ], 'privacy:metadata:aiprovider_datacurso:externalpurpose');
 
-        $fields = [
-            'userid', 'serviceid', 'windowstart', 'tokensused', 'lastsync', 'timecreated', 'timemodified',
-        ];
-        $fielddata = [];
-        foreach ($fields as $field) {
-            $fielddata[$field] = get_string('privacy:metadata:aiprovider_datacurso_rlimit:' . $field, 'aiprovider_datacurso');
-        }
-        $collection->add_database_table(
-            'aiprovider_datacurso_rlimit',
-            $fielddata,
-            get_string('privacy:metadata:aiprovider_datacurso_rlimit', 'aiprovider_datacurso')
-        );
+        // No local database tables store personal data: the rate limit is now enforced and
+        // accumulated by the external Datacurso service (token-manager).
 
         return $collection;
     }
@@ -177,8 +167,7 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
      * @return array<string,array<string,int>>
      */
     protected static function get_table_user_map(stdClass $user): array {
-        return [
-            'aiprovider_datacurso_rlimit' => ['userid' => $user->id],
-        ];
+        // No local tables store personal data anymore (rate limit moved to the external service).
+        return [];
     }
 }

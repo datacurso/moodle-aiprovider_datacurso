@@ -34,7 +34,10 @@ class process_generate_text extends abstract_processor {
      */
     #[\Override]
     protected function get_endpoint(): UriInterface {
-        return new Uri('https://plugins-ai.datacurso.com/provider/chat/completions');
+        // Use the provider's configured base URL (docker service in local, prod URL in production),
+        // consistent with the dttutor proxy — no hardcoded host.
+        $baseurl = rtrim((new \aiprovider_datacurso\httpclient\ai_services_api())->get_base_url(), '/');
+        return new Uri($baseurl . '/provider/chat/completions');
     }
 
     #[\Override]

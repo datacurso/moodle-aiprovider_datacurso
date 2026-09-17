@@ -27,10 +27,10 @@ namespace aiprovider_datacurso\httpclient;
  */
 class ai_course_api extends datacurso_api_base {
     /** Default base URL for the standard DataCurso course AI service. */
-    private const DEFAULT_BASE_URL = 'https://course-ai.datacurso.com';
+    private const DEFAULT_BASE_URL = 'https://course-ai-v2.datacurso.com/api/v1';
 
     /** Default base URL for the EU-hosted DataCurso course AI service. */
-    private const DEFAULT_BASE_URL_EU = 'https://eu.course-ai.datacurso.com';
+    private const DEFAULT_BASE_URL_EU = 'https://course-ai-v2.datacurso.com/api/v1';
 
     /**
      * Constructor.
@@ -47,27 +47,5 @@ class ai_course_api extends datacurso_api_base {
         }
 
         parent::__construct($finalbaseurl, $licensekey);
-    }
-
-    /**
-     * Build the streaming URL for a given session ID, adjusting base URL for localhost dev environments.
-     *
-     * @param string $sessionid
-     * @return string streaming URL
-     */
-    public function get_streaming_url_for_session(string $sessionid): string {
-        $baseurl = rtrim($this->baseurl, '/');
-        return $baseurl . '/course/stream?session_id=' . urlencode($sessionid);
-    }
-
-    /**
-     * Build the streaming URL for a module creation job (create-mod), adjusting base URL for localhost dev environments.
-     *
-     * @param string $jobid
-     * @return string streaming URL
-     */
-    public function get_mod_streaming_url_for_job(string $jobid): string {
-        $baseurl = rtrim($this->baseurl, '/');
-        return $baseurl . '/resources/create-mod/stream?job_id=' . urlencode($jobid);
     }
 }

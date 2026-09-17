@@ -46,7 +46,9 @@ class process_generate_image extends abstract_processor {
      */
     #[\Override]
     protected function get_endpoint(): UriInterface {
-        return new Uri('https://plugins-ai.datacurso.com/provider/images/generations');
+        // Use the provider's configured base URL (docker service in local, prod URL in production).
+        $baseurl = rtrim((new \aiprovider_datacurso\httpclient\ai_services_api())->get_base_url(), '/');
+        return new Uri($baseurl . '/provider/images/generations');
     }
 
     /**
@@ -147,10 +149,28 @@ class process_generate_image extends abstract_processor {
             ];
         }
 
+        $userid = (int)($this->action->get_configuration('userid') ?? 0);
+        $b64 = $body->data[0]->b64_json ?? null;
         $imageurl = $body->data[0]->url ?? null;
 
-        // Ensure at least one image format is provided.
-        if (empty($imageurl)) {
+        // Preferred path: the AI service returns the image inline as base64 (Gemini).
+        if (!empty($b64)) {
+            $binary = base64_decode($b64, true);
+            if ($binary === false || $binary === '') {
+                debugging('Invalid API response: could not decode base64 image', DEBUG_DEVELOPER);
+                return [
+                    'success' => false,
+                    'errorcode' => 400,
+                    'errormessage' => get_string('responseinvalidaimage', 'aiprovider_datacurso'),
+                ];
+            }
+            $file = $this->save_to_draft_area($userid, $binary);
+            $sourceurl = '';
+        } else if (!empty($imageurl)) {
+            // Fallback: a hosted URL was provided (e.g. OpenAI-style responses).
+            $file = $this->download_file($imageurl, $userid);
+            $sourceurl = $imageurl;
+        } else {
             debugging('Invalid API response: no valid image format provided', DEBUG_DEVELOPER);
             return [
                 'success' => false,
@@ -158,9 +178,6 @@ class process_generate_image extends abstract_processor {
                 'errormessage' => get_string('responseinvalidaimage', 'aiprovider_datacurso'),
             ];
         }
-
-        $userid = (int)($this->action->get_configuration('userid') ?? 0);
-        $file = $this->download_file($imageurl, $userid);
 
         // Verify that file was successfully created.
         if (!$file instanceof \stored_file) {
@@ -174,7 +191,7 @@ class process_generate_image extends abstract_processor {
         return [
             'success' => true,
             'errorcode' => 200,
-            'sourceurl' => $imageurl ?? '',
+            'sourceurl' => $sourceurl,
             'revisedprompt' => $body->data[0]->revised_prompt ?? '',
             'draftfile' => $file,
         ];
@@ -227,9 +244,15 @@ class process_generate_image extends abstract_processor {
         $tempdst = make_request_directory() . DIRECTORY_SEPARATOR . $filename;
         file_put_contents($tempdst, $imagebinary);
 
-        // Add watermark before saving to draft area.
-        $image = new ai_image($tempdst);
-        $image->add_watermark()->save();
+        // Add watermark before saving to draft area. This is best-effort: it relies on GD compiled
+        // with FreeType (imagettfbbox/imagettftext). Where that is unavailable the watermark step
+        // throws; in that case we log and keep the un-watermarked image rather than failing the action.
+        try {
+            $image = new ai_image($tempdst);
+            $image->add_watermark()->save();
+        } catch (\Throwable $e) {
+            debugging('Skipping image watermark (add_watermark failed): ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
 
         $fileinfo = (object)[
             'contextid' => \context_user::instance($userid)->id,
