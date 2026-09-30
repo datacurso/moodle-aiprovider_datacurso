@@ -1,3 +1,13 @@
+## [1.5.2] - 2026-09-30
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Changed
+- **The region of the licence is resolved once and kept**
+  Which region serves a site was asked of the shop while building every API client, so each call to an AI service paid a round trip to `shop.datacurso.com` first, and a shop that did not answer took every service down with it although the services themselves were up. The region is a property of the licence, not of the request: it is now resolved once, kept with a fingerprint of the licence it belongs to, and asked for again only when that licence changes or after a week. On a site of the pilot the first resolution costs 1.4 seconds and every one after it costs a millisecond.
+  When the region is already known and the shop cannot be reached, the known region is used and the service keeps working. When it is not known —a licence that has never reached the shop— the call still fails rather than guess: choosing a region wrongly would send the data of a site to a deployment it may not be allowed to reach.
+  Saving the licence key drops the region resolved for the previous one, so a change of licence is seen at once instead of waiting for the answer to go stale. The week is there for the other case: a site whose region is moved between deployments without its key changing.
+
 ## [1.5.1] - 2026-09-07
 
 **Compatibility note:** This version is compatible only with **Moodle 4.5**.
