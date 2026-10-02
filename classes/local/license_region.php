@@ -69,7 +69,7 @@ class license_region {
 
         try {
             $european = static::ask_the_shop();
-        } catch (\Throwable $e) {
+        } catch (\moodle_exception $e) {
             return self::fall_back($e, $known, $stored);
         }
 
@@ -108,14 +108,14 @@ class license_region {
     /**
      * What to answer when the shop could not be asked.
      *
-     * @param \Throwable $failure What the shop failed with.
+     * @param \moodle_exception $failure What the shop failed with.
      * @param bool $known Whether the region of this licence was resolved before.
      * @param mixed $stored The region resolved before, as the configuration holds it.
      * @return bool
-     * @throws \Throwable When nothing is known, because guessing would send the data of a site to
-     *                    a region it may not be allowed to reach.
+     * @throws \moodle_exception When nothing is known, because guessing would send the data of a
+     *                           site to a region it may not be allowed to reach.
      */
-    private static function fall_back(\Throwable $failure, bool $known, $stored): bool {
+    private static function fall_back(\moodle_exception $failure, bool $known, $stored): bool {
         if (!$known) {
             throw $failure;
         }

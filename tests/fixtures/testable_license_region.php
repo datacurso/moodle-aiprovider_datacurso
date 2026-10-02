@@ -39,8 +39,8 @@ class testable_license_region extends license_region {
     /** @var bool What the shop answers. */
     public static bool $european = false;
 
-    /** @var \Throwable|null Thrown instead of answering, to play a shop that is down. */
-    public static ?\Throwable $failure = null;
+    /** @var \moodle_exception|null Thrown instead of answering, to play a shop that is down. */
+    public static ?\moodle_exception $failure = null;
 
     /**
      * Forget everything this double remembers between tests.
@@ -55,7 +55,7 @@ class testable_license_region extends license_region {
      * Answer for the shop.
      *
      * @return bool
-     * @throws \Throwable When a failure was queued.
+     * @throws \moodle_exception When a failure was queued.
      */
     protected static function ask_the_shop(): bool {
         self::$asked++;
