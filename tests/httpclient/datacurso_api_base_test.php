@@ -286,4 +286,147 @@ final class datacurso_api_base_test extends \advanced_testcase {
             $this->assertFileDoesNotExist($client->temppath);
         }
     }
+
+    /**
+     * The license header carries the configured key.
+     */
+    public function test_license_header_carries_the_configured_key(): void {
+        $client = $this->make_client(new fake_curl());
+
+        $this->assertSame('License-Key: test-key', $client->get_license_header());
+    }
+
+    /**
+     * Spaces around the key are not sent.
+     */
+    public function test_license_header_trims_the_key(): void {
+        $client = new datacurso_api_base('https://example.invalid', "  spaced-key \n");
+
+        $this->assertSame('License-Key: spaced-key', $client->get_license_header());
+    }
+
+    /**
+     * Provide the keys that must not be sent.
+     *
+     * @return array<string, array{0: ?string}>
+     */
+    public static function missing_license_key_provider(): array {
+        return [
+            'empty string' => [''],
+            'only spaces' => ['   '],
+            'only a line break' => ["\n"],
+        ];
+    }
+
+    /**
+     * Without a license key there is no header: the call fails with the localized error.
+     *
+     * @dataProvider missing_license_key_provider
+     * @param string|null $licensekey Key given to the client.
+     */
+    public function test_license_header_fails_without_a_key(?string $licensekey): void {
+        $this->resetAfterTest();
+        $client = new datacurso_api_base('https://example.invalid', $licensekey);
+        $expectedmessage = get_string('invalidlicensekey', 'aiprovider_datacurso');
+
+        try {
+            $client->get_license_header();
+            $this->fail('Expected a moodle_exception.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidlicensekey', $e->errorcode);
+            $this->assertSame($expectedmessage, $e->getMessage());
+        }
+        $this->resetDebugging();
+    }
+
+    /**
+     * A key that was never configured fails the same way when the client reads it from the settings.
+     */
+    public function test_license_header_fails_when_the_setting_is_empty(): void {
+        $this->resetAfterTest();
+        set_config('licensekey', '', 'aiprovider_datacurso');
+        $client = new datacurso_api_base('https://example.invalid');
+        $expectedmessage = get_string('invalidlicensekey', 'aiprovider_datacurso');
+
+        $this->expectException(\moodle_exception::class);
+        $this->expectExceptionMessage($expectedmessage);
+        $client->get_license_header();
+    }
+
+    /**
+     * Every request carries the license header built by the shared method.
+     */
+    public function test_request_sends_the_license_header(): void {
+        $this->resetAfterTest();
+        $curl = new fake_curl();
+        $curl->enqueue('{"ok": true}');
+
+        $this->make_client($curl)->request('GET', '/status');
+
+        $this->assertCount(1, $curl->calls);
+        $this->assertContains('License-Key: test-key', $curl->calls[0]['options']['CURLOPT_HTTPHEADER']);
+    }
+
+    /**
+     * A request without a license key stops before any network call.
+     */
+    public function test_request_without_a_key_never_reaches_the_service(): void {
+        $this->resetAfterTest();
+        $curl = new fake_curl();
+        $client = new class ('https://example.invalid', '', $curl) extends datacurso_api_base {
+            /**
+             * Constructor.
+             *
+             * @param string $baseurl Base URL.
+             * @param string $licensekey License key.
+             * @param fake_curl $fakecurl Transport double.
+             */
+            public function __construct(
+                string $baseurl,
+                string $licensekey,
+                /** @var fake_curl Transport double. */
+                private fake_curl $fakecurl
+            ) {
+                parent::__construct($baseurl, $licensekey);
+            }
+
+            #[\Override]
+            protected function create_curl(): \curl {
+                return $this->fakecurl;
+            }
+        };
+
+        try {
+            $client->request('GET', '/status');
+            $this->fail('Expected a moodle_exception.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidlicensekey', $e->errorcode);
+        }
+
+        $this->assertSame([], $curl->calls);
+        $this->resetDebugging();
+    }
+
+    /**
+     * A download without a license key stops before any file is created or requested.
+     */
+    public function test_download_without_a_key_fails_before_creating_a_file(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $client = new datacurso_api_base('https://example.invalid', '');
+
+        try {
+            $client->download_file('/files/download?path=x', 'x.pdf');
+            $this->fail('Expected a moodle_exception.');
+        } catch (\moodle_exception $e) {
+            $this->assertSame('invalidlicensekey', $e->errorcode);
+        }
+
+        $admin = get_admin();
+        $usercontext = \context_user::instance($admin->id);
+        $storage = get_file_storage();
+        $files = $storage->get_area_files($usercontext->id, 'user', 'draft', false, 'id', false);
+        $this->assertCount(0, $files);
+        $this->resetDebugging();
+    }
 }
