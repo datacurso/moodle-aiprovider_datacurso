@@ -1,3 +1,11 @@
+## [1.5.3] - 2026-10-05
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Fixed
+- **A fresh install no longer prints a debugging message**
+  The `service` field of the consumption table was declared as a required text column with an empty default, which XMLDB does not accept: every new install printed a debugging message, and `moodle-plugin-ci` stops the install of any plugin that depends on this one when it sees it. The empty default is gone. Sites that already have the table are unaffected, because the upgrade step created the field without a default.
+
 ## [1.5.2] - 2026-09-30
 
 **Compatibility note:** This version is compatible only with **Moodle 4.5**.
