@@ -1,3 +1,15 @@
+## [2.1.4] - 2026-10-05
+
+**Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.
+
+### Changed
+- **The region of the licence is resolved once and kept**
+  Which region serves a site was asked of the shop while building every API client, so each call to an AI service paid a round trip to `shop.datacurso.com` first, and a shop that did not answer took every service down with it although the services themselves were up. The region is a property of the licence, not of the request: it is now resolved once, kept with a fingerprint of the licence it belongs to, and asked for again only when that licence changes or after a week.
+  When the region is already known and the shop cannot be reached, the known region is used and the service keeps working. When it is not known —a licence that has never reached the shop— the call still fails rather than guess: choosing a region wrongly would send the data of a site to a deployment it may not be allowed to reach.
+  The licence key lives in the configuration of the AI provider instance, which core saves without notifying the plugin, so a change of licence is detected by its fingerprint on the next request instead of by a save callback. The week is there for the other case: a site whose region is moved between deployments without its key changing.
+- **The privacy declaration names the whole chain**
+  The declaration of the AI services said the request data reaches Datacurso and stopped there, although those services do not generate the answers themselves: they hand the request on to a large language model of a third party, today Google Gemini or OpenAI depending on the model, which may sit outside the European Union. The declaration now says so, in every shipped language, and says what that provider does not receive: the identifier of the user, the identifier of the site and the timezone are stripped before the request leaves. It also stops claiming that every erasure request goes through support, which is no longer true of the AI tutor: the platform now asks the service to delete the conversations of a person or of a course on its own.
+
 ## [2.1.3] - 2026-09-08
 
 **Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.

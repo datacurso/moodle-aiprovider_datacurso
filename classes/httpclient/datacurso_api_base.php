@@ -16,6 +16,8 @@
 
 namespace aiprovider_datacurso\httpclient;
 
+use aiprovider_datacurso\local\license_region;
+
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/filelib.php');
@@ -376,12 +378,13 @@ class datacurso_api_base {
     /**
      * Check if the license is for European Union.
      *
+     * The answer is resolved once and kept, because it is a property of the licence and not of
+     * the request. See license_region for what that means when the shop cannot be reached.
+     *
      * @return bool
+     * @throws \moodle_exception When the region is not known yet and the shop cannot be asked.
      */
     public function is_for_ue(): bool {
-        $datacursoapi = new datacurso_api();
-        $response = $datacursoapi->get('tokens/saldo');
-        // The key may be absent (older service versions, mocked responses); absent means not EU.
-        return !empty($response['is_for_eu']);
+        return license_region::is_european();
     }
 }
