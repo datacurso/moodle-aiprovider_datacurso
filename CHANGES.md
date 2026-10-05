@@ -1,3 +1,11 @@
+## [1.5.2] - 2026-10-04
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Security
+- **One place builds the License-Key header, and a missing key stops the call**
+  The header of every call to the Datacurso services is now built by `datacurso_api_base::get_license_header()`. `send_request()` and `download_file()` use it, so a request cannot leave without the license. `download_file()` used to send an empty header when no key was configured; it now fails before creating any file or contacting the service, with the localized `invalidlicensekey` message, exactly like the other requests. Spaces around the key are no longer sent. `local_coursegen` also reads the header from this method to open its generation streams.
+
 ## [1.5.1] - 2026-09-07
 
 **Compatibility note:** This version is compatible only with **Moodle 4.5**.
