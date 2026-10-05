@@ -47,12 +47,19 @@ if ($hassiteconfig) {
         ));
 
         // License key.
-        $settings->add(new admin_setting_configpasswordunmask(
+        $licensekey = new admin_setting_configpasswordunmask(
             'aiprovider_datacurso/licensekey',
             new lang_string('licensekey', 'aiprovider_datacurso'),
             new lang_string('licensekey_desc', 'aiprovider_datacurso'),
             ''
-        ));
+        );
+        // The licence decides which region serves this site, and it is the only thing that does.
+        // Saving a new one drops the region resolved for the old one, so the next request resolves
+        // it again instead of answering for a licence that is no longer in force.
+        $licensekey->set_updatedcallback(
+            'aiprovider_datacurso\local\license_region::forget'
+        );
+        $settings->add($licensekey);
 
         // Per-plugin rate limit settings now live in the dedicated Configuration page
         // (Datacurso AI Provider → Configuration), which is the single source of truth.
