@@ -77,6 +77,24 @@ class datacurso_api_base {
     }
 
     /**
+     * Build the License-Key header that every request to a Datacurso service must carry.
+     *
+     * This is the only place that builds the header, so no call can reach a service without the license.
+     *
+     * @return string Header line, for example "License-Key: abc123".
+     * @throws \moodle_exception When no license key is configured.
+     */
+    public function get_license_header(): string {
+        $licensekey = trim((string) $this->licensekey);
+        if ($licensekey === '') {
+            debugging('Cannot make this request: invalid license key', DEBUG_DEVELOPER);
+            throw new \moodle_exception('invalidlicensekey', 'aiprovider_datacurso');
+        }
+
+        return 'License-Key: ' . $licensekey;
+    }
+
+    /**
      * Download a file from Datacurso API.
      *
      * @param string $endpoint Relative endpoint (starting with "/").
@@ -88,6 +106,7 @@ class datacurso_api_base {
     public function download_file($endpoint, $filename, $filerecord = []): ?\stored_file {
         global $USER;
 
+        $licenseheader = $this->get_license_header();
         $baseurl = $this->get_base_url();
         $packageurl = $baseurl . ltrim($endpoint, '/');
 
@@ -107,9 +126,7 @@ class datacurso_api_base {
         ];
         $fileinfo = array_merge($fileinfo, $filerecord);
         $options = [];
-        $options['headers'] = [
-            'License-Key: ' . $this->licensekey,
-        ];
+        $options['headers'] = [$licenseheader];
 
         $file = $fs->create_file_from_url($fileinfo, $packageurl, $options, true);
         return $file;
@@ -138,10 +155,7 @@ class datacurso_api_base {
      */
     protected function send_request(string $method, string $path, $payload = [], array $headers = []): ?array {
         global $USER, $CFG;
-        if (empty($this->licensekey)) {
-            debugging('Cannot make this request: invalid license key', DEBUG_DEVELOPER);
-            throw new \moodle_exception('invalidlicensekey', 'aiprovider_datacurso');
-        }
+        $licenseheader = $this->get_license_header();
 
         if (!str_starts_with($path, '/')) {
             $path = '/' . $path;
@@ -151,9 +165,7 @@ class datacurso_api_base {
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
 
         $curl = $this->create_curl();
-        $baseheaders = [
-            'License-Key: ' . $this->licensekey,
-        ];
+        $baseheaders = [$licenseheader];
 
         // Forward the configured per-service rate limit to the Python service, which enforces it
         // centrally against the user's accumulated credit consumption within the window. The
