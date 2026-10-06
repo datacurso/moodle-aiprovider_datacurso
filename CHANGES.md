@@ -1,3 +1,11 @@
+## [1.5.4] - 2026-10-06
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Fixed
+- **A fresh install no longer prints a debugging message, now for the action field too**
+  Release 1.5.3 removed the empty default of the `service` field of the consumption table, but the `action` field kept the same declaration, so every new install still printed a debugging message and `moodle-plugin-ci` still stopped the install of any plugin that depends on this one. The empty default of `action` is gone as well. Sites that already have the table are unaffected, because the upgrade step created the field without a default.
+
 ## [1.5.3] - 2026-10-05
 
 **Compatibility note:** This version is compatible only with **Moodle 4.5**.
