@@ -1,3 +1,11 @@
+## [2.1.5] - 2026-10-06
+
+**Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.
+
+### Fixed
+- **A fresh install no longer prints a debugging message**
+  The `service` and `action` fields of the consumption table were declared as required text columns with an empty default, which XMLDB does not accept: every new install printed a debugging message, and `moodle-plugin-ci` stops the install of any plugin that depends on this one when it sees it. The empty defaults are gone. Sites that already have the table are unaffected, because the upgrade step created both fields without a default.
+
 ## [2.1.4] - 2026-10-05
 
 **Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.
