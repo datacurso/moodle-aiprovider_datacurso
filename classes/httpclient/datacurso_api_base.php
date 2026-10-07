@@ -16,6 +16,7 @@
 
 namespace aiprovider_datacurso\httpclient;
 
+use aiprovider_datacurso\local\license_region;
 use aiprovider_datacurso\local\tenant_config;
 use aiprovider_datacurso\local\tenant_resolver;
 
@@ -335,7 +336,11 @@ class datacurso_api_base {
     /**
      * Check if the license is for European Union.
      *
+     * The answer is resolved once and kept, because it is a property of the licence and not of
+     * the request. See license_region for what that means when the shop cannot be reached.
+     *
      * @return bool
+     * @throws \moodle_exception When the region is not known yet and the shop cannot be asked.
      */
     public function is_for_ue(): bool {
         return self::is_license_for_ue($this->licensekey, $this->tenantid);
@@ -344,24 +349,14 @@ class datacurso_api_base {
     /**
      * Check if a given license (optionally scoped to tenant) is for EU.
      *
-     * @param string|null $licensekey
-     * @param int|null $tenantid
+     * The region is resolved once per tenant and kept, see license_region.
+     *
+     * @param string|null $licensekey Explicit license key; defaults to the licence of the tenant.
+     * @param int|null $tenantid Tenant to answer for; defaults to the tenant of the current user.
      * @return bool
+     * @throws \moodle_exception When the region is not known yet and the shop cannot be asked.
      */
     public static function is_license_for_ue(?string $licensekey = null, ?int $tenantid = null): bool {
-        global $USER;
-
-        $resolvedtenantid = $tenantid ?? tenant_resolver::get_tenant_id((int) $USER->id);
-        $tenantlicense = tenant_config::get(
-            'aiprovider_datacurso',
-            $resolvedtenantid,
-            'licensekey',
-            get_config('aiprovider_datacurso', 'licensekey')
-        );
-
-        $resolvedlicense = $licensekey ?? trim((string)$tenantlicense);
-        $datacursoapi = new datacurso_api($resolvedlicense);
-        $response = $datacursoapi->get('tokens/saldo');
-        return !empty($response['is_for_eu']);
+        return license_region::is_european($tenantid, $licensekey);
     }
 }

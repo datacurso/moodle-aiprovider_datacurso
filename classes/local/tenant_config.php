@@ -200,12 +200,36 @@ class tenant_config {
     }
 
     /**
-     * Delete specific configuration names across all tenants for a plugin.
+     * Get the value stored for a tenant, exactly as stored.
+     *
+     * Unlike get(), it neither decodes the value nor falls back to the site configuration, so a
+     * tenant that has stored nothing is told apart from one that inherits the site value.
+     *
+     * @param string $plugin
+     * @param int    $tenantid
+     * @param string $name
+     * @return string|null The stored value, or null when the tenant has none.
+     */
+    public static function get_stored(string $plugin, int $tenantid, string $name): ?string {
+        global $DB;
+
+        $value = $DB->get_field(self::TABLE, 'value', [
+            'plugin'    => $plugin,
+            'tenant_id' => $tenantid,
+            'name'      => $name,
+        ]);
+
+        return $value === false ? null : (string)$value;
+    }
+
+    /**
+     * Delete specific configuration names for a plugin, across all tenants or for one of them.
      *
      * @param string $plugin
      * @param string[] $names
+     * @param int|null $tenantid Tenant to delete them for; null deletes them for every tenant.
      */
-    public static function delete_names(string $plugin, array $names): void {
+    public static function delete_names(string $plugin, array $names, ?int $tenantid = null): void {
         global $DB;
 
         $names = array_values(array_filter(array_map('strval', $names), static function (string $name): bool {
@@ -218,11 +242,12 @@ class tenant_config {
 
         [$insql, $params] = $DB->get_in_or_equal($names, SQL_PARAMS_NAMED);
         $params['plugin'] = $plugin;
+        $where = "plugin = :plugin AND name {$insql}";
+        if ($tenantid !== null) {
+            $where .= ' AND tenant_id = :tenantid';
+            $params['tenantid'] = $tenantid;
+        }
 
-        $DB->delete_records_select(
-            self::TABLE,
-            "plugin = :plugin AND name {$insql}",
-            $params
-        );
+        $DB->delete_records_select(self::TABLE, $where, $params);
     }
 }

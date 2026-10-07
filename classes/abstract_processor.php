@@ -92,6 +92,22 @@ abstract class abstract_processor extends process_base {
     }
 
     /**
+     * The licence the request is sent with: the one of the user's tenant, or the site licence.
+     *
+     * Resolved like the API clients and the region, so the credits are spent from the same licence
+     * that decided the region serving the request.
+     *
+     * @param int $userid User the action runs for.
+     * @return string
+     */
+    protected function get_license_key(int $userid): string {
+        $tenantid = \aiprovider_datacurso\local\tenant_resolver::get_tenant_id($userid);
+        $licensekey = \aiprovider_datacurso\local\tenant_config::get('aiprovider_datacurso', $tenantid, 'licensekey', '');
+
+        return trim((string)$licensekey);
+    }
+
+    /**
      * Executes the HTTP request to the external Datacurso AI service.
      *
      * @return array Processed response data, either success or error.
@@ -100,8 +116,8 @@ abstract class abstract_processor extends process_base {
     protected function query_ai_api(): array {
         global $USER;
 
-        $licensekey = get_config('aiprovider_datacurso', 'licensekey');
         $userid = $this->action->get_configuration('userid') ?? $USER->id;
+        $licensekey = $this->get_license_key((int)$userid);
 
         $client = \core\di::get(http_client::class);
 

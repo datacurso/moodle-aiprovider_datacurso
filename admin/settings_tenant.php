@@ -61,6 +61,12 @@ if ($form->is_cancelled()) {
 
 // Submit.
 if ($data = $form->get_data()) {
+    $previouslicence = \aiprovider_datacurso\local\tenant_config::get_stored(
+        'aiprovider_datacurso',
+        $tenantid,
+        'licensekey'
+    );
+
     \aiprovider_datacurso\local\tenant_config::save_from_form(
         'aiprovider_datacurso',
         $tenantid,
@@ -87,6 +93,12 @@ if ($data = $form->get_data()) {
             "ratelimit_{$sid}_creditperaction",
             json_encode($map)
         );
+    }
+
+    // The licence decides the region that serves this tenant: drop the region kept for the
+    // previous licence so the next request resolves it for the new one.
+    if (trim((string)($data->licensekey ?? '')) !== trim((string)$previouslicence)) {
+        \aiprovider_datacurso\local\license_region::forget_for_tenant($tenantid);
     }
 
     redirect(
