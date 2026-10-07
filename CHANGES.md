@@ -11,6 +11,8 @@ Brings `MOODLE_405_STABLE` up to 1.5.3 (entries 1.5.0 to 1.5.3 below) into the W
   Text generation, summaries and image generation sent the site licence in the `License-Key` header while the region was resolved with the tenant licence, so a tenant with its own licence spent the site's credits. They now send the licence of the user's tenant, falling back to the site licence.
 
 ### Fixed
+- **Consumption table on sites upgrading from 1.4.3-wp**
+  The source creates the consumption history table in an upgrade step numbered `2026090100`, lower than the `2026091601` that the Workplace branch had already reached, so a Workplace site upgrading from 1.4.3-wp skipped it and the history page failed reading a table that did not exist. A new step creates the table on those sites.
 - **Configuration acceptance test**
   `tests/behat/configuration.feature` still drove the "Configuration" tab and the field names of the site-wide form that was replaced by the tenant configuration page. It now drives the tenant configuration page.
 
