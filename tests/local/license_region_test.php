@@ -42,11 +42,29 @@ final class license_region_test extends \advanced_testcase {
     }
 
     /**
+     * Store a value where the resolution keeps it for the current user.
+     *
+     * That is the site configuration without tenancy, and the tenant of the user on Workplace, where
+     * even the user running the tests belongs to a tenant.
+     *
+     * @param string $name
+     * @param string $value
+     */
+    private function keep(string $name, string $value): void {
+        $tenantid = tenant_resolver::get_tenant_id();
+        if ($tenantid === tenant_resolver::NO_TENANT) {
+            set_config($name, $value, 'aiprovider_datacurso');
+            return;
+        }
+        tenant_config::set('aiprovider_datacurso', $tenantid, $name, $value);
+    }
+
+    /**
      * Make the answer held in the configuration old enough to be asked for again.
      */
     private function let_the_answer_go_stale(): void {
         $stale = time() - license_region::TTL - 1;
-        set_config(license_region::CHECKED, $stale, 'aiprovider_datacurso');
+        $this->keep(license_region::CHECKED, (string)$stale);
     }
 
     /**
@@ -192,9 +210,9 @@ final class license_region_test extends \advanced_testcase {
      * MDL-INT-039: the client that every plugin builds answers through this resolution.
      */
     public function test_the_api_client_answers_through_the_resolution(): void {
-        set_config(license_region::REGION, '1', 'aiprovider_datacurso');
-        set_config(license_region::FINGERPRINT, sha1('DC-A-LICENCE'), 'aiprovider_datacurso');
-        set_config(license_region::CHECKED, time(), 'aiprovider_datacurso');
+        $this->keep(license_region::REGION, '1');
+        $this->keep(license_region::FINGERPRINT, sha1('DC-A-LICENCE'));
+        $this->keep(license_region::CHECKED, (string)time());
         $client = new \aiprovider_datacurso\httpclient\ai_services_api();
 
         $this->assertTrue($client->is_for_ue());
