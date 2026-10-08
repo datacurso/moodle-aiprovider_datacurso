@@ -22,6 +22,8 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="externalid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Consumption record id in the external Datacurso service (id_consumo)."/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Moodle user who triggered the consumption."/>
+        <FIELD NAME="tenant_id" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Tenant of the user who triggered the consumption; 0 without tenancy."/>
+        <FIELD NAME="licence" TYPE="char" LENGTH="40" NOTNULL="true" DEFAULT="" SEQUENCE="false" COMMENT="Fingerprint (sha1) of the licence the record was synced with."/>
         <FIELD NAME="service" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" COMMENT="Service identifier (e.g. local_coursegen)."/>
         <FIELD NAME="action" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="" SEQUENCE="false" COMMENT="Action identifier."/>
         <FIELD NAME="credits" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Credits consumed."/>
@@ -37,6 +39,8 @@
         <INDEX NAME="timecreated" UNIQUE="false" FIELDS="timecreated"/>
         <INDEX NAME="service" UNIQUE="false" FIELDS="service"/>
         <INDEX NAME="action" UNIQUE="false" FIELDS="action"/>
+        <INDEX NAME="tenant_id" UNIQUE="false" FIELDS="tenant_id"/>
+        <INDEX NAME="licence" UNIQUE="false" FIELDS="licence"/>
       </INDEXES>
     </TABLE>
   </TABLES>

@@ -243,6 +243,38 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026100701, 'aiprovider', 'datacurso');
     }
 
+    if ($oldversion < 2026100800) {
+        // The consumption mirror is read per tenant: each record keeps the tenant of the user who
+        // consumed and the fingerprint of the licence it was synced with, so each licence keeps its
+        // own sync watermark. The rows already mirrored carry neither and cannot be attributed, so
+        // the mirror is emptied; the history is pulled again the next time the page is opened.
+        $table = new xmldb_table('aiprovider_datacurso_consumption');
+
+        $fields = [
+            new xmldb_field('tenant_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'userid'),
+            new xmldb_field('licence', XMLDB_TYPE_CHAR, '40', null, XMLDB_NOTNULL, null, '', 'tenant_id'),
+        ];
+        foreach ($fields as $field) {
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        }
+
+        $indexes = [
+            new xmldb_index('tenant_id', XMLDB_INDEX_NOTUNIQUE, ['tenant_id']),
+            new xmldb_index('licence', XMLDB_INDEX_NOTUNIQUE, ['licence']),
+        ];
+        foreach ($indexes as $index) {
+            if (!$dbman->index_exists($table, $index)) {
+                $dbman->add_index($table, $index);
+            }
+        }
+
+        $DB->delete_records('aiprovider_datacurso_consumption');
+
+        upgrade_plugin_savepoint(true, 2026100800, 'aiprovider', 'datacurso');
+    }
+
     return true;
 }
 

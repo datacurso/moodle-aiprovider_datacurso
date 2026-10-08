@@ -79,6 +79,7 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         $collection->add_database_table('aiprovider_datacurso_consumption', [
             'externalid' => 'privacy:metadata:aiprovider_datacurso_consumption:externalid',
             'userid' => 'privacy:metadata:aiprovider_datacurso_consumption:userid',
+            'tenant_id' => 'privacy:metadata:aiprovider_datacurso_consumption:tenant_id',
             'service' => 'privacy:metadata:aiprovider_datacurso_consumption:service',
             'action' => 'privacy:metadata:aiprovider_datacurso_consumption:action',
             'credits' => 'privacy:metadata:aiprovider_datacurso_consumption:credits',

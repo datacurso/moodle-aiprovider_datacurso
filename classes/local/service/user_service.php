@@ -39,6 +39,18 @@ class user_service {
         try {
             $where = "u.deleted = 0 AND u.suspended = 0 AND u.id > 1";
             $sqlparams = [];
+            $join = '';
+
+            // On Workplace only the users of the tenant of the viewer are offered.
+            if (\aiprovider_datacurso\local\tenant_resolver::is_tenancy_available()) {
+                [$tenantjoin, $tenantwhere, $tenantparams] = \tool_tenant\tenancy::get_users_sql(
+                    'u',
+                    \aiprovider_datacurso\local\tenant_resolver::get_tenant_id()
+                );
+                $join = $tenantjoin;
+                $where .= " AND {$tenantwhere}";
+                $sqlparams += $tenantparams;
+            }
 
             if (!empty($search)) {
                 $searchsql = $db->sql_like('u.firstname', ':search1', false, false) . ' OR ' .
@@ -55,6 +67,7 @@ class user_service {
 
             $sql = "SELECT DISTINCT u.id{$namefields}
                     FROM {user} u
+                    $join
                     WHERE $where
                     ORDER BY u.firstname ASC, u.lastname ASC";
 

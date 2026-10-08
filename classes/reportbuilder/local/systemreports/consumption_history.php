@@ -41,6 +41,17 @@ class consumption_history extends system_report {
 
         $this->set_main_table('aiprovider_datacurso_consumption', $mainalias);
         $this->add_entity($entitymain);
+
+        // Only the consumption of the users of the tenant of the viewer (0 on a site without
+        // tenancy), paid with the licence that tenant uses now.
+        $this->add_base_condition_simple(
+            "{$mainalias}.tenant_id",
+            \aiprovider_datacurso\local\tenant_resolver::get_tenant_id()
+        );
+        $this->add_base_condition_simple(
+            "{$mainalias}.licence",
+            \aiprovider_datacurso\local\sync\consumption_sync::current_licence_fingerprint()
+        );
         $this->set_downloadable(true, get_string('link_consumptionhistory', 'aiprovider_datacurso'));
         $this->set_default_per_page(10);
 
