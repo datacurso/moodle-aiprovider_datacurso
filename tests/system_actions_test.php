@@ -82,9 +82,9 @@ final class system_actions_test extends \advanced_testcase {
     public function test_system_instruction_adherence_eval(): void {
         $this->markTestSkipped(
             'Golden-dataset evaluation requiring the live Datacurso AI service and a valid license '
-            . '(marked "Automatizado: no"). It also depends on the system-instruction defect: the '
-            . 'automated red signal for that defect lives in the failing MDL-UNIT-012 '
-            . '(process_generate_text_test / process_summarise_text_test) and API-CTR-002 tests.'
+            . '(marked "Automatizado: no"). That the configured system instruction reaches the model '
+            . 'is covered without the service by MDL-UNIT-012 (process_generate_text_test / '
+            . 'process_summarise_text_test) and API-CTR-002.'
         );
     }
 }

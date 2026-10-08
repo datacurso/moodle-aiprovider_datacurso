@@ -64,9 +64,9 @@ final class process_summarise_text_test extends \advanced_testcase {
     /**
      * Summarisation must read and send its own configured system instruction.
      *
-     * MDL-UNIT-012: [Pendiente:fail] summarise inherits the text processor's reader, which uses
-     * the wrong config key, so the summarise instruction ('action_summarise_text_instruction')
-     * never reaches the payload. Red by design until the defect is fixed.
+     * MDL-UNIT-012: summarise inherits the text processor's reader, which reads the key of the
+     * running action, so the summarise instruction ('action_summarise_text_instruction') reaches
+     * the payload.
      */
     public function test_configured_summary_instruction_reaches_payload(): void {
         global $USER;

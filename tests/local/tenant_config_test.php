@@ -81,4 +81,38 @@ final class tenant_config_test extends \advanced_testcase {
         $this->assertSame(1, tenant_config::get('aiprovider_datacurso', 42, 'ratelimit_local_coursegen_enable'));
         $this->assertEquals(1, tenant_config::get_all('aiprovider_datacurso', 42)['ratelimit_local_coursegen_enable']);
     }
+
+    /**
+     * get_stored() returns what the tenant stored, as stored, and null instead of the site value.
+     */
+    public function test_get_stored_neither_decodes_nor_falls_back(): void {
+        $this->resetAfterTest();
+
+        set_config('licenseregion', '1', 'aiprovider_datacurso');
+        $this->assertNull(tenant_config::get_stored('aiprovider_datacurso', 42, 'licenseregion'));
+
+        tenant_config::set('aiprovider_datacurso', 42, 'licenseregion', '0');
+        $this->assertSame('0', tenant_config::get_stored('aiprovider_datacurso', 42, 'licenseregion'));
+    }
+
+    /**
+     * delete_names() removes the names for every tenant, or only for the tenant given.
+     */
+    public function test_delete_names_for_one_tenant_or_all(): void {
+        $this->resetAfterTest();
+
+        foreach ([42, 7] as $tenantid) {
+            tenant_config::set('aiprovider_datacurso', $tenantid, 'licenseregion', '1');
+            tenant_config::set('aiprovider_datacurso', $tenantid, 'licensekey', 'KEY-' . $tenantid);
+        }
+
+        tenant_config::delete_names('aiprovider_datacurso', ['licenseregion'], 42);
+        $this->assertNull(tenant_config::get_stored('aiprovider_datacurso', 42, 'licenseregion'));
+        $this->assertSame('1', tenant_config::get_stored('aiprovider_datacurso', 7, 'licenseregion'));
+        $this->assertSame('KEY-42', tenant_config::get_stored('aiprovider_datacurso', 42, 'licensekey'));
+
+        tenant_config::delete_names('aiprovider_datacurso', ['licenseregion']);
+        $this->assertNull(tenant_config::get_stored('aiprovider_datacurso', 7, 'licenseregion'));
+        $this->assertSame('KEY-7', tenant_config::get_stored('aiprovider_datacurso', 7, 'licensekey'));
+    }
 }

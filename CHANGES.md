@@ -1,3 +1,41 @@
+## [1.5.3-wp] - 2026-10-07
+
+**Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.
+
+Brings `MOODLE_405_STABLE` up to 1.5.3 (entries 1.5.0 to 1.5.3 below) into the Workplace branch.
+
+### Changed
+- **The region of the licence is resolved once per tenant**
+  The source resolves the region once and keeps it in the site configuration, because a site has a single licence. A Workplace site has one licence per tenant, so a region kept for the whole site let the first tenant to reach the shop decide where every other tenant's requests went. The region is now kept per tenant, with the fingerprint of the licence that tenant uses (its own, or the site licence it falls back to), and the shop is asked with that same licence. A site without tenancy keeps it in the site configuration exactly as the source does. Saving the licence on the tenant configuration page drops the region kept for that tenant; saving the site licence drops it everywhere.
+- **The provider's own actions use the tenant licence**
+  Text generation, summaries and image generation sent the site licence in the `License-Key` header while the region was resolved with the tenant licence, so a tenant with its own licence spent the site's credits. They now send the licence of the user's tenant, falling back to the site licence.
+
+### Fixed
+- **Consumption table on sites upgrading from 1.4.3-wp**
+  The source creates the consumption history table in an upgrade step numbered `2026090100`, lower than the `2026091601` that the Workplace branch had already reached, so a Workplace site upgrading from 1.4.3-wp skipped it and the history page failed reading a table that did not exist. A new step creates the table on those sites.
+- **Configuration acceptance test**
+  `tests/behat/configuration.feature` still drove the "Configuration" tab and the field names of the site-wide form that was replaced by the tenant configuration page. It now drives the tenant configuration page.
+
+## [1.5.3] - 2026-10-05
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Fixed
+- **A fresh install no longer prints a debugging message**
+  The `service` field of the consumption table was declared as a required text column with an empty default, which XMLDB does not accept: every new install printed a debugging message, and `moodle-plugin-ci` stops the install of any plugin that depends on this one when it sees it. The empty default is gone. Sites that already have the table are unaffected, because the upgrade step created the field without a default.
+
+## [1.5.2] - 2026-09-30
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Changed
+- **The region of the licence is resolved once and kept**
+  Which region serves a site was asked of the shop while building every API client, so each call to an AI service paid a round trip to `shop.datacurso.com` first, and a shop that did not answer took every service down with it although the services themselves were up. The region is a property of the licence, not of the request: it is now resolved once, kept with a fingerprint of the licence it belongs to, and asked for again only when that licence changes or after a week. On a site of the pilot the first resolution costs 1.4 seconds and every one after it costs a millisecond.
+  When the region is already known and the shop cannot be reached, the known region is used and the service keeps working. When it is not known —a licence that has never reached the shop— the call still fails rather than guess: choosing a region wrongly would send the data of a site to a deployment it may not be allowed to reach.
+  Saving the licence key drops the region resolved for the previous one, so a change of licence is seen at once instead of waiting for the answer to go stale. The week is there for the other case: a site whose region is moved between deployments without its key changing.
+- **The privacy declaration names the whole chain**
+  The declaration of the AI services said the request data reaches Datacurso and stopped there, although those services do not generate the answers themselves: they hand the request on to a large language model of a third party, today Google Gemini or OpenAI depending on the model, which may sit outside the European Union. The declaration now says so, and says what that provider does not receive: the identifier of the user, the identifier of the site and the timezone are stripped before the request leaves. It also stops claiming that every erasure request goes through support, which is no longer true of the AI tutor: the platform now asks the service to delete the conversations of a person or of a course on its own.
+
 ## [1.5.1-wp] - 2026-09-07
 
 **Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.

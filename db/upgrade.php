@@ -223,28 +223,7 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
 
     if ($oldversion < 2026090100) {
         // Local mirror of the external consumption history, synced on demand for Report Builder.
-        $table = new xmldb_table('aiprovider_datacurso_consumption');
-
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('externalid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
-        $table->add_field('service', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('action', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
-        $table->add_field('credits', XMLDB_TYPE_NUMBER, '10, 2', null, XMLDB_NOTNULL, null, '0');
-        $table->add_field('balance', XMLDB_TYPE_NUMBER, '12, 2', null, XMLDB_NOTNULL, null, '0');
-        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
-
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
-        $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
-        $table->add_key('externalid', XMLDB_KEY_UNIQUE, ['externalid']);
-
-        $table->add_index('timecreated', XMLDB_INDEX_NOTUNIQUE, ['timecreated']);
-        $table->add_index('service', XMLDB_INDEX_NOTUNIQUE, ['service']);
-        $table->add_index('action', XMLDB_INDEX_NOTUNIQUE, ['action']);
-
-        if (!$dbman->table_exists($table)) {
-            $dbman->create_table($table);
-        }
+        aiprovider_datacurso_create_consumption_table($dbman);
 
         upgrade_plugin_savepoint(true, 2026090100, 'aiprovider', 'datacurso');
     }
@@ -255,5 +234,45 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026091601, 'aiprovider', 'datacurso');
     }
 
+    if ($oldversion < 2026100701) {
+        // The 2026090100 step above comes from MOODLE_405_STABLE, whose versions are lower than the
+        // 2026091601 that WORKPLACE_405_STABLE had already reached: a Workplace site upgrading from
+        // 1.4.3-wp skips it and never gets the consumption table. Create it here for those sites.
+        aiprovider_datacurso_create_consumption_table($dbman);
+
+        upgrade_plugin_savepoint(true, 2026100701, 'aiprovider', 'datacurso');
+    }
+
     return true;
+}
+
+/**
+ * Create the local mirror of the consumption history when it does not exist yet.
+ *
+ * @param database_manager $dbman
+ */
+function aiprovider_datacurso_create_consumption_table(database_manager $dbman): void {
+    // Local mirror of the external consumption history, synced on demand for Report Builder.
+    $table = new xmldb_table('aiprovider_datacurso_consumption');
+
+    $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+    $table->add_field('externalid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+    $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+    $table->add_field('service', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, null);
+    $table->add_field('action', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+    $table->add_field('credits', XMLDB_TYPE_NUMBER, '10, 2', null, XMLDB_NOTNULL, null, '0');
+    $table->add_field('balance', XMLDB_TYPE_NUMBER, '12, 2', null, XMLDB_NOTNULL, null, '0');
+    $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+    $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+    $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+    $table->add_key('externalid', XMLDB_KEY_UNIQUE, ['externalid']);
+
+    $table->add_index('timecreated', XMLDB_INDEX_NOTUNIQUE, ['timecreated']);
+    $table->add_index('service', XMLDB_INDEX_NOTUNIQUE, ['service']);
+    $table->add_index('action', XMLDB_INDEX_NOTUNIQUE, ['action']);
+
+    if (!$dbman->table_exists($table)) {
+        $dbman->create_table($table);
+    }
 }
