@@ -60,7 +60,7 @@ if ($hassiteconfig) {
             'aiprovider_datacurso/ratelimits_moved',
             new lang_string('ratelimits_heading', 'aiprovider_datacurso'),
             new lang_string('ratelimits_moved_desc', 'aiprovider_datacurso', (object) [
-                'url' => (new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'config']))->out(),
+                'url' => (new moodle_url('/ai/provider/datacurso/admin/settings_tenant.php'))->out(),
             ])
         ));
     }

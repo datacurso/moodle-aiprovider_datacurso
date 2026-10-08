@@ -18,7 +18,7 @@ namespace aiprovider_datacurso;
 
 use core\http_client;
 use core_ai\process_base;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\RequestOptions;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -36,12 +36,27 @@ use GuzzleHttp\Psr7\Uri;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 abstract class abstract_processor extends process_base {
+    /** @var UriInterface|null Endpoint resolved for this processor instance, see resolve_endpoint(). */
+    private ?UriInterface $resolvedendpoint = null;
+
     /**
      * Returns the endpoint of the specific AI service.
      *
      * @return UriInterface
      */
     abstract protected function get_endpoint(): UriInterface;
+
+    /**
+     * Resolves the endpoint once per processor instance.
+     *
+     * Subclasses keep overriding get_endpoint(); resolving it may hit the network (license
+     * check), so every call site in the request flow must go through this cached accessor.
+     *
+     * @return UriInterface
+     */
+    protected function resolve_endpoint(): UriInterface {
+        return $this->resolvedendpoint ??= $this->get_endpoint();
+    }
 
     /**
      * Builds the JSON body to be sent to the AI service.
@@ -93,7 +108,7 @@ abstract class abstract_processor extends process_base {
         // Forward the per-service rate-limit config so plugins-ai-server enforces the credit limit
         // for the provider's own actions (text/summary/image) and accumulates the window counter.
         // Returns an empty array when the limit is disabled for this service.
-        $path = $this->get_endpoint()->getPath();
+        $path = $this->resolve_endpoint()->getPath();
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
         // Resolve the sub-action (text vs image) so the look-ahead credit estimate is correct.
         $actionkey = \aiprovider_datacurso\local\ratelimiter::resolve_action_key($serviceid, $path);
@@ -102,7 +117,7 @@ abstract class abstract_processor extends process_base {
 
         try {
             $response = $client->post(
-                $this->get_endpoint(),
+                $this->resolve_endpoint(),
                 [
                     RequestOptions::HEADERS => array_merge(
                         [
@@ -115,11 +130,13 @@ abstract class abstract_processor extends process_base {
                     RequestOptions::HTTP_ERRORS => false,
                 ]
             );
-        } catch (RequestException $e) {
+        } catch (TransferException $e) {
+            // The transport message may contain hostnames or internal details: keep it for developers only.
+            debugging('Datacurso AI transport error: ' . $e->getMessage(), DEBUG_DEVELOPER);
             return [
                 'success' => false,
                 'errorcode' => (int)($e->getCode() ?: 500),
-                'errormessage' => $e->getMessage(),
+                'errormessage' => get_string('serviceunavailable', 'aiprovider_datacurso'),
             ];
         }
 
@@ -144,33 +161,42 @@ abstract class abstract_processor extends process_base {
 
         $decoded = !empty($body) ? json_decode($body) : null;
 
-        // Per-plugin rate limit exceeded: show a clear, localized message with the retry time
-        // (same handling as datacurso_api_base for the other plugins).
-        if ($status === 403 && isset($decoded->detail) && $decoded->detail === 'rate_limit_exceeded') {
-            $resetat = (int)($decoded->reset_at ?? 0);
-            $retryat = $resetat > 0
-                ? userdate($resetat, get_string('strftimedatetime', 'langconfig'))
-                : '';
-            return [
-                'success' => false,
-                'errorcode' => 403,
-                'errormessage' => get_string('error_ratelimit_exceeded', 'aiprovider_datacurso', $retryat),
-            ];
-        }
-
-        $message = 'Unknown error';
-        if (!empty($body)) {
-            if (isset($decoded->error->message)) {
-                $message = $decoded->error->message;
-            } else {
-                $message = $body;
+        // Actionable 403 rejections (same handling as datacurso_api_base for the other plugins):
+        // rate limit exceeded (with the retry time), credits exhausted and license not allowed.
+        if ($status === 403 && isset($decoded->detail)) {
+            $actionable = null;
+            if ($decoded->detail === 'rate_limit_exceeded') {
+                $resetat = (int)($decoded->reset_at ?? 0);
+                $retryat = $resetat > 0
+                    ? userdate($resetat, get_string('strftimedatetime', 'langconfig'))
+                    : '';
+                $actionable = get_string('error_ratelimit_exceeded', 'aiprovider_datacurso', $retryat);
+            } else if ($decoded->detail === 'tokens_not_sufficient') {
+                $actionable = get_string('notenoughtokens', 'aiprovider_datacurso');
+            } else if ($decoded->detail === 'license_not_allowed') {
+                $actionable = get_string('license_not_allowed', 'aiprovider_datacurso');
+            }
+            if ($actionable !== null) {
+                return [
+                    'success' => false,
+                    'errorcode' => 403,
+                    'errormessage' => $actionable,
+                ];
             }
         }
 
+        // Never echo the upstream body to the end user: core_ai shows errormessage in the browser and
+        // persists it. The raw body (truncated) is only made available to developers via debugging().
+        $status = $status ?: 500;
+        debugging(
+            'Datacurso AI service returned HTTP ' . $status . ': ' . substr((string)$body, 0, 1000),
+            DEBUG_DEVELOPER
+        );
+
         return [
             'success' => false,
-            'errorcode' => $status ?: 500,
-            'errormessage' => $message,
+            'errorcode' => $status,
+            'errormessage' => get_string('httperror', 'aiprovider_datacurso', $status),
         ];
     }
 }

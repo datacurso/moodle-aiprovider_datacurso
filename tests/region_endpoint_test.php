@@ -14,31 +14,26 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace aiprovider_datacurso\output;
-
-use renderable;
-use templatable;
-use renderer_base;
+namespace aiprovider_datacurso;
 
 /**
- * Page to render the AI consumption information.
- *
- * This class provides the context data for the Mustache template
- * used to render the AI consumption page.
+ * Region endpoint equivalence between the standard and European deployments.
  *
  * @package    aiprovider_datacurso
- * @category   output
- * @copyright  2025 Industria Elearning
+ * @category   test
+ * @copyright  2026 Datacurso
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @coversNothing
  */
-class consumption_page implements renderable, templatable {
+final class region_endpoint_test extends \advanced_testcase {
     /**
-     * Export data for the template.
-     *
-     * @param renderer_base $output The renderer in use.
-     * @return array Data to pass to the Mustache.
+     * API-CTR-004: [Pendiente:skip] region selection standard vs European.
      */
-    public function export_for_template(renderer_base $output): array {
-        return [];
+    public function test_european_region_routing(): void {
+        $this->markTestSkipped(
+            'European region is not deployed for the course-creation service: both regions point to '
+            . 'the same URL, so selecting Europe does not route to a European server. Skipped until a '
+            . 'real European endpoint exists for that service.'
+        );
     }
 }

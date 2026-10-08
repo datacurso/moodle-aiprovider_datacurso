@@ -24,6 +24,7 @@ use core_privacy\local\request\userlist;
 use core_privacy\local\metadata\provider as metadata_provider;
 use core_privacy\local\request\core_userlist_provider;
 use core_privacy\local\request\plugin\provider as plugin_provider;
+use core_privacy\local\request\transform;
 use core_privacy\local\request\writer;
 use stdClass;
 
@@ -37,14 +38,53 @@ use stdClass;
 class provider implements core_userlist_provider, metadata_provider, plugin_provider {
     #[\Override]
     public static function get_metadata(collection $collection): collection {
-        $collection->add_external_location_link('aiprovider_datacurso', [
-            'prompt' => 'privacy:metadata:aiprovider_datacurso:prompt',
-            'numberimages' => 'privacy:metadata:aiprovider_datacurso:numberimages',
-            'userid' => 'privacy:metadata:aiprovider_datacurso:userid',
-        ], 'privacy:metadata:aiprovider_datacurso:externalpurpose');
+        // AI services (plugins-ai / eu.plugins-ai): text, summary and image generation requests
+        // sent by the processors, plus every request made through ai_services_api.
+        $collection->add_external_location_link('datacurso_ai_services', [
+            'prompt' => 'privacy:metadata:datacurso_ai_services:prompt',
+            'messages' => 'privacy:metadata:datacurso_ai_services:messages',
+            'model' => 'privacy:metadata:datacurso_ai_services:model',
+            'n' => 'privacy:metadata:datacurso_ai_services:n',
+            'size' => 'privacy:metadata:datacurso_ai_services:size',
+            'userid' => 'privacy:metadata:datacurso_ai_services:userid',
+            'site_id' => 'privacy:metadata:datacurso_ai_services:site_id',
+            'site_url' => 'privacy:metadata:datacurso_ai_services:site_url',
+            'timezone' => 'privacy:metadata:datacurso_ai_services:timezone',
+            'lang' => 'privacy:metadata:datacurso_ai_services:lang',
+            'file' => 'privacy:metadata:datacurso_ai_services:file',
+            'licensekey' => 'privacy:metadata:datacurso_ai_services:licensekey',
+            'ratelimit' => 'privacy:metadata:datacurso_ai_services:ratelimit',
+        ], 'privacy:metadata:datacurso_ai_services');
 
-        // No local database tables store personal data: the rate limit is now enforced and
-        // accumulated by the external Datacurso service (token-manager).
+        // Course creation service (course-ai-v2): requests made through ai_course_api.
+        $collection->add_external_location_link('datacurso_course_service', [
+            'payload' => 'privacy:metadata:datacurso_course_service:payload',
+            'file' => 'privacy:metadata:datacurso_course_service:file',
+            'userid' => 'privacy:metadata:datacurso_course_service:userid',
+            'site_id' => 'privacy:metadata:datacurso_course_service:site_id',
+            'site_url' => 'privacy:metadata:datacurso_course_service:site_url',
+            'timezone' => 'privacy:metadata:datacurso_course_service:timezone',
+            'lang' => 'privacy:metadata:datacurso_course_service:lang',
+            'licensekey' => 'privacy:metadata:datacurso_course_service:licensekey',
+            'ratelimit' => 'privacy:metadata:datacurso_course_service:ratelimit',
+        ], 'privacy:metadata:datacurso_course_service');
+
+        // Datacurso shop: license validation, credit balance and the per-user consumption ledger
+        // that is mirrored locally.
+        $collection->add_external_location_link('datacurso_shop', [
+            'licensekey' => 'privacy:metadata:datacurso_shop:licensekey',
+        ], 'privacy:metadata:datacurso_shop');
+
+        // Local mirror of the credit-consumption history used for the admin reports.
+        $collection->add_database_table('aiprovider_datacurso_consumption', [
+            'externalid' => 'privacy:metadata:aiprovider_datacurso_consumption:externalid',
+            'userid' => 'privacy:metadata:aiprovider_datacurso_consumption:userid',
+            'service' => 'privacy:metadata:aiprovider_datacurso_consumption:service',
+            'action' => 'privacy:metadata:aiprovider_datacurso_consumption:action',
+            'credits' => 'privacy:metadata:aiprovider_datacurso_consumption:credits',
+            'balance' => 'privacy:metadata:aiprovider_datacurso_consumption:balance',
+            'timecreated' => 'privacy:metadata:aiprovider_datacurso_consumption:timecreated',
+        ], 'privacy:metadata:aiprovider_datacurso_consumption');
 
         return $collection;
     }
@@ -69,6 +109,19 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         }
     }
 
+    /**
+     * Export the user data held locally by this plugin.
+     *
+     * Remote data (prompts and consumption ledger retained by the Datacurso services) is not
+     * reachable from here yet: the services expose no privacy endpoints. Once they do
+     * (GET /privacy/users/export on plugins-ai and course-ai-v2, GET tokens/usuario-datos on the
+     * shop, authenticated by License-Key and keyed by (site_id, userid)), a
+     * self::request_remote_export($userid) call should be added here, wrapped in
+     * try/catch (\Throwable) + debugging() so a remote failure never breaks the Moodle export.
+     * Until then, erasure and export requests for remote data are handled through Datacurso support.
+     *
+     * @param approved_contextlist $contextlist The approved contexts to export information for.
+     */
     #[\Override]
     public static function export_user_data(approved_contextlist $contextlist) {
         global $DB;
@@ -80,14 +133,27 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
         $tables = static::get_table_user_map($user);
 
         foreach ($tables as $table => $filterparams) {
+            // Collect every row first and export them in a single call: export_data() writes to a
+            // path derived from the subcontext, so calling it once per record would make each row
+            // overwrite the previous one and only the last would survive in the export.
+            $rows = [];
             $records = $DB->get_recordset($table, $filterparams);
             foreach ($records as $record) {
-                writer::with_context($context)->export_data([
-                    get_string('privacy:metadata:aiprovider_datacurso', 'aiprovider_datacurso'),
-                    get_string('privacy:metadata:' . $table, 'aiprovider_datacurso'),
-                ], $record);
+                if (isset($record->timecreated)) {
+                    $record->timecreated = transform::datetime($record->timecreated);
+                }
+                $rows[] = $record;
             }
             $records->close();
+
+            if (empty($rows)) {
+                continue;
+            }
+
+            writer::with_context($context)->export_data([
+                get_string('privacy:metadata:aiprovider_datacurso', 'aiprovider_datacurso'),
+                get_string('privacy:metadata:' . $table, 'aiprovider_datacurso'),
+            ], (object) ['records' => $rows]);
         }
     }
 
@@ -124,6 +190,14 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
 
     /**
      * Delete all user data from this plugin tables for a given user.
+     *
+     * Remote erasure is not implemented yet because the Datacurso services expose no privacy
+     * endpoints. The intended contract, to be wired here once available, is
+     * self::request_remote_erasure($userid) right after the local delete_records() loop:
+     * DELETE /privacy/users on plugins-ai and course-ai-v2, DELETE tokens/usuario-datos on the shop;
+     * authenticated by License-Key, keyed by (site_id, userid), idempotent, 204 on success. The
+     * call must be wrapped in try/catch (\Throwable) + debugging() so a remote failure never blocks
+     * the Moodle deletion. Until then, remote erasure requests are handled through Datacurso support.
      *
      * @param int $userid The user ID
      * @return void
@@ -167,7 +241,8 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
      * @return array<string,array<string,int>>
      */
     protected static function get_table_user_map(stdClass $user): array {
-        // No local tables store personal data anymore (rate limit moved to the external service).
-        return [];
+        return [
+            'aiprovider_datacurso_consumption' => ['userid' => (int) $user->id],
+        ];
     }
 }

@@ -136,6 +136,31 @@ class settings_tenant_form extends \moodleform {
                 0
             );
 
+            // Credits per action: bold title in the label column, description alongside.
+            $mform->addElement(
+                'static',
+                "cpahead_{$sid}",
+                \html_writer::tag(
+                    'strong',
+                    get_string('ratelimit_creditperaction', 'aiprovider_datacurso'),
+                    ['class' => 'h5']
+                ),
+                \html_writer::tag(
+                    'span',
+                    get_string('ratelimit_creditperaction_desc', 'aiprovider_datacurso'),
+                    ['class' => 'text-muted']
+                )
+            );
+            $mform->hideIf("cpahead_{$sid}", "ratelimit_{$sid}_enable", 'eq', 0);
+
+            foreach (\aiprovider_datacurso\provider::get_actions_for_service($sid) as $action) {
+                $key = $action['key'];
+                $mform->addElement('text', "credit[{$sid}][{$key}]", (string) $action['name'], ['size' => 8]);
+                $mform->setType("credit[{$sid}][{$key}]", PARAM_INT);
+                $mform->addHelpButton("credit[{$sid}][{$key}]", 'ratelimit_creditperaction', 'aiprovider_datacurso');
+                $mform->hideIf("credit[{$sid}][{$key}]", "ratelimit_{$sid}_enable", 'eq', 0);
+            }
+
             $classname = "\\aiprovider_datacurso\\local\\ratelimit\\{$sid}";
             if (class_exists($classname)) {
                 $serviceconfig = new $classname();
@@ -147,6 +172,27 @@ class settings_tenant_form extends \moodleform {
         }
 
         $this->add_action_buttons(true);
+    }
+
+    /**
+     * Reject negative per-action credit costs.
+     *
+     * @param array $data
+     * @param array $files
+     * @return array
+     */
+    public function validation($data, $files): array {
+        $errors = parent::validation($data, $files);
+
+        foreach (($data['credit'] ?? []) as $sid => $map) {
+            foreach ((array) $map as $key => $value) {
+                if ((int) $value < 0) {
+                    $errors["credit[{$sid}][{$key}]"] = get_string('error_positivevalue', 'aiprovider_datacurso');
+                }
+            }
+        }
+
+        return $errors;
     }
 
     /**
@@ -221,6 +267,21 @@ class settings_tenant_form extends \moodleform {
             }
             if ($windowunit !== null) {
                 $data->{"ratelimit_{$sid}_window_unit"} = $windowunit;
+            }
+
+            // Credits per action: stored map (tenant override or site-wide fallback),
+            // merged with the catalog default for any key not yet configured.
+            $storedcredit = \aiprovider_datacurso\local\tenant_config::get(
+                'aiprovider_datacurso',
+                $tenantid,
+                "ratelimit_{$sid}_creditperaction"
+            );
+            $storedcredit = (is_object($storedcredit) || is_array($storedcredit)) ? (array) $storedcredit : [];
+
+            $data->credit[$sid] = [];
+            foreach (\aiprovider_datacurso\provider::get_actions_for_service($sid) as $action) {
+                $key = $action['key'];
+                $data->credit[$sid][$key] = isset($storedcredit[$key]) ? (int) $storedcredit[$key] : (int) $action['default'];
             }
 
             $classname = "\\aiprovider_datacurso\\local\\ratelimit\\{$sid}";

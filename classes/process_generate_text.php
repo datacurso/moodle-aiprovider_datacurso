@@ -42,7 +42,9 @@ class process_generate_text extends abstract_processor {
 
     #[\Override]
     protected function get_system_instruction(): string {
-        return get_config('aiprovider_datacurso', 'action_generate_text_systeminstruction');
+        $class = get_class($this->action);
+        $actionname = substr($class, strrpos($class, '\\') + 1);
+        return (string) get_config('aiprovider_datacurso', "action_{$actionname}_instruction");
     }
 
     /**
@@ -91,7 +93,7 @@ class process_generate_text extends abstract_processor {
 
         return new Request(
             'POST',
-            $this->get_endpoint(),
+            $this->resolve_endpoint(),
             [
                 'Content-Type' => 'application/json',
                 'License-Key' => $licensekey,

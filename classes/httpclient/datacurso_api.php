@@ -60,8 +60,19 @@ class datacurso_api {
         $this->licensekey = $licensekey ?? trim((string)$tenantlicense);
 
         if (empty($this->licensekey)) {
-            throw new moodle_exception('licensekey_missing', 'aiprovider_datacurso');
+            throw new moodle_exception('invalidlicensekey', 'aiprovider_datacurso');
         }
+    }
+
+    /**
+     * Create the cURL wrapper used for the requests.
+     *
+     * Seam for tests, so the transport can be replaced without touching the network.
+     *
+     * @return \curl
+     */
+    protected function create_curl(): \curl {
+        return new \curl();
     }
 
     /**
@@ -137,7 +148,7 @@ class datacurso_api {
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
 
-        $curl = new \curl();
+        $curl = $this->create_curl();
         $options = [
             'CURLOPT_RETURNTRANSFER' => true,
             'CURLOPT_HTTPHEADER' => $headers,
@@ -149,21 +160,36 @@ class datacurso_api {
             $response = $curl->get($url, [], $options);
         }
 
-        // Get code HTTP y handle errors.
+        // Handle transport and HTTP errors. Exception messages are localized and never include the
+        // request URL, the response body or the transport error text (which may contain hostnames);
+        // those details are only made available to developers via debugging().
         $info = $curl->get_info();
-        $httpcode = $info['http_code'] ?? 0;
+        $httpcode = (int)($info['http_code'] ?? 0);
 
         if ($curl->error) {
-            throw new moodle_exception("cURL error: {$curl->error}");
+            debugging(
+                "Datacurso shop API {$method} request failed: cURL errno {$curl->errno} ({$curl->error})",
+                DEBUG_DEVELOPER
+            );
+            throw new moodle_exception('curlerror', 'aiprovider_datacurso', '', (int)$curl->errno);
         }
 
         if ($httpcode >= 400) {
-            throw new moodle_exception("HTTP error {$httpcode} from {$url}");
+            debugging(
+                "Datacurso shop API {$method} request returned HTTP {$httpcode} (" . strlen((string)$response) . ' bytes)',
+                DEBUG_DEVELOPER
+            );
+            throw new moodle_exception('httperror', 'aiprovider_datacurso', '', $httpcode);
         }
 
-        $decoded = json_decode($response, true);
-        if ($decoded === null) {
-            throw new moodle_exception("Invalid JSON response from {$url}: {$response}");
+        $decoded = json_decode((string)$response, true);
+        if (!is_array($decoded)) {
+            debugging(
+                "Datacurso shop API {$method} request returned invalid JSON: " . json_last_error_msg()
+                    . ' (' . strlen((string)$response) . ' bytes)',
+                DEBUG_DEVELOPER
+            );
+            throw new moodle_exception('jsondecodeerror', 'aiprovider_datacurso', '', json_last_error_msg());
         }
 
         return $decoded;
