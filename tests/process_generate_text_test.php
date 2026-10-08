@@ -284,10 +284,9 @@ final class process_generate_text_test extends \advanced_testcase {
     /**
      * The admin-configured system instruction must reach the payload.
      *
-     * MDL-UNIT-012: [Pendiente:fail] the processor reads config key
-     * 'action_generate_text_systeminstruction' while the admin form writes
-     * 'action_generate_text_instruction', so the instruction never reaches the model.
-     * This test asserts the correct behavior and is red by design until the defect is fixed.
+     * MDL-UNIT-012: the processor reads the same key the admin form writes
+     * ('action_generate_text_instruction'). It used to read 'action_generate_text_systeminstruction',
+     * so the instruction never reached the model.
      */
     public function test_configured_system_instruction_reaches_payload(): void {
         $this->resetAfterTest();
@@ -318,8 +317,7 @@ final class process_generate_text_test extends \advanced_testcase {
     /**
      * The request body carries the system instruction then the user prompt, in order.
      *
-     * API-CTR-002: [Pendiente:fail] payload ordering depends on the system-instruction defect
-     * (see MDL-UNIT-012); the instruction arrives empty, so this test is red by design.
+     * API-CTR-002: depends on the configured instruction being read (see MDL-UNIT-012).
      */
     public function test_payload_has_system_then_user_message(): void {
         $this->resetAfterTest();
