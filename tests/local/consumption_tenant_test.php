@@ -36,14 +36,15 @@ final class consumption_tenant_test extends \advanced_testcase {
      * @param int $externalid
      * @param int $tenantid
      * @param float $credits
+     * @param string $licence Fingerprint of the licence that paid; empty for the one of the viewer in these tests.
      */
-    private function consumption(int $externalid, int $tenantid, float $credits): void {
+    private function consumption(int $externalid, int $tenantid, float $credits, string $licence = ''): void {
         global $DB;
         $DB->insert_record('aiprovider_datacurso_consumption', (object)[
             'externalid' => $externalid,
             'userid' => 0,
             'tenant_id' => $tenantid,
-            'licence' => '',
+            'licence' => $licence,
             'service' => 'local_coursegen',
             'action' => '/course/execute',
             'credits' => $credits,
@@ -62,6 +63,24 @@ final class consumption_tenant_test extends \advanced_testcase {
 
         $this->consumption(1, $mine, 10);
         $this->consumption(2, $mine + 1000, 99);
+
+        $summary = consumption_service::get_summary('service');
+
+        $this->assertEquals(10, $summary['total']);
+    }
+
+    /**
+     * Consumption of the users of the tenant paid with another licence (a licence the tenant used
+     * before, or the one of another tenant) does not count for the licence the tenant uses now.
+     */
+    public function test_the_summary_counts_the_licence_of_the_tenant_only(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        set_config('licensekey', 'DC-CURRENT-LICENCE', 'aiprovider_datacurso');
+        $mine = tenant_resolver::get_tenant_id();
+
+        $this->consumption(1, $mine, 10, sha1('DC-CURRENT-LICENCE'));
+        $this->consumption(2, $mine, 99, sha1('DC-ANOTHER-LICENCE'));
 
         $summary = consumption_service::get_summary('service');
 

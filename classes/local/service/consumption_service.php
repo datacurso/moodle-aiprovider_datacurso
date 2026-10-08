@@ -137,9 +137,13 @@ class consumption_service {
         ?string $fromdate,
         ?string $todate
     ): array {
-        // Only the consumption of the tenant of the current user (0 on a site without tenancy).
-        $conditions = ['tenant_id = :tenantid'];
-        $params = ['tenantid' => \aiprovider_datacurso\local\tenant_resolver::get_tenant_id()];
+        // Only the consumption of the users of the tenant of the current user (0 on a site without
+        // tenancy), paid with the licence that tenant uses now.
+        $conditions = ['tenant_id = :tenantid', 'licence = :licence'];
+        $params = [
+            'tenantid' => \aiprovider_datacurso\local\tenant_resolver::get_tenant_id(),
+            'licence' => \aiprovider_datacurso\local\sync\consumption_sync::current_licence_fingerprint(),
+        ];
 
         if (!empty($service) && $service !== 'all') {
             $conditions[] = 'service = :service';

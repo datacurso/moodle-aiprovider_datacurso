@@ -165,16 +165,26 @@ class consumption_sync {
     }
 
     /**
-     * Fingerprint of the licence the history is requested with.
+     * Fingerprint of the licence the current user's requests are made with.
      *
      * The licence of the tenant of the current user, or the one of the site when the tenant has
-     * none: the same one the API client authenticates with.
+     * none: the same one the API client authenticates with. The history is synced and shown for
+     * this licence only.
+     *
+     * @return string Empty when no licence is configured.
+     */
+    public static function current_licence_fingerprint(): string {
+        $licence = trim((string) tenant_config::get('aiprovider_datacurso', tenant_resolver::get_tenant_id(), 'licensekey', ''));
+        return $licence === '' ? '' : sha1($licence);
+    }
+
+    /**
+     * Fingerprint of the licence the history is requested with.
      *
      * @return string
      */
     protected static function get_licence_fingerprint(): string {
-        $licence = trim((string) tenant_config::get('aiprovider_datacurso', tenant_resolver::get_tenant_id(), 'licensekey', ''));
-        return $licence === '' ? '' : sha1($licence);
+        return static::current_licence_fingerprint();
     }
 
     /**
