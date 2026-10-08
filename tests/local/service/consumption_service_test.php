@@ -56,6 +56,8 @@ final class consumption_service_test extends \advanced_testcase {
             $DB->insert_record('aiprovider_datacurso_consumption', (object) [
                 'externalid' => $externalid,
                 'userid' => $this->userid,
+                // The summary reads the tenant of the viewer (0 without tenancy).
+                'tenant_id' => \aiprovider_datacurso\local\tenant_resolver::get_tenant_id(),
                 'service' => $service,
                 'action' => $action,
                 'credits' => $credits,

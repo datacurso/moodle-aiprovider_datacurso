@@ -1,3 +1,15 @@
+## [1.5.4-wp] - 2026-10-08
+
+**Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.
+
+### Fixed
+- **The consumption history is read per tenant**: the local mirror of the consumption history kept no tenant and no licence. Each administrator synced the history of the licence of their own tenant into the same table, and the history, the charts and their totals showed the consumption of every licence of the site together. A single watermark for the whole table also meant that the history of a licence with lower ids than another one was never synced. Each record now keeps the tenant of the user who consumed and the fingerprint of the licence it was synced with; every licence keeps its own watermark; and the history, the charts and the user filter only show the tenant of the viewer. Records without a user belong to the tenant that holds the licence.
+- **The user filter of the charts only offers users of the tenant**: it searched every user of the site, so the administrator of a tenant could look up the names of the users of other tenants.
+
+### Changed
+- **Upgrade step `2026100800`** adds the tenant and licence columns to the consumption mirror and empties it: the rows already mirrored cannot be attributed to a tenant. The history is pulled again from the service the next time the history page is opened.
+- **Privacy**: the tenant of the consumption record is declared to the privacy API.
+
 ## [1.5.3-wp] - 2026-10-07
 
 **Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.

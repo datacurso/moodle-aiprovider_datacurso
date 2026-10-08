@@ -17,6 +17,8 @@
 namespace aiprovider_datacurso\local\sync;
 
 use aiprovider_datacurso\httpclient\datacurso_api;
+use aiprovider_datacurso\local\tenant_config;
+use aiprovider_datacurso\local\tenant_resolver;
 
 /**
  * Keeps the local consumption mirror table up to date from the external Datacurso API.
@@ -25,6 +27,11 @@ use aiprovider_datacurso\httpclient\datacurso_api;
  * local DB table. This service is called when the report page is opened: it pulls the records
  * created since the last synced one (or performs a full backfill on the first run) into
  * {aiprovider_datacurso_consumption}, so the report always renders fresh data without cron.
+ *
+ * On Workplace each tenant may hold its own licence, and the service answers with the history of
+ * the licence the request is made with. So each record keeps the fingerprint of that licence, which
+ * gives every licence its own watermark, and the tenant of the user who consumed, which is what the
+ * report and the charts filter on.
  *
  * @package    aiprovider_datacurso
  * @copyright  2025 Josue <https://datacurso.com>
@@ -83,9 +90,15 @@ class consumption_sync {
      * @param \moodle_database $db
      */
     private static function pull(\moodle_database $db): void {
-        $lastid = (int) $db->get_field_sql('SELECT MAX(externalid) FROM {' . self::TABLE . '}');
-
         $client = static::get_api_client();
+        $licence = static::get_licence_fingerprint();
+        $lastid = (int) $db->get_field_sql(
+            'SELECT MAX(externalid) FROM {' . self::TABLE . '} WHERE licence = :licence',
+            ['licence' => $licence]
+        );
+        // Records without a user belong to the licence, so to the tenant that holds it.
+        $tenants = [0 => tenant_resolver::get_tenant_id()];
+
         $newrecords = [];
         $seen = [];
         $reachedknown = false;
@@ -120,7 +133,12 @@ class consumption_sync {
                     continue;
                 }
                 $seen[$externalid] = true;
-                $newrecords[] = self::map_record($item);
+                $record = self::map_record($item);
+                $record->licence = $licence;
+                $owner = max(0, $record->userid);
+                $tenants[$owner] ??= tenant_resolver::get_tenant_id($owner);
+                $record->tenant_id = $tenants[$owner];
+                $newrecords[] = $record;
             }
 
             $totalpages = (int) ($response['paginacion']['total_paginas'] ?? 1);
@@ -129,9 +147,34 @@ class consumption_sync {
             }
         }
 
+        // The external id is unique across the mirror: a record already stored under another
+        // licence is not inserted again, which would make the whole insert fail.
+        // A full backfill can bring thousands of ids, so they are checked in chunks.
+        $stored = [];
+        foreach (array_chunk(array_keys($seen), 1000) as $chunk) {
+            [$insql, $params] = $db->get_in_or_equal($chunk);
+            foreach ($db->get_fieldset_select(self::TABLE, 'externalid', "externalid {$insql}", $params) as $id) {
+                $stored[(int) $id] = true;
+            }
+        }
+        $newrecords = array_filter($newrecords, static fn($record) => !isset($stored[$record->externalid]));
+
         if (!empty($newrecords)) {
             $db->insert_records(self::TABLE, $newrecords);
         }
+    }
+
+    /**
+     * Fingerprint of the licence the history is requested with.
+     *
+     * The licence of the tenant of the current user, or the one of the site when the tenant has
+     * none: the same one the API client authenticates with.
+     *
+     * @return string
+     */
+    protected static function get_licence_fingerprint(): string {
+        $licence = trim((string) tenant_config::get('aiprovider_datacurso', tenant_resolver::get_tenant_id(), 'licensekey', ''));
+        return $licence === '' ? '' : sha1($licence);
     }
 
     /**

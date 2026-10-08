@@ -137,8 +137,9 @@ class consumption_service {
         ?string $fromdate,
         ?string $todate
     ): array {
-        $conditions = [];
-        $params = [];
+        // Only the consumption of the tenant of the current user (0 on a site without tenancy).
+        $conditions = ['tenant_id = :tenantid'];
+        $params = ['tenantid' => \aiprovider_datacurso\local\tenant_resolver::get_tenant_id()];
 
         if (!empty($service) && $service !== 'all') {
             $conditions[] = 'service = :service';

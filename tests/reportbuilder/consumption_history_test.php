@@ -47,6 +47,7 @@ final class consumption_history_test extends \advanced_testcase {
         $DB->insert_record('aiprovider_datacurso_consumption', (object) [
             'externalid' => 1,
             'userid' => $user->id,
+            'tenant_id' => \aiprovider_datacurso\local\tenant_resolver::get_tenant_id(),
             'service' => 'local_coursegen',
             'action' => '/course/execute',
             'credits' => 10,

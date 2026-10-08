@@ -268,4 +268,61 @@ final class consumption_sync_test extends \advanced_testcase {
         $this->assertSame(0, $bytid[2]);
         $this->assertSame(0, $bytid[1]);
     }
+
+    /**
+     * Each licence keeps its own watermark: the history of a second licence is not cut short by
+     * the ids already synced for the first one.
+     */
+    public function test_each_licence_keeps_its_own_watermark(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        set_config('licensekey', 'DC-LICENCE-A', 'aiprovider_datacurso');
+        $this->sync_with([$this->make_response([$this->make_item(100), $this->make_item(99)])]);
+
+        set_config('licensekey', 'DC-LICENCE-B', 'aiprovider_datacurso');
+        $this->sync_with([$this->make_response([$this->make_item(50), $this->make_item(49)])]);
+
+        $this->assertSame(4, $DB->count_records('aiprovider_datacurso_consumption'));
+        $this->assertSame(2, $DB->count_records('aiprovider_datacurso_consumption', ['licence' => sha1('DC-LICENCE-B')]));
+        $this->assertSame(2, $DB->count_records('aiprovider_datacurso_consumption', ['licence' => sha1('DC-LICENCE-A')]));
+    }
+
+    /**
+     * A record is stored with the tenant of its user; one without a user goes to the tenant syncing.
+     */
+    public function test_records_keep_the_tenant_of_their_user(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+
+        $this->sync_with([$this->make_response([
+            $this->make_item(10, ['userid' => $user->id]),
+            $this->make_item(11, ['userid' => 0]),
+        ])]);
+
+        $expected = \aiprovider_datacurso\local\tenant_resolver::get_tenant_id((int)$user->id);
+        $this->assertEquals($expected, $DB->get_field('aiprovider_datacurso_consumption', 'tenant_id', ['externalid' => 10]));
+        $this->assertEquals(
+            \aiprovider_datacurso\local\tenant_resolver::get_tenant_id(),
+            $DB->get_field('aiprovider_datacurso_consumption', 'tenant_id', ['externalid' => 11])
+        );
+    }
+
+    /**
+     * A record already mirrored under another licence does not make the sync fail.
+     */
+    public function test_a_record_already_stored_under_another_licence_is_skipped(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $stored = (array)$this->make_record(7);
+        $stored['licence'] = sha1('DC-OTHER');
+        $DB->insert_record('aiprovider_datacurso_consumption', (object)$stored);
+
+        set_config('licensekey', 'DC-LICENCE-A', 'aiprovider_datacurso');
+        $this->sync_with([$this->make_response([$this->make_item(8), $this->make_item(7)])]);
+
+        $this->assertSame(2, $DB->count_records('aiprovider_datacurso_consumption'));
+        $this->assertEquals(sha1('DC-OTHER'), $DB->get_field('aiprovider_datacurso_consumption', 'licence', ['externalid' => 7]));
+    }
 }
