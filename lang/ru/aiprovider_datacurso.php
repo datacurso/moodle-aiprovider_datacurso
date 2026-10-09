@@ -91,6 +91,7 @@ $string['create_activity_workshop_noimage'] = 'Создать семинар с 
 $string['created'] = 'Создано';
 $string['curlerror'] = 'Ошибка cURL API Datacurso: {$a}';
 $string['datacurso:manage'] = 'Управление настройками провайдера ИИ';
+$string['datacurso:manageconfig'] = 'Управление настройками поставщика ИИ Datacurso';
 $string['datacurso:use'] = 'Использование сервисов ИИ Datacurso';
 $string['datacurso:viewreports'] = 'Просмотр отчетов об использовании ИИ';
 $string['day'] = 'день';

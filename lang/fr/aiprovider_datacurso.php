@@ -91,6 +91,7 @@ $string['create_activity_workshop_noimage'] = 'Créer un atelier avec IA (sans i
 $string['created'] = 'Créé';
 $string['curlerror'] = 'Erreur cURL de l\'API Datacurso : {$a}';
 $string['datacurso:manage'] = 'Gérer les paramètres du fournisseur IA';
+$string['datacurso:manageconfig'] = 'Gérer la configuration du fournisseur d\'IA Datacurso';
 $string['datacurso:use'] = 'Utiliser les services IA Datacurso';
 $string['datacurso:viewreports'] = 'Voir les rapports d\'utilisation de l\'IA';
 $string['day'] = 'jour';

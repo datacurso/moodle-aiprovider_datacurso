@@ -33,9 +33,17 @@ jobs:
     steps:
       - name: Call the service function
         id: add-version
+        env:
+          # Passed through the environment, never interpolated into the script, so the input
+          # cannot inject shell code; it is validated as a version tag before any use.
+          TAG_INPUT: ${{ github.event.inputs.tag }}
         run: |
-          if [[ ! -z "${{ github.event.inputs.tag }}" ]]; then
-            TAGNAME="${{ github.event.inputs.tag }}"
+          if [[ ! -z "$TAG_INPUT" ]]; then
+            if [[ ! "$TAG_INPUT" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.]+)?$ ]]; then
+              echo "The tag input is not a valid version tag!"
+              exit 1
+            fi
+            TAGNAME="$TAG_INPUT"
           elif [[ $GITHUB_REF = refs/tags/* ]]; then
             TAGNAME="${GITHUB_REF##*/}"
           fi

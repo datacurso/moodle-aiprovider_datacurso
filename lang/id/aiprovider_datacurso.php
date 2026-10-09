@@ -91,6 +91,7 @@ $string['create_activity_workshop_noimage'] = 'Buat lokakarya dengan AI (tanpa g
 $string['created'] = 'Dibuat';
 $string['curlerror'] = 'Kesalahan cURL API Datacurso: {$a}';
 $string['datacurso:manage'] = 'Kelola pengaturan penyedia AI';
+$string['datacurso:manageconfig'] = 'Mengelola konfigurasi penyedia AI Datacurso';
 $string['datacurso:use'] = 'Gunakan layanan AI Datacurso';
 $string['datacurso:viewreports'] = 'Lihat laporan penggunaan AI';
 $string['day'] = 'hari';
