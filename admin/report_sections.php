@@ -48,8 +48,11 @@ $PAGE->set_pagelayout('report');
 $PAGE->set_title('Datacurso AI Provider Reports');
 
 // Process the configuration form BEFORE any output so we can redirect after saving.
+// Viewing the reports is not enough to change the configuration: the write capability is
+// checked before the form is built, so a reports-only user neither sees it nor can post to it.
 $configform = null;
 if ($tab === 'config') {
+    \aiprovider_datacurso\form\config_form::require_manage_capability();
     $configform = new \aiprovider_datacurso\form\config_form($PAGE->url);
     if ($configform->is_cancelled()) {
         redirect($PAGE->url);
@@ -86,11 +89,13 @@ $tabs[] = new tabobject(
     get_string('link_listplugings', 'aiprovider_datacurso')
 );
 
-$tabs[] = new tabobject(
-    'config',
-    new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'config']),
-    get_string('link_config', 'aiprovider_datacurso')
-);
+if (\aiprovider_datacurso\form\config_form::can_manage()) {
+    $tabs[] = new tabobject(
+        'config',
+        new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'config']),
+        get_string('link_config', 'aiprovider_datacurso')
+    );
+}
 
 // Render page header and navigation.
 echo $OUTPUT->header();

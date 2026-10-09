@@ -15,32 +15,19 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Capability definitions for the Datacurso AI Provider plugin.
+ * Event observers for the Datacurso AI Provider plugin.
  *
  * @package    aiprovider_datacurso
- * @copyright  2025 Industria Elearning
+ * @copyright  2026 Datacurso
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$capabilities = [
-    // Capability to view AI usage reports and statistics.
-    'aiprovider/datacurso:viewreports' => [
-        'captype' => 'read',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'archetypes' => [
-            'manager' => CAP_ALLOW,
-        ],
-    ],
-
-    // Capability to change the license key and the per-service rate limits from the
-    // Configuration tab. Deliberately granted to no archetype: viewing the reports must not
-    // imply being able to change the site configuration.
-    'aiprovider/datacurso:manageconfig' => [
-        'riskbitmask' => RISK_CONFIG,
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'archetypes' => [],
+$observers = [
+    // Keep the pseudonym reverse map in step with user deletion.
+    [
+        'eventname' => '\core\event\user_deleted',
+        'callback' => '\aiprovider_datacurso\local\outbound_privacy::user_deleted',
     ],
 ];

@@ -208,17 +208,48 @@ class config_form extends \moodleform {
     }
 
     /**
+     * Whether the current user may change the configuration.
+     *
+     * Viewing the reports (`viewreports`) and changing the license key or the rate limits
+     * (`manageconfig`) are separate capabilities; the second one is a site configuration risk.
+     *
+     * @return bool
+     */
+    public static function can_manage(): bool {
+        return has_capability('aiprovider/datacurso:manageconfig', \context_system::instance());
+    }
+
+    /**
+     * Stop unless the current user may change the configuration.
+     *
+     * @throws \required_capability_exception
+     */
+    public static function require_manage_capability(): void {
+        require_capability('aiprovider/datacurso:manageconfig', \context_system::instance());
+    }
+
+    /**
      * Persist the submitted configuration.
      *
      * Ports the validation and set_config calls from the former ratelimit_config_api::save_config,
      * keeping the exact same config keys and JSON encodings.
      *
      * @param \stdClass $data Submitted data from get_data().
+     * @throws \required_capability_exception When the current user may not change the configuration.
      */
     public static function save(\stdClass $data): void {
-        // License key: write the same setting the native AI provider page uses.
+        self::require_manage_capability();
+
+        // License key: write the same setting the native AI provider page uses. The change is
+        // recorded in the config log so it is attributable, but the secret itself is never logged:
+        // both the old and the new value are masked, and an unchanged key adds no row.
         if (property_exists($data, 'licensekey')) {
-            set_config('licensekey', trim((string) $data->licensekey), 'aiprovider_datacurso');
+            $licensekey = trim((string) $data->licensekey);
+            $previous = (string) get_config('aiprovider_datacurso', 'licensekey');
+            set_config('licensekey', $licensekey, 'aiprovider_datacurso');
+            if ($licensekey !== $previous) {
+                add_to_config_log('licensekey', '********', '********', 'aiprovider_datacurso');
+            }
         }
 
         $validids = array_column(provider::get_services(), 'id');
@@ -242,14 +273,28 @@ class config_form extends \moodleform {
                 }
             }
 
-            set_config("ratelimit_{$sid}_enable", $enable, 'aiprovider_datacurso');
-            set_config("ratelimit_{$sid}_limit", $limit, 'aiprovider_datacurso');
-            set_config("ratelimit_{$sid}_creditperaction", json_encode($map), 'aiprovider_datacurso');
-            set_config(
+            self::set_config_audited("ratelimit_{$sid}_enable", $enable);
+            self::set_config_audited("ratelimit_{$sid}_limit", $limit);
+            self::set_config_audited("ratelimit_{$sid}_creditperaction", json_encode($map));
+            self::set_config_audited(
                 "ratelimit_{$sid}_window",
-                json_encode(['value' => $windowvalue, 'unit' => $windowunit]),
-                'aiprovider_datacurso'
+                json_encode(['value' => $windowvalue, 'unit' => $windowunit])
             );
         }
+    }
+
+    /**
+     * Store a plugin setting, writing a config_log row only when the value actually changes.
+     *
+     * Saving the form re-submits every service, so logging unconditionally would fill the audit
+     * trail with rows that record no change (as the licence key, which is audited the same way).
+     *
+     * @param string $name Setting name.
+     * @param mixed $value New value (stored as a string, as set_config does).
+     */
+    private static function set_config_audited(string $name, $value): void {
+        $previous = get_config('aiprovider_datacurso', $name);
+        $changed = $previous === false || (string) $previous !== (string) $value;
+        set_config($name, $value, 'aiprovider_datacurso', $changed);
     }
 }

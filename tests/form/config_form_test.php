@@ -132,4 +132,113 @@ final class config_form_test extends \advanced_testcase {
         set_config('licensekey', 'XYZ', 'aiprovider_datacurso');
         $this->assertSame('XYZ', config_form::current_data()['licensekey']);
     }
+
+    /**
+     * Fetch the config_log rows written by this plugin for a setting name, newest first.
+     *
+     * @param string $name
+     * @return \stdClass[]
+     */
+    private function config_log_rows(string $name): array {
+        global $DB;
+        return array_values($DB->get_records('config_log', ['plugin' => 'aiprovider_datacurso', 'name' => $name], 'id DESC'));
+    }
+
+    /**
+     * Every rate-limit setting saved from the Configuration tab is written to the config log,
+     * so changes are attributable like any other admin setting.
+     *
+     * AIP-SEC-005: configuration change audit.
+     */
+    public function test_rate_limit_changes_are_written_to_config_log(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        config_form::save((object) [
+            'enable' => ['local_coursegen' => 1],
+            'limit' => ['local_coursegen' => 250],
+            'windowvalue' => ['local_coursegen' => 3],
+            'windowunit' => ['local_coursegen' => 'days'],
+            'credit' => ['local_coursegen' => ['course_image' => 1500]],
+        ]);
+
+        $this->assertSame('1', $this->config_log_rows('ratelimit_local_coursegen_enable')[0]->value ?? null);
+        $this->assertSame('250', $this->config_log_rows('ratelimit_local_coursegen_limit')[0]->value ?? null);
+        $this->assertSame(
+            json_encode(['value' => 3, 'unit' => 'days']),
+            $this->config_log_rows('ratelimit_local_coursegen_window')[0]->value ?? null
+        );
+        $this->assertSame(
+            json_encode(['course_image' => 1500]),
+            $this->config_log_rows('ratelimit_local_coursegen_creditperaction')[0]->value ?? null
+        );
+    }
+
+    /**
+     * A license key change is logged, but the secret itself never reaches the log; an unchanged
+     * key adds no row.
+     *
+     * AIP-SEC-005: configuration change audit without leaking the secret.
+     */
+    public function test_license_key_change_is_logged_without_the_secret(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        // The install already logs the default (empty) value of the setting.
+        $before = count($this->config_log_rows('licensekey'));
+
+        config_form::save((object) ['licensekey' => 'SECRET-KEY-123']);
+
+        $rows = $this->config_log_rows('licensekey');
+        $this->assertCount($before + 1, $rows);
+        $this->assertSame('********', $rows[0]->value);
+        $this->assertSame('********', $rows[0]->oldvalue);
+        foreach ($DB->get_records('config_log') as $row) {
+            $this->assertStringNotContainsString('SECRET-KEY-123', (string) $row->value);
+            $this->assertStringNotContainsString('SECRET-KEY-123', (string) $row->oldvalue);
+        }
+
+        // Saving the same key again is not a change.
+        config_form::save((object) ['licensekey' => 'SECRET-KEY-123']);
+        $this->assertCount($before + 1, $this->config_log_rows('licensekey'));
+
+        // A different key is.
+        config_form::save((object) ['licensekey' => 'OTHER-KEY']);
+        $this->assertCount($before + 2, $this->config_log_rows('licensekey'));
+    }
+
+    /**
+     * Saving the same rate-limit values again adds no config_log row: only changes are audited.
+     *
+     * REL-006: idempotent save leaves the audit trail untouched.
+     */
+    public function test_unchanged_rate_limits_add_no_config_log_rows(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $data = (object) [
+            'enable' => ['local_coursegen' => 1],
+            'limit' => ['local_coursegen' => 250],
+            'windowvalue' => ['local_coursegen' => 3],
+            'windowunit' => ['local_coursegen' => 'days'],
+            'credit' => ['local_coursegen' => ['course_image' => 1500]],
+        ];
+
+        config_form::save($data);
+        $count = $DB->count_records('config_log', ['plugin' => 'aiprovider_datacurso']);
+        $newestid = (int) $DB->get_field_sql('SELECT MAX(id) FROM {config_log}');
+
+        config_form::save($data);
+
+        $this->assertSame($count, $DB->count_records('config_log', ['plugin' => 'aiprovider_datacurso']));
+        $this->assertSame($newestid, (int) $DB->get_field_sql('SELECT MAX(id) FROM {config_log}'));
+
+        // A real change is still audited, and it is the newest row.
+        $data->limit['local_coursegen'] = 300;
+        config_form::save($data);
+        $this->assertSame('300', $this->config_log_rows('ratelimit_local_coursegen_limit')[0]->value);
+        $this->assertSame($count + 1, $DB->count_records('config_log', ['plugin' => 'aiprovider_datacurso']));
+    }
 }
