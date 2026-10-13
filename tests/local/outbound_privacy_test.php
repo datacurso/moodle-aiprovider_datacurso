@@ -70,7 +70,7 @@ final class outbound_privacy_test extends \advanced_testcase {
         $token = outbound_privacy::pseudonymise_userid(7);
 
         $this->assertMatchesRegularExpression('/^[0-9a-f]{32}$/', $token);
-        $expected = substr(hash_hmac('sha256', '7', get_site_identifier() . outbound_privacy::PSEUDONYM_KEY_SUFFIX), 0, 32);
+        $expected = substr(hash_hmac('sha256', '7', outbound_privacy::get_pseudonym_secret()), 0, 32);
         $this->assertSame($expected, $token);
     }
 
@@ -229,5 +229,86 @@ final class outbound_privacy_test extends \advanced_testcase {
 
         $this->assertNull(outbound_privacy::resolve_pseudonym($token));
         $this->assertFalse(\cache::make('aiprovider_datacurso', 'pseudonyms')->get($token));
+    }
+
+    /**
+     * The HMAC secret is generated once per site (64 lowercase hex characters), persisted in the
+     * plugin configuration and returned unchanged afterwards.
+     */
+    public function test_pseudonym_secret_is_generated_once_and_persisted(): void {
+        $this->resetAfterTest();
+
+        // The install already generated one: start from a site without it.
+        unset_config('pseudonym_secret', 'aiprovider_datacurso');
+        $this->assertEmpty(get_config('aiprovider_datacurso', 'pseudonym_secret'));
+
+        $secret = outbound_privacy::get_pseudonym_secret();
+
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $secret);
+        $this->assertSame($secret, get_config('aiprovider_datacurso', 'pseudonym_secret'));
+        $this->assertSame($secret, outbound_privacy::get_pseudonym_secret());
+    }
+
+    /**
+     * The secret is the plugin's own, not the site UUID sent to the services as site_id.
+     */
+    public function test_pseudonym_secret_is_not_the_site_uuid(): void {
+        $this->resetAfterTest();
+
+        $this->assertNotSame(
+            \aiprovider_datacurso\httpclient\datacurso_api_base::get_site_uuid(),
+            outbound_privacy::get_pseudonym_secret()
+        );
+    }
+
+    /**
+     * Tokens are scoped by the secret: another secret yields other tokens, and a token resolved
+     * under the previous secret no longer resolves once the caches are cleared.
+     */
+    public function test_tokens_are_scoped_by_the_secret(): void {
+        $this->resetAfterTest();
+
+        $user = $this->getDataGenerator()->create_user();
+        $token = outbound_privacy::pseudonymise_userid($user->id);
+        $this->assertSame((int) $user->id, outbound_privacy::resolve_pseudonym($token));
+
+        set_config('pseudonym_secret', str_repeat('ab', 32), 'aiprovider_datacurso');
+        outbound_privacy::reset_static_caches();
+        \cache::make('aiprovider_datacurso', 'pseudonyms')->purge();
+
+        $this->assertNotSame($token, outbound_privacy::pseudonymise_userid($user->id));
+        $this->assertNull(outbound_privacy::resolve_pseudonym($token));
+        $this->assertSame((int) $user->id, outbound_privacy::resolve_pseudonym(outbound_privacy::pseudonymise_userid($user->id)));
+    }
+
+    /**
+     * A fresh install generates the secret, so no request ever has to write it lazily.
+     */
+    public function test_install_generates_the_secret(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        require_once($CFG->dirroot . '/ai/provider/datacurso/db/install.php');
+
+        unset_config('pseudonym_secret', 'aiprovider_datacurso');
+        xmldb_aiprovider_datacurso_install();
+
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', (string) get_config('aiprovider_datacurso', 'pseudonym_secret'));
+    }
+
+    /**
+     * A site upgraded from an earlier release gets its secret from the upgrade step.
+     */
+    public function test_upgrade_generates_the_secret(): void {
+        global $CFG;
+        $this->resetAfterTest();
+        require_once($CFG->libdir . '/upgradelib.php');
+        require_once($CFG->dirroot . '/ai/provider/datacurso/db/upgrade.php');
+
+        unset_config('pseudonym_secret', 'aiprovider_datacurso');
+        set_config('version', 2026100500, 'aiprovider_datacurso');
+        xmldb_aiprovider_datacurso_upgrade(2026100500);
+
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', (string) get_config('aiprovider_datacurso', 'pseudonym_secret'));
+        $this->assertSame('2026100900', get_config('aiprovider_datacurso', 'version'));
     }
 }

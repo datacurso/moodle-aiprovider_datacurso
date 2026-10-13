@@ -251,5 +251,13 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026090100, 'aiprovider', 'datacurso');
     }
 
+    if ($oldversion < 2026100900) {
+        // Generate the per-site secret behind the user pseudonyms sent to the Datacurso
+        // services, so it exists before the first request instead of being written lazily.
+        \aiprovider_datacurso\local\outbound_privacy::get_pseudonym_secret();
+
+        upgrade_plugin_savepoint(true, 2026100900, 'aiprovider', 'datacurso');
+    }
+
     return true;
 }

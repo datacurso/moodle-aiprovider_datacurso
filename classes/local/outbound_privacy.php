@@ -21,28 +21,16 @@ namespace aiprovider_datacurso\local;
  *
  * The services need a stable per-person key so they can keep per-user accounting and enforce
  * the configured rate limits, but they do not need the Moodle user id. This class derives a
- * site-scoped pseudonym for it, for the provider itself and for its consumer plugins, and
- * resolves such pseudonyms back to local users for the consumption history the shop returns.
- * Anything field-specific — masking names in prompts, allowlisting payload keys — is owned by
- * each plugin, which knows its own payload.
+ * pseudonym for it with a secret the plugin generates and keeps for the site, for the provider
+ * itself and for its consumer plugins, and resolves such pseudonyms back to local users for the
+ * consumption history the shop returns. Anything field-specific — masking names in prompts,
+ * allowlisting payload keys — is owned by each plugin, which knows its own payload.
  *
  * @package    aiprovider_datacurso
  * @copyright  2026 Datacurso
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class outbound_privacy {
-    /**
-     * Suffix appended to the site identifier to form the HMAC key of the user pseudonyms.
-     *
-     * Frozen contract: the remote services keep per-user accounting and rate-limit windows under
-     * the resulting tokens, and the consumer plugins derive the same tokens on their side. Changing
-     * it would silently reset every remote per-user counter and break the reverse lookup of the
-     * consumption history, so it must never change.
-     *
-     * @var string
-     */
-    public const PSEUDONYM_KEY_SUFFIX = '|aiprovider_datacurso';
-
     /** @var string Cache area holding the pseudonym to user id map. */
     private const CACHE_AREA = 'pseudonyms';
 
@@ -65,20 +53,42 @@ final class outbound_privacy {
     private static array $unresolved = [];
 
     /**
+     * The secret that keys the user pseudonyms of this site.
+     *
+     * Frozen contract: the secret is generated once per site (32 random bytes, stored as 64 hex
+     * characters in the plugin configuration) at install or upgrade, lazily on first use only as
+     * a fallback, and must never be regenerated or transmitted. The remote services keep every per-user counter and rate-limit window under
+     * the tokens it produces, and the reverse lookup of the consumption history depends on it.
+     * It is deliberately NOT the site UUID sent to the services as `site_id`: a key known to the
+     * recipient would make the tokens reversible by enumerating user ids.
+     *
+     * @return string 64-character lowercase hexadecimal secret.
+     */
+    public static function get_pseudonym_secret(): string {
+        $secret = get_config('aiprovider_datacurso', 'pseudonym_secret');
+        if (!empty($secret)) {
+            return (string) $secret;
+        }
+
+        $secret = bin2hex(random_bytes(32));
+        set_config('pseudonym_secret', $secret, 'aiprovider_datacurso');
+        return $secret;
+    }
+
+    /**
      * Derive a stable, non-reversible, site-scoped token for a user id.
      *
-     * The token is an HMAC-SHA256 of the user id keyed with the site identifier, truncated to
-     * 32 hex characters. The same user on the same site always yields the same token, the raw
-     * Moodle id cannot be recovered from it, and tokens cannot be correlated across sites. It is
-     * never empty, so the remote rate limiter always receives a key to enforce against.
+     * The token is an HMAC-SHA256 of the user id keyed with the site's own secret (see
+     * {@see get_pseudonym_secret()}), truncated to 32 hex characters. The same user on the same
+     * site always yields the same token, the raw Moodle id cannot be recovered from it, and
+     * tokens cannot be correlated across sites. It is never empty, so the remote rate limiter
+     * always receives a key to enforce against.
      *
      * @param int|string $userid Moodle user id.
      * @return string 32-character lowercase hexadecimal token.
      */
     public static function pseudonymise_userid(int|string $userid): string {
-        $key = get_site_identifier() . self::PSEUDONYM_KEY_SUFFIX;
-
-        return substr(hash_hmac('sha256', (string) $userid, $key), 0, 32);
+        return substr(hash_hmac('sha256', (string) $userid, self::get_pseudonym_secret()), 0, 32);
     }
 
     /**

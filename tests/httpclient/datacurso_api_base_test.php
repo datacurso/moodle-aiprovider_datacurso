@@ -321,6 +321,13 @@ final class datacurso_api_base_test extends \advanced_testcase {
         $this->assertNotSame((string) $user->id, $body['userid']);
         $this->assertMatchesRegularExpression('/^[0-9a-f]{32}$/', $body['userid']);
 
+        // The HMAC secret behind the pseudonym stays on the site: not in the body, nor in the headers,
+        // and it is not the site UUID the services receive as site_id.
+        $secret = \aiprovider_datacurso\local\outbound_privacy::get_pseudonym_secret();
+        $this->assertStringNotContainsString($secret, (string) $curl->calls[0]['params']);
+        $this->assertStringNotContainsString($secret, implode("\n", $curl->calls[0]['options']['CURLOPT_HTTPHEADER']));
+        $this->assertNotSame($secret, $body['site_id']);
+
         $this->assertSame(datacurso_api_base::get_site_uuid(), $body['site_id']);
         $this->assertSame($CFG->wwwroot, $body['site_url']);
         $this->assertSame(\core_date::get_user_timezone(), $body['timezone']);
