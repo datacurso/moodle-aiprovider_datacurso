@@ -17,7 +17,7 @@
 namespace aiprovider_datacurso\local;
 
 /**
- * Tests for the outbound privacy helper (user pseudonymisation and payload masking).
+ * Tests for the outbound privacy helper (user pseudonymisation and its reverse resolution).
  *
  * @package    aiprovider_datacurso
  * @category   test
@@ -166,123 +166,6 @@ final class outbound_privacy_test extends \advanced_testcase {
         delete_user($user);
 
         $this->assertNull(outbound_privacy::resolve_pseudonym(outbound_privacy::pseudonymise_userid($user->id)));
-    }
-
-    /**
-     * Placeholders are built for the full name, first name and last name, skipping empty values.
-     */
-    public function test_placeholders_for_user(): void {
-        $this->resetAfterTest();
-
-        $user = $this->getDataGenerator()->create_user(['firstname' => 'Ana', 'lastname' => 'Pérez']);
-        $this->assertSame([
-            '[STUDENT_NAME]' => fullname($user),
-            '[STUDENT_FIRSTNAME]' => 'Ana',
-            '[STUDENT_LASTNAME]' => 'Pérez',
-        ], outbound_privacy::placeholders_for_user($user));
-
-        $nolastname = clone $user;
-        $nolastname->lastname = '';
-        $placeholders = outbound_privacy::placeholders_for_user($nolastname);
-        $this->assertArrayHasKey('[STUDENT_NAME]', $placeholders);
-        $this->assertArrayHasKey('[STUDENT_FIRSTNAME]', $placeholders);
-        $this->assertArrayNotHasKey('[STUDENT_LASTNAME]', $placeholders);
-
-        $noname = clone $user;
-        $noname->firstname = '';
-        $noname->lastname = '';
-        $this->assertSame([], outbound_privacy::placeholders_for_user($noname));
-    }
-
-    /**
-     * Masking replaces the longest names first, so the full name is not split into its parts,
-     * and restoring puts the names back.
-     */
-    public function test_mask_and_restore_text(): void {
-        $this->resetAfterTest();
-
-        $replacements = [
-            '[STUDENT_FIRSTNAME]' => 'Ana',
-            '[STUDENT_NAME]' => 'Ana Pérez',
-            '[STUDENT_LASTNAME]' => 'Pérez',
-        ];
-        $text = 'Dear Ana Pérez, Ana did well. Regards to the Pérez family.';
-
-        $masked = outbound_privacy::mask_text($text, $replacements);
-        $this->assertSame(
-            'Dear [STUDENT_NAME], [STUDENT_FIRSTNAME] did well. Regards to the [STUDENT_LASTNAME] family.',
-            $masked
-        );
-        $this->assertSame($text, outbound_privacy::restore_text($masked, $replacements));
-
-        $this->assertSame('', outbound_privacy::mask_text('', $replacements));
-        $this->assertSame('plain', outbound_privacy::mask_text('plain', []));
-        $this->assertSame('plain', outbound_privacy::restore_text('plain', []));
-    }
-
-    /**
-     * Only allowlisted keys survive.
-     */
-    public function test_apply_allowlist(): void {
-        $this->resetAfterTest();
-
-        $payload = ['prompt' => 'p', 'email' => 'a@b.c', 'userid' => 3];
-
-        $this->assertSame(['prompt' => 'p', 'userid' => 3], outbound_privacy::apply_allowlist($payload, ['prompt', 'userid']));
-        $this->assertSame([], outbound_privacy::apply_allowlist($payload, []));
-    }
-
-    /**
-     * End to end: allowlist, pseudonymous userid, student name placeholder and masked fields.
-     */
-    public function test_anonymise_payload_end_to_end(): void {
-        $this->resetAfterTest();
-
-        $student = $this->getDataGenerator()->create_user(['firstname' => 'Ana', 'lastname' => 'Pérez']);
-        $payload = [
-            'userid' => 42,
-            'student_name' => 'Ana Pérez',
-            'submission' => 'Ana Pérez wrote this. Ana signed it.',
-            'prompt' => 'Grade the work of Pérez',
-            'email' => 'ana@example.com',
-        ];
-
-        $result = outbound_privacy::anonymise_payload(
-            $payload,
-            ['userid', 'student_name', 'submission', 'prompt'],
-            $student,
-            ['submission']
-        );
-
-        $this->assertSame(outbound_privacy::pseudonymise_userid(42), $result['payload']['userid']);
-        $this->assertSame('[STUDENT_NAME]', $result['payload']['student_name']);
-        $this->assertSame('[STUDENT_NAME] wrote this. [STUDENT_FIRSTNAME] signed it.', $result['payload']['submission']);
-        // Not listed in the mask fields: left untouched.
-        $this->assertSame('Grade the work of Pérez', $result['payload']['prompt']);
-        $this->assertArrayNotHasKey('email', $result['payload']);
-        $this->assertSame(outbound_privacy::placeholders_for_user($student), $result['replacements']);
-
-        // The reply can be restored with the returned replacements.
-        $this->assertSame(
-            'Well done Ana Pérez',
-            outbound_privacy::restore_text('Well done [STUDENT_NAME]', $result['replacements'])
-        );
-    }
-
-    /**
-     * Without allowlist or student, only the userid is pseudonymised and nothing else changes.
-     */
-    public function test_anonymise_payload_without_options(): void {
-        $this->resetAfterTest();
-
-        $token = outbound_privacy::pseudonymise_userid(1);
-        $result = outbound_privacy::anonymise_payload(['userid' => $token, 'text' => 'Ana']);
-
-        $this->assertSame(['userid' => $token, 'text' => 'Ana'], $result['payload']);
-        $this->assertSame([], $result['replacements']);
-
-        $result = outbound_privacy::anonymise_payload(['text' => 'Ana']);
-        $this->assertSame(['text' => 'Ana'], $result['payload']);
     }
 
     /**

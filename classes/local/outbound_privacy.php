@@ -17,28 +17,20 @@
 namespace aiprovider_datacurso\local;
 
 /**
- * Outbound privacy helper: what leaves the site towards the Datacurso services.
+ * The single shared source of the user pseudonym sent to the Datacurso services.
  *
  * The services need a stable per-person key so they can keep per-user accounting and enforce
  * the configured rate limits, but they do not need the Moodle user id. This class derives a
- * site-scoped pseudonym for it, resolves such pseudonyms back to local users (for the
- * consumption history that the shop returns) and offers the masking primitives the consumer
- * plugins use to keep student names out of the prompts.
+ * site-scoped pseudonym for it, for the provider itself and for its consumer plugins, and
+ * resolves such pseudonyms back to local users for the consumption history the shop returns.
+ * Anything field-specific — masking names in prompts, allowlisting payload keys — is owned by
+ * each plugin, which knows its own payload.
  *
  * @package    aiprovider_datacurso
  * @copyright  2026 Datacurso
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class outbound_privacy {
-    /** @var string Placeholder that replaces the student full name. */
-    public const PLACEHOLDER_NAME = '[STUDENT_NAME]';
-
-    /** @var string Placeholder that replaces the student first name. */
-    public const PLACEHOLDER_FIRSTNAME = '[STUDENT_FIRSTNAME]';
-
-    /** @var string Placeholder that replaces the student last name. */
-    public const PLACEHOLDER_LASTNAME = '[STUDENT_LASTNAME]';
-
     /**
      * Suffix appended to the site identifier to form the HMAC key of the user pseudonyms.
      *
@@ -194,120 +186,5 @@ final class outbound_privacy {
         $rs->close();
 
         return $map;
-    }
-
-    /**
-     * Build the placeholder to name map for a student, skipping empty values.
-     *
-     * @param \stdClass $user User record (at least the name fields used by fullname()).
-     * @return array<string, string> Placeholder => original value.
-     */
-    public static function placeholders_for_user(\stdClass $user): array {
-        $replacements = [];
-
-        $studentname = trim(fullname($user));
-        if ($studentname !== '') {
-            $replacements[self::PLACEHOLDER_NAME] = $studentname;
-        }
-
-        if (!empty($user->firstname) && is_string($user->firstname)) {
-            $replacements[self::PLACEHOLDER_FIRSTNAME] = $user->firstname;
-        }
-
-        if (!empty($user->lastname) && is_string($user->lastname)) {
-            $replacements[self::PLACEHOLDER_LASTNAME] = $user->lastname;
-        }
-
-        return $replacements;
-    }
-
-    /**
-     * Replace names with their placeholders, longest name first so a full name is not split.
-     *
-     * @param string $text Text to mask.
-     * @param array<string, string> $replacements Placeholder => original value.
-     * @return string
-     */
-    public static function mask_text(string $text, array $replacements): string {
-        if ($text === '' || empty($replacements)) {
-            return $text;
-        }
-
-        uasort($replacements, static fn(string $a, string $b): int => strlen($b) <=> strlen($a));
-
-        return str_replace(array_values($replacements), array_keys($replacements), $text);
-    }
-
-    /**
-     * Put the names back in place of their placeholders.
-     *
-     * @param string $text Text to restore (typically the AI reply).
-     * @param array<string, string> $replacements Placeholder => original value.
-     * @return string
-     */
-    public static function restore_text(string $text, array $replacements): string {
-        if ($text === '' || empty($replacements)) {
-            return $text;
-        }
-
-        return str_replace(array_keys($replacements), array_values($replacements), $text);
-    }
-
-    /**
-     * Keep only the allowlisted keys of a payload.
-     *
-     * @param array $payload Payload to filter.
-     * @param string[] $allowedkeys Keys allowed to leave the site.
-     * @return array
-     */
-    public static function apply_allowlist(array $payload, array $allowedkeys): array {
-        return array_intersect_key($payload, array_flip($allowedkeys));
-    }
-
-    /**
-     * Anonymise an outbound payload in one go.
-     *
-     * Applies the allowlist when given, pseudonymises the userid when present, and when a
-     * student is given builds the name placeholders, replaces a `student_name` field by the
-     * full-name placeholder and masks the listed string fields.
-     *
-     * @param array $payload Original payload.
-     * @param string[]|null $allowlist Keys allowed to leave the site; null keeps every key.
-     * @param \stdClass|null $student Student whose names must not leave the site.
-     * @param string[] $maskfields Payload string fields in which the student names are masked.
-     * @return array{payload: array, replacements: array<string, string>}
-     */
-    public static function anonymise_payload(
-        array $payload,
-        ?array $allowlist = null,
-        ?\stdClass $student = null,
-        array $maskfields = []
-    ): array {
-        if ($allowlist !== null) {
-            $payload = self::apply_allowlist($payload, $allowlist);
-        }
-
-        if (array_key_exists('userid', $payload)) {
-            $payload['userid'] = self::pseudonymise_userid_value($payload['userid']);
-        }
-
-        $replacements = $student !== null ? self::placeholders_for_user($student) : [];
-
-        if (!empty($replacements)) {
-            if (isset($payload['student_name']) && is_string($payload['student_name']) && $payload['student_name'] !== '') {
-                $payload['student_name'] = self::PLACEHOLDER_NAME;
-            }
-
-            foreach ($maskfields as $field) {
-                if (isset($payload[$field]) && is_string($payload[$field])) {
-                    $payload[$field] = self::mask_text($payload[$field], $replacements);
-                }
-            }
-        }
-
-        return [
-            'payload' => $payload,
-            'replacements' => $replacements,
-        ];
     }
 }
