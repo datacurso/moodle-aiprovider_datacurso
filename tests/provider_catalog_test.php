@@ -64,6 +64,22 @@ final class provider_catalog_test extends \advanced_testcase {
     }
 
     /**
+     * Jedomi is catalogued as a single-action service costing 2 credits per chat completion.
+     *
+     * The default window limit is not derived from the catalog: like the tutor chat
+     * (local_dttutor, also 2 credits), Jedomi uses the generic prefill of 10.
+     */
+    public function test_jedomi_catalog_defaults(): void {
+        $this->assertSame(2, provider::get_credit_for_action('local_jedomi'));
+        $this->assertSame(2, provider::get_credit_for_action('local_jedomi', 'default'));
+        $this->assertSame(
+            provider::get_default_window_limit('local_dttutor'),
+            provider::get_default_window_limit('local_jedomi')
+        );
+        $this->assertSame(10, provider::get_default_window_limit('local_jedomi'));
+    }
+
+    /**
      * An admin-saved JSON override wins over the catalog default.
      *
      * MDL-UNIT-003: config override branch of the credit resolution.

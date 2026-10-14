@@ -45,5 +45,6 @@ final class provider_test extends \basic_testcase {
         $this->assertContains('local_coursegen', $serviceids);
         $this->assertContains('local_assign_ai', $serviceids);
         $this->assertContains('report_lifestory', $serviceids);
+        $this->assertContains('local_jedomi', $serviceids);
     }
 }

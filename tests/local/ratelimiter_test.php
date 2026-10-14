@@ -127,4 +127,15 @@ final class ratelimiter_test extends \advanced_testcase {
 
         $this->assertSame([], (new ratelimiter())->get_rate_limit_headers('local_coursegen', 'course_image'));
     }
+
+    /**
+     * The Jedomi endpoint prefix resolves to local_jedomi without affecting the tutor chat prefix.
+     *
+     * @covers \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path
+     */
+    public function test_resolve_service_for_path_maps_jedomi(): void {
+        $this->assertSame('local_jedomi', ratelimiter::resolve_service_for_path('/jedomi/chat/completions'));
+        $this->assertSame('local_jedomi', ratelimiter::resolve_service_for_path('jedomi/chat/completions'));
+        $this->assertSame('local_dttutor', ratelimiter::resolve_service_for_path('/chat/x'));
+    }
 }

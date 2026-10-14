@@ -126,6 +126,7 @@ class provider extends \core_ai\provider {
             ['id' => 'local_socialcert', 'name' => get_string('pluginname_socialcert', 'aiprovider_datacurso')],
             ['id' => 'report_lifestory', 'name' => get_string('pluginname_lifestory', 'aiprovider_datacurso')],
             ['id' => 'local_coursedynamicrules', 'name' => get_string('pluginname_smartrules', 'aiprovider_datacurso')],
+            ['id' => 'local_jedomi', 'name' => get_string('pluginname_jedomi', 'aiprovider_datacurso')],
         ];
     }
 
@@ -180,6 +181,9 @@ class provider extends \core_ai\provider {
                 ['key' => 'default', 'name' => self::lang('action_default'), 'default' => 3],
             ],
             'local_dttutor' => [
+                ['key' => 'default', 'name' => self::lang('action_default'), 'default' => 2],
+            ],
+            'local_jedomi' => [
                 ['key' => 'default', 'name' => self::lang('action_default'), 'default' => 2],
             ],
         ];

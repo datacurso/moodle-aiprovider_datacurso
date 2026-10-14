@@ -1,3 +1,11 @@
+## [1.6.1] - 2026-10-14
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Added
+- **Jedomi registered as a rate-limited service**
+  The Jedomi plugin (`local_jedomi`) is now part of the service catalogue: requests under the `/jedomi/` path are attributed to it, it appears in the configuration and report tabs, and each chat completion costs 2 credits by default.
+
 ## [1.6.0] - 2026-10-09
 
 **Compatibility note:** This version is compatible only with **Moodle 4.5**.
