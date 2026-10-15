@@ -25,7 +25,13 @@
 
 /**
  * Custom code to be run on installing the plugin.
+ *
+ * Generates the per-site secret behind the user pseudonyms, so it exists before the first
+ * request instead of being written lazily inside one.
+ *
+ * @return bool
  */
 function xmldb_aiprovider_datacurso_install() {
+    \aiprovider_datacurso\local\outbound_privacy::get_pseudonym_secret();
     return true;
 }

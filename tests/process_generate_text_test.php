@@ -200,8 +200,8 @@ final class process_generate_text_test extends \advanced_testcase {
     /**
      * A generic service error must not leak the upstream detail to the end user.
      *
-     * The localized httperror string is returned instead, and the upstream message only reaches
-     * the developer debugging channel.
+     * The localized httperror string is returned instead, and the upstream body reaches nobody:
+     * the developer debugging channel only gets the status and the body size (AIP-PRIV-002).
      *
      * MDL-UNIT-011: error handling (generic service error).
      */
@@ -222,7 +222,8 @@ final class process_generate_text_test extends \advanced_testcase {
 
         $debugmessages = $this->getDebuggingMessages();
         $this->assertDebuggingCalledCount(1);
-        $this->assertStringContainsString('boom', $debugmessages[0]->message);
+        $this->assertStringNotContainsString('boom', $debugmessages[0]->message);
+        $this->assertStringContainsString('500', $debugmessages[0]->message);
     }
 
     /**
@@ -248,7 +249,8 @@ final class process_generate_text_test extends \advanced_testcase {
 
         $debugmessages = $this->getDebuggingMessages();
         $this->assertDebuggingCalledCount(1);
-        $this->assertStringContainsString('gateway secret', $debugmessages[0]->message);
+        $this->assertStringNotContainsString('gateway secret', $debugmessages[0]->message);
+        $this->assertStringContainsString('502', $debugmessages[0]->message);
     }
 
     /**
@@ -342,5 +344,51 @@ final class process_generate_text_test extends \advanced_testcase {
         $this->assertSame('ADMIN_RULE', $messages[0]['content'] ?? null);
         $this->assertSame('user', $messages[1]['role'] ?? null);
         $this->assertSame('Say hi', $messages[1]['content'] ?? null);
+    }
+
+    /**
+     * The request body carries the site-scoped pseudonym of the user, never the raw Moodle id.
+     *
+     * AIP-PRIV-001 (partial): pseudonymous user identifier.
+     */
+    public function test_request_body_carries_pseudonymous_userid(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+
+        $this->set_mock_http([
+            new Response(200, [], json_encode([
+                'choices' => [['message' => ['content' => 'ok'], 'finish_reason' => 'stop']],
+            ])),
+        ]);
+
+        $this->make_processor('Say hi')->process();
+
+        $payload = json_decode((string) $this->capturedbody, true);
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{32}$/', $payload['userid']);
+        $this->assertSame(\aiprovider_datacurso\local\outbound_privacy::pseudonymise_userid($user->id), $payload['userid']);
+        $this->assertNotSame((string) $user->id, $payload['userid']);
+    }
+
+    /**
+     * The developer debugging output of a failed call carries the HTTP status and the body size
+     * only, never the remote body, which may contain prompts or upstream internals.
+     *
+     * AIP-PRIV-002: error logging without the remote body.
+     */
+    public function test_error_debugging_omits_remote_body(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $body = json_encode(['error' => 'upstream-secret-marker: the prompt was "Say hi"']);
+        $this->set_mock_http([new Response(500, [], $body)]);
+
+        $this->make_processor('Say hi')->process();
+
+        $debugmessages = $this->getDebuggingMessages();
+        $this->assertDebuggingCalledCount(1);
+        $this->assertStringNotContainsString('upstream-secret-marker', $debugmessages[0]->message);
+        $this->assertStringContainsString('500', $debugmessages[0]->message);
+        $this->assertStringContainsString(strlen($body) . ' bytes', $debugmessages[0]->message);
     }
 }

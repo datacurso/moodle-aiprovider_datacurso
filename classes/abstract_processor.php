@@ -16,6 +16,7 @@
 
 namespace aiprovider_datacurso;
 
+use aiprovider_datacurso\local\outbound_privacy;
 use core\http_client;
 use core_ai\process_base;
 use GuzzleHttp\Exception\TransferException;
@@ -101,7 +102,9 @@ abstract class abstract_processor extends process_base {
         global $USER;
 
         $licensekey = get_config('aiprovider_datacurso', 'licensekey');
-        $userid = $this->action->get_configuration('userid') ?? $USER->id;
+        // The single outbound path of the processors: the body builders receive the site-scoped
+        // pseudonym of the user, so the raw Moodle id never reaches the AI service.
+        $userid = outbound_privacy::pseudonymise_userid_value($this->action->get_configuration('userid') ?? $USER->id);
 
         $client = \core\di::get(http_client::class);
 
@@ -186,10 +189,11 @@ abstract class abstract_processor extends process_base {
         }
 
         // Never echo the upstream body to the end user: core_ai shows errormessage in the browser and
-        // persists it. The raw body (truncated) is only made available to developers via debugging().
+        // persists it. Nor to the logs: the body may carry the prompt or upstream internals, so the
+        // developer debugging output gets the status and the body size only (as datacurso_api_base).
         $status = $status ?: 500;
         debugging(
-            'Datacurso AI service returned HTTP ' . $status . ': ' . substr((string)$body, 0, 1000),
+            'Datacurso AI service returned HTTP ' . $status . ' (' . strlen((string) $body) . ' bytes)',
             DEBUG_DEVELOPER
         );
 

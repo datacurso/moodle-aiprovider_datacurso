@@ -1,10 +1,52 @@
-## [1.5.2] - 2026-10-04
+## [1.6.1] - 2026-10-15
 
 **Compatibility note:** This version is compatible only with **Moodle 4.5**.
 
 ### Security
 - **One place builds the License-Key header, and a missing key stops the call**
   The header of every call to the Datacurso services is now built by `datacurso_api_base::get_license_header()`. `send_request()` and `download_file()` use it, so a request cannot leave without the license. `download_file()` used to send an empty header when no key was configured; it now fails before creating any file or contacting the service, with the localized `invalidlicensekey` message, exactly like the other requests. Spaces around the key are no longer sent. `local_coursegen` also reads the header from this method to open its generation streams.
+
+## [1.6.0] - 2026-10-09
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Security
+- **Changing the configuration needs its own capability (AIP-SEC-003)**
+  The Configuration tab (license key and per-service rate limits) was reachable by anyone holding `aiprovider/datacurso:viewreports`, a read capability granted to managers by default, so viewing the reports implied being able to change the site configuration. A new write capability, `aiprovider/datacurso:manageconfig` (`RISK_CONFIG`, granted to no archetype), is now required both to see the tab and to save it; the page checks it before the form is built and `config_form::save()` checks it again, so a reports-only user cannot post to it either. Site administrators keep access through their all-capabilities status. Because the capability has no archetype, grant `aiprovider/datacurso:manageconfig` through a role override (Site administration > Users > Permissions > Define roles) to every manager who edited the configuration until now. Backed by `access_control_test::test_manageconfig_capability_is_declared`, `test_viewreports_only_user_cannot_manage_config`, `test_viewreports_only_user_cannot_save` and `test_manageconfig_user_can_save`, and by the new scenarios of `tests/behat/access_control.feature`.
+- **Configuration changes are written to the config log (AIP-SEC-005)**
+  Saving the Configuration tab changed the rate-limit settings and the license key without any trace in `config_log`, unlike the native admin settings. A rate-limit setting whose value changes is now saved with logging, and a license key change adds a row with both values masked (`********`): the change is attributable, the secret is never logged, and re-saving unchanged values adds no row. Backed by `config_form_test::test_rate_limit_changes_are_written_to_config_log`, `test_unchanged_rate_limits_add_no_config_log_rows` and `test_license_key_change_is_logged_without_the_secret`.
+- **Error logging no longer includes the remote body (AIP-PRIV-002)**
+  When the AI service failed, the processors wrote up to 1000 characters of the upstream body to the developer debugging output, which may carry the prompt or upstream internals. They now log the HTTP status and the body size only, as the base API client already did. Backed by `process_generate_text_test::test_error_debugging_omits_remote_body`, `test_generic_service_error_is_sanitized` and `test_non_json_error_body_is_not_surfaced`.
+
+### Changed
+- **The user identifier sent to the Datacurso services is a pseudonym (AIP-PRIV-001, partial)**
+  Every request to the AI services, the course service and the shop carried the raw Moodle user id as `userid`. It now carries a site-scoped pseudonym: an HMAC-SHA256 of the id, truncated to 32 hexadecimal characters, keyed with a per-site random secret that the plugin generates at install or upgrade and stores in its configuration (`pseudonym_secret`). The secret is never sent to the services and is deliberately not the site UUID they receive as `site_id`: a key known to the recipient would make the tokens reversible. The token is stable per person and site, so the services keep their per-user accounting and rate limits, and it is never empty, so the limits stay enforced; the raw id cannot be recovered from it and tokens cannot be correlated across sites. It is derived in one place per path: the base API client (`datacurso_api_base::send_request`, where a numeric id handed by a consumer plugin is pseudonymised and a pseudonym it already derived is kept) and the core AI processors (`abstract_processor::query_ai_api`). `site_id`, `site_url`, `timezone` and `lang` are sent exactly as before. After upgrading, every user is identified at the remote services by a new pseudonymous id, so the per-user consumption counters and rate-limit windows start fresh once. Backed by `datacurso_api_base_test::test_post_sends_pseudonymous_userid_and_keeps_site_fields`, `test_post_pseudonymises_caller_provided_numeric_userid`, `test_post_keeps_caller_provided_pseudonym` and `test_request_body_carries_pseudonymous_userid` in the three processor test classes. The privacy metadata strings of both external locations describe the token. Consumer plugins derive the same token through this helper, while any name masking or payload allowlist stays plugin-owned.
+- **The consumption report resolves pseudonyms back to local users**
+  The shop echoes in its consumption history whatever `userid` the site sent. The synchronisation now resolves a pseudonym through the reverse map, keeps a shorter all-digit value as the user id (history written before this version) and stores 0 for anything else. Pseudonym detection comes first, so a pseudonym is never cast to an integer: one made of 32 digits would become `PHP_INT_MAX`, and leading digits would attribute the consumption to the wrong user. Backed by `consumption_sync_test::test_pseudonymous_userid_resolves_to_local_user`, `test_unknown_pseudonym_maps_to_zero`, `test_numeric_userid_still_maps`, `test_hex_token_with_leading_digits_is_not_cast_to_a_user_id` and `test_all_digit_pseudonym_is_resolved_not_cast`.
+
+### Added
+- **Shared user pseudonym helper for the provider and its consumer plugins**
+  New `\aiprovider_datacurso\local\outbound_privacy` class, the single source of the userid pseudonym: `pseudonymise_userid()`, `is_pseudonym()`, `pseudonymise_userid_value()` (keeps a value that already is a token), `get_pseudonym_secret()` (the per-site random secret, generated by the plugin at install or upgrade — lazily on first use as a fallback — stored in config and never sent to the services; explicitly not the site UUID, and never to be regenerated because every remote per-user counter depends on it; see `outbound_privacy_test::test_install_generates_the_secret` and `test_upgrade_generates_the_secret`) and `resolve_pseudonym()` (reverse lookup through a new `aiprovider_datacurso/pseudonyms` application cache, rebuilt from the non-deleted user ids at most once per request without loading user objects, with unresolvable tokens remembered for the request and deleted users dropped by a `user_deleted` observer; see `outbound_privacy_test::test_unknown_tokens_rebuild_the_map_at_most_once_per_process`, `test_reset_static_caches_allows_a_later_user_to_resolve` and `test_deleted_user_token_no_longer_resolves`). Name masking and payload allowlists are not part of it: each plugin owns its payload. Backed by the seventeen tests of `outbound_privacy_test`, including `test_tokens_are_scoped_by_the_secret`, and by `datacurso_api_base_test::test_post_sends_pseudonymous_userid_and_keeps_site_fields`, which proves the secret leaves in no body or header.
+
+## [1.5.3] - 2026-10-05
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Fixed
+- **A fresh install no longer prints a debugging message**
+  The `service` field of the consumption table was declared as a required text column with an empty default, which XMLDB does not accept: every new install printed a debugging message, and `moodle-plugin-ci` stops the install of any plugin that depends on this one when it sees it. The empty default is gone. Sites that already have the table are unaffected, because the upgrade step created the field without a default.
+
+## [1.5.2] - 2026-09-30
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Changed
+- **The region of the licence is resolved once and kept**
+  Which region serves a site was asked of the shop while building every API client, so each call to an AI service paid a round trip to `shop.datacurso.com` first, and a shop that did not answer took every service down with it although the services themselves were up. The region is a property of the licence, not of the request: it is now resolved once, kept with a fingerprint of the licence it belongs to, and asked for again only when that licence changes or after a week. On a site of the pilot the first resolution costs 1.4 seconds and every one after it costs a millisecond.
+  When the region is already known and the shop cannot be reached, the known region is used and the service keeps working. When it is not known —a licence that has never reached the shop— the call still fails rather than guess: choosing a region wrongly would send the data of a site to a deployment it may not be allowed to reach.
+  Saving the licence key drops the region resolved for the previous one, so a change of licence is seen at once instead of waiting for the answer to go stale. The week is there for the other case: a site whose region is moved between deployments without its key changing.
+- **The privacy declaration names the whole chain**
+  The declaration of the AI services said the request data reaches Datacurso and stopped there, although those services do not generate the answers themselves: they hand the request on to a large language model of a third party, today Google Gemini or OpenAI depending on the model, which may sit outside the European Union. The declaration now says so, and says what that provider does not receive: the identifier of the user, the identifier of the site and the timezone are stripped before the request leaves. It also stops claiming that every erasure request goes through support, which is no longer true of the AI tutor: the platform now asks the service to delete the conversations of a person or of a course on its own.
 
 ## [1.5.1] - 2026-09-07
 

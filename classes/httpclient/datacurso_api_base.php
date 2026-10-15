@@ -18,6 +18,9 @@ namespace aiprovider_datacurso\httpclient;
 
 defined('MOODLE_INTERNAL') || die();
 
+use aiprovider_datacurso\local\license_region;
+use aiprovider_datacurso\local\outbound_privacy;
+
 require_once($CFG->libdir . '/filelib.php');
 
 /**
@@ -188,9 +191,13 @@ class datacurso_api_base {
         $url = $this->baseurl . $path;
         $response = null;
 
+        // The services key per-user accounting and rate limits by userid, so it must be a stable,
+        // non-empty value per person and site; the raw Moodle id never leaves the site. The
+        // default wins over the caller's value, so a numeric userid handed by a consumer plugin
+        // is pseudonymised here and a pseudonym it already derived is kept as is.
         $defaultpayload = [
             'site_id' => self::get_site_uuid(),
-            'userid' => $payload['userid'] ?? $USER->id,
+            'userid' => outbound_privacy::pseudonymise_userid_value($payload['userid'] ?? $USER->id),
             'timezone' => \core_date::get_user_timezone(),
             'lang' => $payload['lang'] ?? current_language(),
             'site_url' => $CFG->wwwroot,
@@ -328,11 +335,13 @@ class datacurso_api_base {
     /**
      * Check if the license is for European Union.
      *
+     * The answer is resolved once and kept, because it is a property of the licence and not of
+     * the request. See license_region for what that means when the shop cannot be reached.
+     *
      * @return bool
+     * @throws \moodle_exception When the region is not known yet and the shop cannot be asked.
      */
     public function is_for_ue(): bool {
-        $datacursoapi = new datacurso_api();
-        $response = $datacursoapi->get('tokens/saldo');
-        return $response['is_for_eu'] == true;
+        return license_region::is_european();
     }
 }

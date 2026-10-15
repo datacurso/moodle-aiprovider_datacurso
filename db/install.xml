@@ -9,7 +9,7 @@
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="externalid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Consumption record id in the external Datacurso service (id_consumo)."/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Moodle user who triggered the consumption."/>
-        <FIELD NAME="service" TYPE="char" LENGTH="100" NOTNULL="true" DEFAULT="" SEQUENCE="false" COMMENT="Service identifier (e.g. local_coursegen)."/>
+        <FIELD NAME="service" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" COMMENT="Service identifier (e.g. local_coursegen)."/>
         <FIELD NAME="action" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT="" SEQUENCE="false" COMMENT="Action identifier."/>
         <FIELD NAME="credits" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Credits consumed."/>
         <FIELD NAME="balance" TYPE="number" LENGTH="12" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Remaining balance after the consumption."/>

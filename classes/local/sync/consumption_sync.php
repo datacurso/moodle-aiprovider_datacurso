@@ -17,6 +17,7 @@
 namespace aiprovider_datacurso\local\sync;
 
 use aiprovider_datacurso\httpclient\datacurso_api;
+use aiprovider_datacurso\local\outbound_privacy;
 
 /**
  * Keeps the local consumption mirror table up to date from the external Datacurso API.
@@ -143,13 +144,39 @@ class consumption_sync {
     private static function map_record(array $item): \stdClass {
         $record = new \stdClass();
         $record->externalid = (int) ($item['id_consumo'] ?? 0);
-        $record->userid = (int) ($item['userid'] ?? ($item['id_usuario'] ?? 0));
+        $record->userid = self::resolve_userid($item['userid'] ?? ($item['id_usuario'] ?? 0));
         $record->service = (string) ($item['id_servicio'] ?? '');
         $record->action = (string) ($item['accion'] ?? '');
         $record->credits = (float) ($item['cantidad_tokens'] ?? 0);
         $record->balance = (float) ($item['saldo_restante'] ?? 0);
         $record->timecreated = self::to_timestamp($item['created_at'] ?? ($item['fecha'] ?? ''));
         return $record;
+    }
+
+    /**
+     * Map the userid echoed by the shop to a local user id.
+     *
+     * The shop returns whatever the site sent: a raw id for history rows written before the
+     * pseudonymisation, or the site-scoped pseudonym afterwards. Pseudonym detection comes first,
+     * so a pseudonym is never cast to an integer: one made of digits only (32 of them) would
+     * otherwise become PHP_INT_MAX, and one with leading digits would attribute the consumption
+     * to the wrong user. A shorter all-digit value is a legacy raw id. Anything else is user 0.
+     *
+     * @param mixed $value Raw value of the userid field.
+     * @return int Local user id, or 0 when it cannot be attributed.
+     */
+    private static function resolve_userid($value): int {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return 0;
+        }
+        if (outbound_privacy::is_pseudonym($value)) {
+            return outbound_privacy::resolve_pseudonym($value) ?? 0;
+        }
+        if (ctype_digit($value)) {
+            return (int) $value;
+        }
+        return 0;
     }
 
     /**

@@ -91,6 +91,7 @@ $string['create_activity_workshop_noimage'] = 'Workshop mit KI erstellen (ohne B
 $string['created'] = 'Erstellt';
 $string['curlerror'] = 'Datacurso API cURL-Fehler: {$a}';
 $string['datacurso:manage'] = 'KI-Anbieter-Einstellungen verwalten';
+$string['datacurso:manageconfig'] = 'Konfiguration des Datacurso-KI-Anbieters verwalten';
 $string['datacurso:use'] = 'Datacurso KI-Dienste nutzen';
 $string['datacurso:viewreports'] = 'KI-Nutzungsberichte anzeigen';
 $string['day'] = 'Tag';
