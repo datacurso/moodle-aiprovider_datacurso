@@ -1,3 +1,10 @@
+## [1.5.5-wp] - 2026-10-15
+
+**Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.
+
+### Fixed
+- **A request without a licence key is stopped before it is sent**: the `License-Key` header of the HTTP client was built in two places, and a request could reach a Datacurso service with an empty header. The header is now built in a single place, which throws when the licence key is empty or only whitespace, and both the requests and the file downloads use it. The licence key is still the one of the tenant, falling back to the site licence.
+
 ## [1.5.4-wp] - 2026-10-08
 
 **Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.
