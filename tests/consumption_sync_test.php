@@ -43,7 +43,6 @@ final class consumption_sync_test extends \advanced_testcase {
      */
     protected function tearDown(): void {
         testable_consumption_sync::$client = null;
-        testable_consumption_sync::$licence = '';
         \aiprovider_datacurso\local\outbound_privacy::reset_static_caches();
         parent::tearDown();
     }
@@ -374,7 +373,7 @@ final class consumption_sync_test extends \advanced_testcase {
         global $DB;
         $this->resetAfterTest();
 
-        testable_consumption_sync::$licence = sha1('old');
+        set_config('licensekey', 'old', 'aiprovider_datacurso');
         $this->sync_with([$this->make_response([$this->make_item(50), $this->make_item(49)])]);
         $this->assertEqualsCanonicalizing([49, 50], array_map('intval', $DB->get_fieldset_select(
             'aiprovider_datacurso_consumption',
@@ -382,7 +381,7 @@ final class consumption_sync_test extends \advanced_testcase {
             '1 = 1'
         )));
 
-        testable_consumption_sync::$licence = sha1('new');
+        set_config('licensekey', 'new', 'aiprovider_datacurso');
         $this->sync_with([$this->make_response([$this->make_item(7), $this->make_item(6)])]);
 
         $this->assertEqualsCanonicalizing([6, 7], array_map('intval', $DB->get_fieldset_select(
@@ -401,7 +400,7 @@ final class consumption_sync_test extends \advanced_testcase {
         global $DB;
         $this->resetAfterTest();
 
-        testable_consumption_sync::$licence = sha1('same');
+        set_config('licensekey', 'same', 'aiprovider_datacurso');
         $this->sync_with([$this->make_response([$this->make_item(20)])]);
         $this->sync_with([$this->make_response([$this->make_item(21), $this->make_item(20)])]);
 
@@ -417,10 +416,9 @@ final class consumption_sync_test extends \advanced_testcase {
         global $DB;
         $this->resetAfterTest();
 
-        testable_consumption_sync::$licence = sha1('kept');
+        set_config('licensekey', 'kept', 'aiprovider_datacurso');
         $this->sync_with([$this->make_response([$this->make_item(20)])]);
 
-        testable_consumption_sync::$licence = '';
         $this->sync_with([]);
 
         $this->assertEquals(1, $DB->count_records('aiprovider_datacurso_consumption'));
