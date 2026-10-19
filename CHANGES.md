@@ -4,7 +4,7 @@
 
 ### Fixed
 - **A new licence no longer keeps showing the consumption of the previous one**
-  The local mirror of the consumption history kept a single watermark, the highest external id stored, whatever licence the rows came from. After changing the licence the report kept listing the consumption of the old one, and the history of the new one was never pulled when its ids were lower. The mirror now remembers the licence it was filled for and is emptied the next time the history is synchronised with a different licence, so the new history is pulled in full. Nothing is emptied while no licence can be resolved.
+  The local mirror of the consumption history kept a single watermark, the highest external id stored, whatever licence the rows came from. After changing the licence the report kept listing the consumption of the old one, and the history of the new one was never pulled when its ids were lower. The mirror now remembers the licence it was filled for and is emptied the next time the history is synchronised with a different licence, so the new history is pulled in full. Removing the licence empties it as well, so nothing is reported while no licence is configured.
 
 ## [2.1.4] - 2026-10-05
 

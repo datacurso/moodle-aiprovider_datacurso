@@ -359,17 +359,17 @@ final class consumption_sync_test extends \advanced_testcase {
         $this->assertEquals(2, $DB->count_records(self::TABLE));
     }
 
-    public function test_missing_licence_does_not_empty_the_mirror(): void {
+    public function test_removing_the_licence_empties_the_mirror(): void {
         global $DB;
 
-        $this->use_licence('kept');
         $client1 = new test_consumption_api_client();
         $client1->responsesbypage[1] = $this->make_page([$this->make_consumption(20)]);
         consumption_sync::sync($client1);
+        $this->assertEquals(1, $DB->count_records(self::TABLE));
 
         $this->use_licence('');
         consumption_sync::sync(new test_consumption_api_client());
 
-        $this->assertEquals(1, $DB->count_records(self::TABLE));
+        $this->assertEquals(0, $DB->count_records(self::TABLE));
     }
 }
