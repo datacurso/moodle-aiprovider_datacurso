@@ -90,18 +90,16 @@ class consumption_sync {
      * reported and the history of the new licence, whose ids may be lower, was never pulled. The
      * fingerprint of the licence the mirror belongs to is kept next to it; when it differs from the
      * licence in force, the rows are dropped so the history of the new licence is pulled in full.
-     * Nothing is dropped while no licence can be resolved, so a missing key is not mistaken for a
-     * change.
+     * Removing the licence is a change too: with no licence in force nothing of the mirror is shown.
      *
      * @param \moodle_database $db
      */
     private static function discard_history_of_another_licence(\moodle_database $db): void {
         $current = \aiprovider_datacurso\local\license_region::fingerprint();
-        if ($current === '') {
-            return;
-        }
 
-        $mirrorof = (string) get_config('aiprovider_datacurso', self::LICENCE_CONFIG);
+        // An unset marker is not the same as an empty one: rows stored before the marker existed
+        // belong to an unknown licence.
+        $mirrorof = get_config('aiprovider_datacurso', self::LICENCE_CONFIG);
         if ($mirrorof === $current) {
             return;
         }

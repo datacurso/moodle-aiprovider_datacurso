@@ -39,6 +39,16 @@ require_once(__DIR__ . '/fixtures/testable_consumption_sync.php');
  */
 final class consumption_sync_test extends \advanced_testcase {
     /**
+     * Put a licence in force, with the mirror already filled for it.
+     */
+    protected function setUp(): void {
+        parent::setUp();
+        $this->resetAfterTest();
+        set_config('licensekey', 'test-key', 'aiprovider_datacurso');
+        set_config('consumption_licence', sha1('test-key'), 'aiprovider_datacurso');
+    }
+
+    /**
      * Reset the injected client after every test.
      */
     protected function tearDown(): void {
@@ -408,19 +418,19 @@ final class consumption_sync_test extends \advanced_testcase {
     }
 
     /**
-     * Without a resolvable licence nothing is dropped.
+     * Removing the licence leaves nothing to report.
      *
-     * MDL-INT-006: a missing licence is not mistaken for a licence change.
+     * MDL-INT-006: the mirror is emptied when the licence is removed.
      */
-    public function test_missing_licence_does_not_empty_the_mirror(): void {
+    public function test_removing_the_licence_empties_the_mirror(): void {
         global $DB;
-        $this->resetAfterTest();
 
-        set_config('licensekey', 'kept', 'aiprovider_datacurso');
         $this->sync_with([$this->make_response([$this->make_item(20)])]);
+        $this->assertEquals(1, $DB->count_records('aiprovider_datacurso_consumption'));
 
+        set_config('licensekey', '', 'aiprovider_datacurso');
         $this->sync_with([]);
 
-        $this->assertEquals(1, $DB->count_records('aiprovider_datacurso_consumption'));
+        $this->assertEquals(0, $DB->count_records('aiprovider_datacurso_consumption'));
     }
 }
