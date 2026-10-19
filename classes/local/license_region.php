@@ -177,11 +177,11 @@ class license_region {
      * A fingerprint of the licence in force, so a new licence resolves its own region.
      *
      * The key itself is already in the configuration; what is kept here is only enough to tell one
-     * licence from another.
+     * licence from another. Public because the consumption mirror is kept per licence too.
      *
-     * @return string
+     * @return string Empty when no licence is configured.
      */
-    private static function fingerprint(): string {
+    public static function fingerprint(): string {
         $configured = get_config(self::PLUGIN, 'licensekey');
         $key = trim((string)$configured);
         if ($key === '') {
