@@ -21,6 +21,7 @@ use aiprovider_datacurso\httpclient\test_consumption_api_client;
 defined('MOODLE_INTERNAL') || die();
 
 require_once(__DIR__ . '/../../fixtures/test_consumption_api_client.php');
+require_once(__DIR__ . '/../../fixtures/testable_consumption_sync.php');
 
 /**
  * Tests for consumption_sync::sync().
@@ -59,6 +60,17 @@ final class consumption_sync_test extends \advanced_testcase {
             enabled: true,
             config: ['licensekey' => 'test-key'],
         );
+
+        // The mirror belongs to the licence in force, so rows seeded by a test are not discarded.
+        set_config('consumption_licence', sha1('test-key'), 'aiprovider_datacurso');
+    }
+
+    /**
+     * Reset the licence injected into the testable synchronisation.
+     */
+    protected function tearDown(): void {
+        testable_consumption_sync::$licence = '';
+        parent::tearDown();
     }
 
     /**
@@ -307,5 +319,52 @@ final class consumption_sync_test extends \advanced_testcase {
         $this->assertSame(strtotime('2026-03-10 14:45:00'), $bytimestamp[3]);
         $this->assertSame(0, $bytimestamp[2]);
         $this->assertSame(0, $bytimestamp[1]);
+    }
+
+    public function test_licence_change_discards_history_of_the_previous_licence(): void {
+        global $DB;
+
+        testable_consumption_sync::$licence = sha1('old');
+        $client1 = new test_consumption_api_client();
+        $client1->responsesbypage[1] = $this->make_page([$this->make_consumption(50), $this->make_consumption(49)]);
+        testable_consumption_sync::sync($client1);
+        $this->assertEqualsCanonicalizing([49, 50], array_map('intval', $DB->get_fieldset(self::TABLE, 'externalid')));
+
+        // The new licence has lower ids: with a single watermark they would never be pulled.
+        testable_consumption_sync::$licence = sha1('new');
+        $client2 = new test_consumption_api_client();
+        $client2->responsesbypage[1] = $this->make_page([$this->make_consumption(7), $this->make_consumption(6)]);
+        testable_consumption_sync::sync($client2);
+
+        $this->assertEqualsCanonicalizing([6, 7], array_map('intval', $DB->get_fieldset(self::TABLE, 'externalid')));
+    }
+
+    public function test_same_licence_keeps_the_mirror(): void {
+        global $DB;
+
+        testable_consumption_sync::$licence = sha1('same');
+        $client1 = new test_consumption_api_client();
+        $client1->responsesbypage[1] = $this->make_page([$this->make_consumption(20)]);
+        testable_consumption_sync::sync($client1);
+
+        $client2 = new test_consumption_api_client();
+        $client2->responsesbypage[1] = $this->make_page([$this->make_consumption(21), $this->make_consumption(20)]);
+        testable_consumption_sync::sync($client2);
+
+        $this->assertEquals(2, $DB->count_records(self::TABLE));
+    }
+
+    public function test_missing_licence_does_not_empty_the_mirror(): void {
+        global $DB;
+
+        testable_consumption_sync::$licence = sha1('kept');
+        $client1 = new test_consumption_api_client();
+        $client1->responsesbypage[1] = $this->make_page([$this->make_consumption(20)]);
+        testable_consumption_sync::sync($client1);
+
+        testable_consumption_sync::$licence = '';
+        testable_consumption_sync::sync(new test_consumption_api_client());
+
+        $this->assertEquals(1, $DB->count_records(self::TABLE));
     }
 }

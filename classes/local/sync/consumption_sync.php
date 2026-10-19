@@ -34,6 +34,9 @@ class consumption_sync {
     /** @var string Local mirror table. */
     private const TABLE = 'aiprovider_datacurso_consumption';
 
+    /** @var string Config holding the fingerprint of the licence the mirror was filled for. */
+    private const LICENCE_CONFIG = 'consumption_licence';
+
     /** @var int Records requested per API page. */
     private const PAGE_SIZE = 500;
 
@@ -59,12 +62,52 @@ class consumption_sync {
         }
 
         try {
+            self::discard_history_of_another_licence($DB);
             self::pull($DB, $client);
         } catch (\Throwable $e) {
             debugging('aiprovider_datacurso consumption sync failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
         } finally {
             $lock->release();
         }
+    }
+
+    /**
+     * Empty the mirror when it was filled with the history of a licence that is no longer in force.
+     *
+     * The history belongs to the licence the requests are made with, but the mirror keeps a single
+     * watermark (the highest external id stored). After a licence change the old rows kept being
+     * reported and the history of the new licence, whose ids may be lower, was never pulled. The
+     * fingerprint of the licence the mirror belongs to is kept next to it; when it differs from the
+     * licence in force, the rows are dropped so the history of the new licence is pulled in full.
+     * Nothing is dropped while no licence can be resolved, so a missing key is not mistaken for a
+     * change.
+     *
+     * @param \moodle_database $db
+     */
+    private static function discard_history_of_another_licence(\moodle_database $db): void {
+        $current = static::get_licence_fingerprint();
+        if ($current === '') {
+            return;
+        }
+
+        $mirrorof = (string) get_config('aiprovider_datacurso', self::LICENCE_CONFIG);
+        if ($mirrorof === $current) {
+            return;
+        }
+
+        $db->delete_records(self::TABLE);
+        set_config(self::LICENCE_CONFIG, $current, 'aiprovider_datacurso');
+    }
+
+    /**
+     * Fingerprint of the licence the history is requested with.
+     *
+     * Declared as a substitution point so tests can change the licence without a shop.
+     *
+     * @return string Empty when no licence is configured.
+     */
+    protected static function get_licence_fingerprint(): string {
+        return \aiprovider_datacurso\local\license_region::fingerprint();
     }
 
     /**
