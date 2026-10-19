@@ -43,6 +43,7 @@ final class consumption_sync_test extends \advanced_testcase {
      */
     protected function tearDown(): void {
         testable_consumption_sync::$client = null;
+        testable_consumption_sync::$licence = '';
         \aiprovider_datacurso\local\outbound_privacy::reset_static_caches();
         parent::tearDown();
     }
@@ -361,5 +362,67 @@ final class consumption_sync_test extends \advanced_testcase {
 
         $this->assertSame((int) $user->id, $this->stored_userid(605));
         $this->assertSame(0, $this->stored_userid(606));
+    }
+
+    /**
+     * A new licence must not keep showing the history of the previous one, nor skip its own
+     * history because the ids of the old one were higher.
+     *
+     * MDL-INT-004: the mirror is rebuilt when the licence changes.
+     */
+    public function test_licence_change_discards_history_of_the_previous_licence(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        testable_consumption_sync::$licence = sha1('old');
+        $this->sync_with([$this->make_response([$this->make_item(50), $this->make_item(49)])]);
+        $this->assertEqualsCanonicalizing([49, 50], array_map('intval', $DB->get_fieldset_select(
+            'aiprovider_datacurso_consumption',
+            'externalid',
+            '1 = 1'
+        )));
+
+        testable_consumption_sync::$licence = sha1('new');
+        $this->sync_with([$this->make_response([$this->make_item(7), $this->make_item(6)])]);
+
+        $this->assertEqualsCanonicalizing([6, 7], array_map('intval', $DB->get_fieldset_select(
+            'aiprovider_datacurso_consumption',
+            'externalid',
+            '1 = 1'
+        )));
+    }
+
+    /**
+     * The same licence keeps its mirror and its watermark.
+     *
+     * MDL-INT-005: an unchanged licence does not empty the mirror.
+     */
+    public function test_same_licence_keeps_the_mirror(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        testable_consumption_sync::$licence = sha1('same');
+        $this->sync_with([$this->make_response([$this->make_item(20)])]);
+        $this->sync_with([$this->make_response([$this->make_item(21), $this->make_item(20)])]);
+
+        $this->assertEquals(2, $DB->count_records('aiprovider_datacurso_consumption'));
+    }
+
+    /**
+     * Without a resolvable licence nothing is dropped.
+     *
+     * MDL-INT-006: a missing licence is not mistaken for a licence change.
+     */
+    public function test_missing_licence_does_not_empty_the_mirror(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        testable_consumption_sync::$licence = sha1('kept');
+        $this->sync_with([$this->make_response([$this->make_item(20)])]);
+
+        testable_consumption_sync::$licence = '';
+        $this->sync_with([]);
+
+        $this->assertEquals(1, $DB->count_records('aiprovider_datacurso_consumption'));
     }
 }

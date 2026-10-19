@@ -38,6 +38,18 @@ class testable_consumption_sync extends consumption_sync {
     /** @var datacurso_api|null Client handed to the synchronisation. */
     public static ?datacurso_api $client = null;
 
+    /** @var string Fingerprint of the licence in force; empty means no licence is configured. */
+    public static string $licence = '';
+
+    /**
+     * Return the injected licence fingerprint instead of reading the configuration.
+     *
+     * @return string
+     */
+    protected static function get_licence_fingerprint(): string {
+        return static::$licence;
+    }
+
     /**
      * Return the injected client instead of building a real one.
      *

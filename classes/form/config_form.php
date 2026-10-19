@@ -249,6 +249,9 @@ class config_form extends \moodleform {
             set_config('licensekey', $licensekey, 'aiprovider_datacurso');
             if ($licensekey !== $previous) {
                 add_to_config_log('licensekey', '********', '********', 'aiprovider_datacurso');
+                // Saving here bypasses the callback of the admin setting, so the region resolved
+                // for the previous licence is dropped explicitly.
+                \aiprovider_datacurso\local\license_region::forget();
             }
         }
 
