@@ -85,7 +85,7 @@ class consumption_sync {
      * @param \moodle_database $db
      */
     private static function discard_history_of_another_licence(\moodle_database $db): void {
-        $current = static::get_licence_fingerprint();
+        $current = \aiprovider_datacurso\local\license_region::fingerprint();
         if ($current === '') {
             return;
         }
@@ -97,17 +97,6 @@ class consumption_sync {
 
         $db->delete_records(self::TABLE);
         set_config(self::LICENCE_CONFIG, $current, 'aiprovider_datacurso');
-    }
-
-    /**
-     * Fingerprint of the licence the history is requested with.
-     *
-     * Declared as a substitution point so tests can change the licence without a shop.
-     *
-     * @return string Empty when no licence is configured.
-     */
-    protected static function get_licence_fingerprint(): string {
-        return \aiprovider_datacurso\local\license_region::fingerprint();
     }
 
     /**

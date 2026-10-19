@@ -21,7 +21,6 @@ use aiprovider_datacurso\httpclient\test_consumption_api_client;
 defined('MOODLE_INTERNAL') || die();
 
 require_once(__DIR__ . '/../../fixtures/test_consumption_api_client.php');
-require_once(__DIR__ . '/../../fixtures/testable_consumption_sync.php');
 
 /**
  * Tests for consumption_sync::sync().
@@ -40,6 +39,9 @@ final class consumption_sync_test extends \advanced_testcase {
     /** @var string Local mirror table. */
     private const TABLE = 'aiprovider_datacurso_consumption';
 
+    /** @var \core_ai\provider Provider instance holding the licence key. */
+    private \core_ai\provider $provider;
+
     /**
      * Seed an enabled provider instance with a license key.
      *
@@ -54,7 +56,7 @@ final class consumption_sync_test extends \advanced_testcase {
 
         global $DB;
         $manager = new \core_ai\manager($DB);
-        $manager->create_provider_instance(
+        $this->provider = $manager->create_provider_instance(
             classname: \aiprovider_datacurso\provider::class,
             name: 'test',
             enabled: true,
@@ -66,11 +68,14 @@ final class consumption_sync_test extends \advanced_testcase {
     }
 
     /**
-     * Reset the licence injected into the testable synchronisation.
+     * Put a licence key in the provider instance, as an administrator changing it would.
+     *
+     * @param string $key
      */
-    protected function tearDown(): void {
-        testable_consumption_sync::$licence = '';
-        parent::tearDown();
+    private function use_licence(string $key): void {
+        global $DB;
+        $manager = new \core_ai\manager($DB);
+        $this->provider = $manager->update_provider_instance($this->provider, ['licensekey' => $key]);
     }
 
     /**
@@ -324,17 +329,17 @@ final class consumption_sync_test extends \advanced_testcase {
     public function test_licence_change_discards_history_of_the_previous_licence(): void {
         global $DB;
 
-        testable_consumption_sync::$licence = sha1('old');
+        $this->use_licence('old');
         $client1 = new test_consumption_api_client();
         $client1->responsesbypage[1] = $this->make_page([$this->make_consumption(50), $this->make_consumption(49)]);
-        testable_consumption_sync::sync($client1);
+        consumption_sync::sync($client1);
         $this->assertEqualsCanonicalizing([49, 50], array_map('intval', $DB->get_fieldset(self::TABLE, 'externalid')));
 
         // The new licence has lower ids: with a single watermark they would never be pulled.
-        testable_consumption_sync::$licence = sha1('new');
+        $this->use_licence('new');
         $client2 = new test_consumption_api_client();
         $client2->responsesbypage[1] = $this->make_page([$this->make_consumption(7), $this->make_consumption(6)]);
-        testable_consumption_sync::sync($client2);
+        consumption_sync::sync($client2);
 
         $this->assertEqualsCanonicalizing([6, 7], array_map('intval', $DB->get_fieldset(self::TABLE, 'externalid')));
     }
@@ -342,14 +347,14 @@ final class consumption_sync_test extends \advanced_testcase {
     public function test_same_licence_keeps_the_mirror(): void {
         global $DB;
 
-        testable_consumption_sync::$licence = sha1('same');
+        $this->use_licence('same');
         $client1 = new test_consumption_api_client();
         $client1->responsesbypage[1] = $this->make_page([$this->make_consumption(20)]);
-        testable_consumption_sync::sync($client1);
+        consumption_sync::sync($client1);
 
         $client2 = new test_consumption_api_client();
         $client2->responsesbypage[1] = $this->make_page([$this->make_consumption(21), $this->make_consumption(20)]);
-        testable_consumption_sync::sync($client2);
+        consumption_sync::sync($client2);
 
         $this->assertEquals(2, $DB->count_records(self::TABLE));
     }
@@ -357,13 +362,13 @@ final class consumption_sync_test extends \advanced_testcase {
     public function test_missing_licence_does_not_empty_the_mirror(): void {
         global $DB;
 
-        testable_consumption_sync::$licence = sha1('kept');
+        $this->use_licence('kept');
         $client1 = new test_consumption_api_client();
         $client1->responsesbypage[1] = $this->make_page([$this->make_consumption(20)]);
-        testable_consumption_sync::sync($client1);
+        consumption_sync::sync($client1);
 
-        testable_consumption_sync::$licence = '';
-        testable_consumption_sync::sync(new test_consumption_api_client());
+        $this->use_licence('');
+        consumption_sync::sync(new test_consumption_api_client());
 
         $this->assertEquals(1, $DB->count_records(self::TABLE));
     }
