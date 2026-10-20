@@ -367,8 +367,10 @@ final class consumption_sync_test extends \advanced_testcase {
         consumption_sync::sync($client1);
         $this->assertEquals(1, $DB->count_records(self::TABLE));
 
+        // The client double is built while a licence still exists: its constructor needs one.
+        $client2 = new test_consumption_api_client();
         $this->use_licence('');
-        consumption_sync::sync(new test_consumption_api_client());
+        consumption_sync::sync($client2);
 
         $this->assertEquals(0, $DB->count_records(self::TABLE));
     }
