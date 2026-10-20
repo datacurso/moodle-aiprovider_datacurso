@@ -1,3 +1,11 @@
+## [1.6.2-wp] - 2026-10-19
+
+**Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.
+
+### Changed
+- **Course creator API endpoint for the European Union**
+  Sites licensed in the European Union now reach the course generation service at `https://eu.course-ai-v2.datacurso.com/api/v1` instead of the standard endpoint, so their course creation requests are served by the EU deployment. Sites of other regions keep using `https://course-ai-v2.datacurso.com/api/v1`.
+
 ## [1.5.4-wp] - 2026-10-08
 
 **Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.
