@@ -1,4 +1,4 @@
-## [1.5.5-wp] - 2026-10-19
+## [1.6.2-wp] - 2026-10-19
 
 **Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.
 
