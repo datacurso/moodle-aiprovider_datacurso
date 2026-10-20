@@ -39,6 +39,9 @@ final class consumption_sync_test extends \advanced_testcase {
     /** @var string Local mirror table. */
     private const TABLE = 'aiprovider_datacurso_consumption';
 
+    /** @var \core_ai\provider Provider instance holding the licence key. */
+    private \core_ai\provider $provider;
+
     /**
      * Seed an enabled provider instance with a license key.
      *
@@ -53,12 +56,26 @@ final class consumption_sync_test extends \advanced_testcase {
 
         global $DB;
         $manager = new \core_ai\manager($DB);
-        $manager->create_provider_instance(
+        $this->provider = $manager->create_provider_instance(
             classname: \aiprovider_datacurso\provider::class,
             name: 'test',
             enabled: true,
             config: ['licensekey' => 'test-key'],
         );
+
+        // The mirror belongs to the licence in force, so rows seeded by a test are not discarded.
+        set_config('consumption_licence', sha1('test-key'), 'aiprovider_datacurso');
+    }
+
+    /**
+     * Put a licence key in the provider instance, as an administrator changing it would.
+     *
+     * @param string $key
+     */
+    private function use_licence(string $key): void {
+        global $DB;
+        $manager = new \core_ai\manager($DB);
+        $this->provider = $manager->update_provider_instance($this->provider, ['licensekey' => $key]);
     }
 
     /**
@@ -307,5 +324,54 @@ final class consumption_sync_test extends \advanced_testcase {
         $this->assertSame(strtotime('2026-03-10 14:45:00'), $bytimestamp[3]);
         $this->assertSame(0, $bytimestamp[2]);
         $this->assertSame(0, $bytimestamp[1]);
+    }
+
+    public function test_licence_change_discards_history_of_the_previous_licence(): void {
+        global $DB;
+
+        $this->use_licence('old');
+        $client1 = new test_consumption_api_client();
+        $client1->responsesbypage[1] = $this->make_page([$this->make_consumption(50), $this->make_consumption(49)]);
+        consumption_sync::sync($client1);
+        $this->assertEqualsCanonicalizing([49, 50], array_map('intval', $DB->get_fieldset(self::TABLE, 'externalid')));
+
+        // The new licence has lower ids: with a single watermark they would never be pulled.
+        $this->use_licence('new');
+        $client2 = new test_consumption_api_client();
+        $client2->responsesbypage[1] = $this->make_page([$this->make_consumption(7), $this->make_consumption(6)]);
+        consumption_sync::sync($client2);
+
+        $this->assertEqualsCanonicalizing([6, 7], array_map('intval', $DB->get_fieldset(self::TABLE, 'externalid')));
+    }
+
+    public function test_same_licence_keeps_the_mirror(): void {
+        global $DB;
+
+        $this->use_licence('same');
+        $client1 = new test_consumption_api_client();
+        $client1->responsesbypage[1] = $this->make_page([$this->make_consumption(20)]);
+        consumption_sync::sync($client1);
+
+        $client2 = new test_consumption_api_client();
+        $client2->responsesbypage[1] = $this->make_page([$this->make_consumption(21), $this->make_consumption(20)]);
+        consumption_sync::sync($client2);
+
+        $this->assertEquals(2, $DB->count_records(self::TABLE));
+    }
+
+    public function test_removing_the_licence_empties_the_mirror(): void {
+        global $DB;
+
+        $client1 = new test_consumption_api_client();
+        $client1->responsesbypage[1] = $this->make_page([$this->make_consumption(20)]);
+        consumption_sync::sync($client1);
+        $this->assertEquals(1, $DB->count_records(self::TABLE));
+
+        // The client double is built while a licence still exists: its constructor needs one.
+        $client2 = new test_consumption_api_client();
+        $this->use_licence('');
+        consumption_sync::sync($client2);
+
+        $this->assertEquals(0, $DB->count_records(self::TABLE));
     }
 }

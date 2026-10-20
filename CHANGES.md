@@ -1,3 +1,19 @@
+## [2.1.6] - 2026-10-19
+
+**Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.
+
+### Fixed
+- **A new licence no longer keeps showing the consumption of the previous one**
+  The local mirror of the consumption history kept a single watermark, the highest external id stored, whatever licence the rows came from. After changing the licence the report kept listing the consumption of the old one, and the history of the new one was never pulled when its ids were lower. The mirror now remembers the licence it was filled for and is emptied the next time the history is synchronised with a different licence, so the new history is pulled in full. Removing the licence empties it as well, so nothing is reported while no licence is configured.
+
+## [2.1.5] - 2026-10-19
+
+**Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.
+
+### Changed
+- **Course creator API endpoint for the European Union**
+  Sites licensed in the European Union now reach the course generation service at `https://eu.course-ai-v2.datacurso.com/api/v1` instead of the standard endpoint, so their course creation requests are served by the EU deployment. Sites of other regions keep using `https://course-ai-v2.datacurso.com/api/v1`.
+
 ## [2.1.4] - 2026-10-05
 
 **Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.

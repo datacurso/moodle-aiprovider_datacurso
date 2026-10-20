@@ -170,7 +170,7 @@ class license_region {
      *
      * @return string
      */
-    private static function fingerprint(): string {
+    public static function fingerprint(): string {
         $key = trim(self::licence_key());
         if ($key === '') {
             return '';
