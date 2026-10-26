@@ -10,13 +10,25 @@
 - **A plugin that is too old gets a clear message**
   When a service answers HTTP 426 the person now sees "update the plugin to version X" (`plugin_update_required`, naming the plugin, its release and the minimum) or "update the plugin to the latest version" (`plugin_version_required`, when no release was reported) instead of a generic HTTP error. The texts are in all the plugin's languages. What happened is read from the service's `error_code` (`PLUGIN_UPDATE_REQUIRED`), never from its text, by the new `upgrade_required_response` class.
 
-## [1.6.1] - 2026-10-15
-
-**Compatibility note:** This version is compatible only with **Moodle 4.5**.
-
 ### Security
 - **One place builds the License-Key header, and a missing key stops the call**
   The header of every call to the Datacurso services is now built by `datacurso_api_base::get_license_header()`. `send_request()` and `download_file()` use it, so a request cannot leave without the license. `download_file()` used to send an empty header when no key was configured; it now fails before creating any file or contacting the service, with the localized `invalidlicensekey` message, exactly like the other requests. Spaces around the key are no longer sent. `local_coursegen` also reads the header from this method to open its generation streams.
+
+## [1.6.2] - 2026-10-19
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Fixed
+- **A new licence no longer keeps showing the consumption of the previous one**
+  The local mirror of the consumption history kept a single watermark, the highest external id stored, whatever licence the rows came from. After changing the licence the report kept listing the consumption of the old one, and the history of the new one was never pulled when its ids were lower. The mirror now remembers the licence it was filled for and is emptied the next time the history is synchronised with a different licence, so the new history is pulled in full. Removing the licence empties it as well, so nothing is reported while no licence is configured. The Configuration tab also saved a new key without forgetting the region resolved for the previous licence, because it bypassed the callback of the admin setting; it now forgets it.
+
+## [1.6.1] - 2026-10-19
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Changed
+- **Course creator API endpoint for the European Union**
+  Sites licensed in the European Union now reach the course generation service at `https://eu.course-ai-v2.datacurso.com/api/v1` instead of the standard endpoint, so their course creation requests are served by the EU deployment. Sites of other regions keep using `https://course-ai-v2.datacurso.com/api/v1`.
 
 ## [1.6.0] - 2026-10-09
 
