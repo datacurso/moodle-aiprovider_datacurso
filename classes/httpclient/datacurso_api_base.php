@@ -38,16 +38,8 @@ class datacurso_api_base {
     /** @var string|null $licensekey The license key obtained from Datacurso SHOP */
     protected $licensekey;
 
-    /**
-     * Value of detail.error_code when a service refuses a plugin release that is too old (HTTP 426).
-     *
-     * It is part of the contract with the services (python_course_ai-v2, app/core/plugin_version.py):
-     * do not rename it on one side only.
-     */
-    private const ERROR_PLUGIN_UPDATE_REQUIRED = 'PLUGIN_UPDATE_REQUIRED';
-
-    /** @var string|null Plugin that makes the requests and says so in X-Plugin-Name; null when none does. */
-    protected $callercomponent;
+    /** @var plugin_identity Says which plugin makes the requests, and its release. */
+    protected $pluginidentity;
 
     /**
      * Constructor.
@@ -55,14 +47,12 @@ class datacurso_api_base {
      * @param string $baseurl The base URL for Datacurso API requests.
      * @param string|null $licensekey The license key obtained from Datacurso SHOP.
      * @param string|null $callercomponent Frankenstyle name of the plugin that makes the requests, for example
-     *        "local_coursegen". The services that refuse plugin releases that are too old need it, together with
-     *        the release, to know who is calling. Left null, no X-Plugin-* header is sent: the provider does not
-     *        speak for the plugins that use it.
+     *        "local_coursegen". Left null, no X-Plugin-* header is sent (see plugin_identity).
      */
     public function __construct(string $baseurl, ?string $licensekey = null, ?string $callercomponent = null) {
         $this->baseurl = $baseurl;
         $this->licensekey = $licensekey ?? get_config('aiprovider_datacurso', 'licensekey');
-        $this->callercomponent = $callercomponent !== null && trim($callercomponent) !== '' ? trim($callercomponent) : null;
+        $this->pluginidentity = new plugin_identity($callercomponent);
     }
 
     /**
@@ -114,28 +104,12 @@ class datacurso_api_base {
     }
 
     /**
-     * Build the headers that identify the plugin making the request.
+     * Build the headers that say which plugin makes the request and its release.
      *
-     * These are X-Plugin-Name (the calling component) and X-Plugin-Version (its release, read from
-     * its version.php). There are none when no component was given. The version header is left out when
-     * the component is not installed or has no release, and the service then asks for an update.
-     *
-     * @return string[] Header lines.
+     * @return string[] Header lines; empty when the client was not given a plugin.
      */
     public function get_plugin_headers(): array {
-        if ($this->callercomponent === null) {
-            return [];
-        }
-
-        $headers = ['X-Plugin-Name: ' . $this->callercomponent];
-
-        $plugin = \core_plugin_manager::instance()->get_plugin_info($this->callercomponent);
-        $release = trim((string) ($plugin->release ?? ''));
-        if ($release !== '') {
-            $headers[] = 'X-Plugin-Version: ' . $release;
-        }
-
-        return $headers;
+        return $this->pluginidentity->get_headers();
     }
 
     /**
@@ -170,45 +144,11 @@ class datacurso_api_base {
         ];
         $fileinfo = array_merge($fileinfo, $filerecord);
         $options = [];
-        $options['headers'] = array_merge([$licenseheader], $this->get_plugin_headers());
+        $pluginheaders = $this->get_plugin_headers();
+        $options['headers'] = array_merge([$licenseheader], $pluginheaders);
 
         $file = $fs->create_file_from_url($fileinfo, $packageurl, $options, true);
         return $file;
-    }
-
-    /**
-     * Turn the service's "upgrade required" answer (HTTP 426) into an exception with a clear message.
-     *
-     * What happened is read from detail.error_code, the stable code the services agree on with
-     * the plugins: PLUGIN_UPDATE_REQUIRED (this release is older than the minimum the service
-     * accepts, with the plugin, its release and the minimum as plain fields) or
-     * PLUGIN_VERSION_REQUIRED (no release was reported). The text of the answer is never used to
-     * decide: its string_id belongs to the translation and can change. Any other 426, or an
-     * update answer without its data, is shown as "update to the latest version".
-     *
-     * @param string $response Raw body of the answer.
-     * @return never
-     * @throws \moodle_exception Always.
-     */
-    private function throw_plugin_update_required(string $response): never {
-        $decoded = json_decode($response, true);
-        $detail = is_array($decoded) && is_array($decoded['detail'] ?? null) ? $decoded['detail'] : [];
-
-        if (($detail['error_code'] ?? '') === self::ERROR_PLUGIN_UPDATE_REQUIRED) {
-            $a = new \stdClass();
-            foreach (['plugin', 'version', 'minimum'] as $field) {
-                // The values come from the service: keep them as plain short text.
-                $value = is_string($detail[$field] ?? null) ? $detail[$field] : '';
-                $a->$field = \core_text::substr(clean_param($value, PARAM_TEXT), 0, 64);
-            }
-            if ($a->plugin !== '' && $a->minimum !== '') {
-                debugging('The service no longer supports this plugin release', DEBUG_DEVELOPER);
-                throw new \moodle_exception('plugin_update_required', 'aiprovider_datacurso', '', $a);
-            }
-        }
-
-        debugging('The service requires the plugin to report its version', DEBUG_DEVELOPER);
-        throw new \moodle_exception('plugin_version_required', 'aiprovider_datacurso');
     }
 
     /**
@@ -244,7 +184,8 @@ class datacurso_api_base {
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
 
         $curl = $this->create_curl();
-        $baseheaders = array_merge([$licenseheader], $this->get_plugin_headers());
+        $pluginheaders = $this->get_plugin_headers();
+        $baseheaders = array_merge([$licenseheader], $pluginheaders);
 
         // Forward the configured per-service rate limit to the Python service, which enforces it
         // centrally against the user's accumulated credit consumption within the window. The
@@ -338,7 +279,8 @@ class datacurso_api_base {
         }
 
         if ($httpcode == 426) {
-            $this->throw_plugin_update_required($response);
+            $upgrade = new upgrade_required_response($response);
+            throw $upgrade->to_exception();
         }
 
         if ($httpcode >= 400) {

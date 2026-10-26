@@ -40,27 +40,24 @@ final class datacurso_api_base_test extends \advanced_testcase {
      * Build a client whose transport is the given fake cURL wrapper.
      *
      * @param fake_curl $curl
-     * @param string|null $callercomponent Plugin that makes the requests, if any.
      * @return datacurso_api_base
      */
-    private function make_client(fake_curl $curl, ?string $callercomponent = null): datacurso_api_base {
-        return new class ('https://example.invalid', 'test-key', $curl, $callercomponent) extends datacurso_api_base {
+    private function make_client(fake_curl $curl): datacurso_api_base {
+        return new class ('https://example.invalid', 'test-key', $curl) extends datacurso_api_base {
             /**
              * Constructor.
              *
              * @param string $baseurl Base URL.
              * @param string $licensekey License key.
              * @param fake_curl $fakecurl Transport double.
-             * @param string|null $callercomponent Plugin that makes the requests.
              */
             public function __construct(
                 string $baseurl,
                 string $licensekey,
                 /** @var fake_curl Transport double. */
-                private fake_curl $fakecurl,
-                ?string $callercomponent
+                private fake_curl $fakecurl
             ) {
-                parent::__construct($baseurl, $licensekey, $callercomponent);
+                parent::__construct($baseurl, $licensekey);
             }
 
             #[\Override]
@@ -368,176 +365,6 @@ final class datacurso_api_base_test extends \advanced_testcase {
 
         $this->assertCount(1, $curl->calls);
         $this->assertContains('License-Key: test-key', $curl->calls[0]['options']['CURLOPT_HTTPHEADER']);
-    }
-
-    /**
-     * A client nobody named sends no plugin header: the provider does not speak for the plugins that use it.
-     */
-    public function test_a_client_without_a_component_sends_no_plugin_headers(): void {
-        $this->resetAfterTest();
-        $curl = new fake_curl();
-        $curl->enqueue('{"ok": true}');
-        $client = $this->make_client($curl);
-
-        $client->request('GET', '/status');
-
-        $this->assertSame([], $client->get_plugin_headers());
-        foreach ($curl->calls[0]['options']['CURLOPT_HTTPHEADER'] as $header) {
-            $this->assertStringStartsNotWith('X-Plugin-', $header);
-        }
-    }
-
-    /**
-     * A blank component counts as none.
-     */
-    public function test_a_blank_component_counts_as_none(): void {
-        $this->resetAfterTest();
-
-        $this->assertSame([], $this->make_client(new fake_curl(), '  ')->get_plugin_headers());
-        $this->assertSame([], $this->make_client(new fake_curl(), '')->get_plugin_headers());
-    }
-
-    /**
-     * A plugin that names itself sends its name and its release with every request.
-     */
-    public function test_a_plugin_that_names_itself_sends_its_name_and_release(): void {
-        $this->resetAfterTest();
-        $release = \core_plugin_manager::instance()->get_plugin_info('aiprovider_datacurso')->release;
-        $this->assertNotEmpty($release);
-
-        $curl = new fake_curl();
-        $curl->enqueue('{"ok": true}');
-        $this->make_client($curl, 'aiprovider_datacurso')->request('GET', '/status');
-
-        $headers = $curl->calls[0]['options']['CURLOPT_HTTPHEADER'];
-        $this->assertContains('X-Plugin-Name: aiprovider_datacurso', $headers);
-        $this->assertContains('X-Plugin-Version: ' . $release, $headers);
-    }
-
-    /**
-     * Without a release to report, only the name is sent and the service asks for an update.
-     */
-    public function test_a_component_without_a_release_sends_no_version(): void {
-        $this->resetAfterTest();
-        $client = $this->make_client(new fake_curl(), 'local_notinstalled');
-
-        $this->assertSame(['X-Plugin-Name: local_notinstalled'], $client->get_plugin_headers());
-    }
-
-    /**
-     * The service refusing an old release is shown with the plugin, its version and the minimum.
-     */
-    public function test_an_outdated_plugin_gets_a_message_with_the_minimum_version(): void {
-        $this->resetAfterTest();
-        $curl = new fake_curl();
-        $curl->enqueue(json_encode(['detail' => [
-            'error_code' => 'PLUGIN_UPDATE_REQUIRED',
-            'plugin' => 'local_coursegen',
-            'version' => '1.0.1',
-            'minimum' => '1.2.0',
-            'string_id' => 'plugin_update_required',
-            'string' => 'English text from the service',
-        ]]), 426);
-
-        $e = $this->get_expecting_exception($this->make_client($curl));
-
-        $this->assertSame('plugin_update_required', $e->errorcode);
-        $this->assertStringContainsString('local_coursegen 1.0.1', $e->getMessage());
-        $this->assertStringContainsString('1.2.0', $e->getMessage());
-        $this->assertDebuggingCalled();
-    }
-
-    /**
-     * The message is chosen by error_code, not by the id or the text the service uses to translate.
-     */
-    public function test_the_decision_does_not_depend_on_the_string_id(): void {
-        $this->resetAfterTest();
-        $curl = new fake_curl();
-        $curl->enqueue(json_encode(['detail' => [
-            'error_code' => 'PLUGIN_UPDATE_REQUIRED',
-            'plugin' => 'local_coursegen',
-            'version' => '1.0.1',
-            'minimum' => '1.2.0',
-            'string_id' => 'any_other_id_after_a_rename',
-            'string' => 'Another wording',
-        ]]), 426);
-
-        $e = $this->get_expecting_exception($this->make_client($curl));
-
-        $this->assertSame('plugin_update_required', $e->errorcode);
-        $this->assertDebuggingCalled();
-    }
-
-    /**
-     * A string_id alone is not enough: without the error_code the plugin asks for the latest version.
-     */
-    public function test_a_string_id_without_an_error_code_is_not_trusted(): void {
-        $this->resetAfterTest();
-        $curl = new fake_curl();
-        $curl->enqueue(json_encode(['detail' => [
-            'string_id' => 'plugin_update_required',
-            'plugin' => 'local_coursegen',
-            'version' => '1.0.1',
-            'minimum' => '1.2.0',
-        ]]), 426);
-
-        $e = $this->get_expecting_exception($this->make_client($curl));
-
-        $this->assertSame('plugin_version_required', $e->errorcode);
-        $this->assertDebuggingCalled();
-    }
-
-    /**
-     * Values that come from the service are shown as plain text.
-     */
-    public function test_the_values_of_the_update_message_are_plain_text(): void {
-        $this->resetAfterTest();
-        $curl = new fake_curl();
-        $curl->enqueue(json_encode(['detail' => [
-            'error_code' => 'PLUGIN_UPDATE_REQUIRED',
-            'plugin' => '<script>alert(1)</script>local_x',
-            'version' => str_repeat('9', 200),
-            'minimum' => '1.2',
-        ]]), 426);
-
-        $e = $this->get_expecting_exception($this->make_client($curl));
-
-        $this->assertStringNotContainsString('<script>', $e->getMessage());
-        $this->assertLessThan(400, strlen($e->getMessage()));
-        $this->assertDebuggingCalled();
-    }
-
-    /**
-     * Any other 426 asks for the latest version: no release reported, an unknown code, no data, no body.
-     *
-     * @dataProvider other_upgrade_answers
-     * @param string $body Body of the 426 answer.
-     */
-    public function test_any_other_426_asks_for_the_latest_version(string $body): void {
-        $this->resetAfterTest();
-        $curl = new fake_curl();
-        $curl->enqueue($body, 426);
-
-        $e = $this->get_expecting_exception($this->make_client($curl));
-
-        $this->assertSame('plugin_version_required', $e->errorcode);
-        $this->assertDebuggingCalled();
-    }
-
-    /**
-     * Answers that are not a readable "update to version X".
-     *
-     * @return array
-     */
-    public static function other_upgrade_answers(): array {
-        return [
-            'version required' => [json_encode(['detail' => ['error_code' => 'PLUGIN_VERSION_REQUIRED', 'string' => 'x']])],
-            'unknown code' => [json_encode(['detail' => ['error_code' => 'SOMETHING_NEW', 'minimum' => '1.2', 'plugin' => 'a']])],
-            'update without its data' => [json_encode(['detail' => ['error_code' => 'PLUGIN_UPDATE_REQUIRED']])],
-            'data of the wrong type' => [json_encode(['detail' => ['error_code' => 'PLUGIN_UPDATE_REQUIRED', 'plugin' => ['a'], 'minimum' => 12]])],
-            'not json' => ['<html>Upgrade Required</html>'],
-            'detail is text' => [json_encode(['detail' => 'upgrade'])],
-        ];
     }
 
     /**
