@@ -174,6 +174,8 @@ $string['months'] = 'Months';
 $string['notenoughtokens'] = 'Insufficient AI credits. Please visit <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Manage Credits</a> in the Datacurso Shop to allocate or purchase more credits. Or contact your administrator.';
 $string['of'] = 'of';
 $string['plugin'] = 'Plugin';
+$string['plugin_update_required'] = 'This version of the plugin ({$a->plugin} {$a->version}) is no longer supported. Update it to version {$a->minimum} or later to keep using the Datacurso services.';
+$string['plugin_version_required'] = 'This version of the plugin is no longer supported by the Datacurso services. Update the plugin to the latest version to keep using them.';
 $string['plugindesc_assign_ai'] = 'Review assignments with AI assistance.';
 $string['plugindesc_coursegen'] = 'Create complete courses, activities, and resources with AI.';
 $string['plugindesc_datacurso_ratings'] = 'Allows students to rate activities and resources; teachers and administrators can later generate AI-based course analysis.';

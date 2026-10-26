@@ -174,6 +174,8 @@ $string['months'] = 'Bulan';
 $string['notenoughtokens'] = 'Kredit AI tidak cukup. Silakan kunjungi <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Kelola Kredit</a> di Toko Datacurso untuk mengalokasikan atau membeli lebih banyak kredit. Atau hubungi administrator Anda.';
 $string['of'] = 'dari';
 $string['plugin'] = 'Plugin';
+$string['plugin_update_required'] = 'Versi plugin ini ({$a->plugin} {$a->version}) tidak lagi didukung. Perbarui ke versi {$a->minimum} atau yang lebih baru untuk terus menggunakan layanan Datacurso.';
+$string['plugin_version_required'] = 'Versi plugin ini tidak lagi didukung oleh layanan Datacurso. Perbarui plugin ke versi terbaru untuk terus menggunakannya.';
 $string['plugindesc_assign_ai'] = 'Tinjau tugas dengan bantuan AI.';
 $string['plugindesc_coursegen'] = 'Buat kursus lengkap, aktivitas, dan sumber daya dengan AI.';
 $string['plugindesc_datacurso_ratings'] = 'Memungkinkan siswa untuk menilai aktivitas dan sumber daya; guru dan administrator kemudian dapat menghasilkan analisis kursus berbasis AI.';
