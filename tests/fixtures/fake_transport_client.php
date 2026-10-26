@@ -44,6 +44,12 @@ class fake_transport_client extends datacurso_api_base {
         $this->baseurl = 'https://example.invalid';
         $this->licensekey = 'test-key';
         $this->pluginidentity = new plugin_identity($callercomponent);
+        $this->instanceprovider = new \aiprovider_datacurso\provider(
+            enabled: true,
+            name: 'test',
+            config: json_encode(['licensekey' => 'test-key']),
+            actionconfig: '{}',
+        );
         $this->fakecurl = $fakecurl;
     }
 
