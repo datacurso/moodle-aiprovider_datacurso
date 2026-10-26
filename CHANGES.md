@@ -4,7 +4,7 @@
 
 ### Added
 - **Every request says which plugin makes it and its release**
-  The Datacurso services need to know which plugin release is calling so that one that is too old can be told to update instead of failing in a confusing way. `datacurso_api_base` now sends `X-Plugin-Name` and `X-Plugin-Version` (the release in the plugin's `version.php`) with every request and file download, next to `License-Key`. The provider identifies as `aiprovider_datacurso`; a plugin that uses the client names itself with the new `set_caller_component()` (`local_coursegen` and `local_coursedynamicrules` do). `get_plugin_headers()` returns the two lines.
+  The Datacurso services need to know which plugin release is calling so that one that is too old can be told to update instead of failing in a confusing way. `datacurso_api_base` now sends `X-Plugin-Name` and `X-Plugin-Version` (the release in the plugin's `version.php`) with every request and file download, next to `License-Key`. A plugin that uses the client names itself with the new `$callercomponent` constructor argument (`local_coursegen` and `local_coursedynamicrules` do); a client that is not told sends no `X-Plugin-*` header, because the provider does not speak for the plugins that use it. `get_plugin_headers()` returns the lines.
 
 ### Changed
 - **A plugin that is too old gets a clear message**

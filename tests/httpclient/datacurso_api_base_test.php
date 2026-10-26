@@ -40,24 +40,27 @@ final class datacurso_api_base_test extends \advanced_testcase {
      * Build a client whose transport is the given fake cURL wrapper.
      *
      * @param fake_curl $curl
+     * @param string|null $callercomponent Plugin that makes the requests, if any.
      * @return datacurso_api_base
      */
-    private function make_client(fake_curl $curl): datacurso_api_base {
-        return new class ('https://example.invalid', 'test-key', $curl) extends datacurso_api_base {
+    private function make_client(fake_curl $curl, ?string $callercomponent = null): datacurso_api_base {
+        return new class ('https://example.invalid', 'test-key', $curl, $callercomponent) extends datacurso_api_base {
             /**
              * Constructor.
              *
              * @param string $baseurl Base URL.
              * @param string $licensekey License key.
              * @param fake_curl $fakecurl Transport double.
+             * @param string|null $callercomponent Plugin that makes the requests.
              */
             public function __construct(
                 string $baseurl,
                 string $licensekey,
                 /** @var fake_curl Transport double. */
-                private fake_curl $fakecurl
+                private fake_curl $fakecurl,
+                ?string $callercomponent
             ) {
-                parent::__construct($baseurl, $licensekey);
+                parent::__construct($baseurl, $licensekey, $callercomponent);
             }
 
             #[\Override]
@@ -368,16 +371,43 @@ final class datacurso_api_base_test extends \advanced_testcase {
     }
 
     /**
-     * Every request tells the service which plugin is calling and its release.
+     * A client nobody named sends no plugin header: the provider does not speak for the plugins that use it.
      */
-    public function test_request_identifies_the_plugin_and_its_release(): void {
+    public function test_a_client_without_a_component_sends_no_plugin_headers(): void {
+        $this->resetAfterTest();
+        $curl = new fake_curl();
+        $curl->enqueue('{"ok": true}');
+        $client = $this->make_client($curl);
+
+        $client->request('GET', '/status');
+
+        $this->assertSame([], $client->get_plugin_headers());
+        foreach ($curl->calls[0]['options']['CURLOPT_HTTPHEADER'] as $header) {
+            $this->assertStringStartsNotWith('X-Plugin-', $header);
+        }
+    }
+
+    /**
+     * A blank component counts as none.
+     */
+    public function test_a_blank_component_counts_as_none(): void {
+        $this->resetAfterTest();
+
+        $this->assertSame([], $this->make_client(new fake_curl(), '  ')->get_plugin_headers());
+        $this->assertSame([], $this->make_client(new fake_curl(), '')->get_plugin_headers());
+    }
+
+    /**
+     * A plugin that names itself sends its name and its release with every request.
+     */
+    public function test_a_plugin_that_names_itself_sends_its_name_and_release(): void {
         $this->resetAfterTest();
         $release = \core_plugin_manager::instance()->get_plugin_info('aiprovider_datacurso')->release;
         $this->assertNotEmpty($release);
 
         $curl = new fake_curl();
         $curl->enqueue('{"ok": true}');
-        $this->make_client($curl)->request('GET', '/status');
+        $this->make_client($curl, 'aiprovider_datacurso')->request('GET', '/status');
 
         $headers = $curl->calls[0]['options']['CURLOPT_HTTPHEADER'];
         $this->assertContains('X-Plugin-Name: aiprovider_datacurso', $headers);
@@ -385,28 +415,11 @@ final class datacurso_api_base_test extends \advanced_testcase {
     }
 
     /**
-     * A plugin that uses the client names itself, and the client keeps that name.
-     */
-    public function test_the_calling_plugin_can_name_itself(): void {
-        $this->resetAfterTest();
-        $curl = new fake_curl();
-        $curl->enqueue('{"ok": true}');
-        $client = $this->make_client($curl);
-
-        $this->assertSame($client, $client->set_caller_component('local_notinstalled'));
-        $client->request('GET', '/status');
-
-        $headers = $curl->calls[0]['options']['CURLOPT_HTTPHEADER'];
-        $this->assertContains('X-Plugin-Name: local_notinstalled', $headers);
-        $this->assertNotContains('X-Plugin-Name: aiprovider_datacurso', $headers);
-    }
-
-    /**
      * Without a release to report, only the name is sent and the service asks for an update.
      */
     public function test_a_component_without_a_release_sends_no_version(): void {
         $this->resetAfterTest();
-        $client = $this->make_client(new fake_curl())->set_caller_component('local_notinstalled');
+        $client = $this->make_client(new fake_curl(), 'local_notinstalled');
 
         $this->assertSame(['X-Plugin-Name: local_notinstalled'], $client->get_plugin_headers());
     }

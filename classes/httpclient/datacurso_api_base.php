@@ -46,18 +46,23 @@ class datacurso_api_base {
      */
     private const ERROR_PLUGIN_UPDATE_REQUIRED = 'PLUGIN_UPDATE_REQUIRED';
 
-    /** @var string Component that identifies itself to the service in X-Plugin-Name. */
-    protected $callercomponent = 'aiprovider_datacurso';
+    /** @var string|null Plugin that makes the requests and says so in X-Plugin-Name; null when none does. */
+    protected $callercomponent;
 
     /**
      * Constructor.
      *
      * @param string $baseurl The base URL for Datacurso API requests.
      * @param string|null $licensekey The license key obtained from Datacurso SHOP.
+     * @param string|null $callercomponent Frankenstyle name of the plugin that makes the requests, for example
+     *        "local_coursegen". The services that refuse plugin releases that are too old need it, together with
+     *        the release, to know who is calling. Left null, no X-Plugin-* header is sent: the provider does not
+     *        speak for the plugins that use it.
      */
-    public function __construct(string $baseurl, ?string $licensekey = null) {
+    public function __construct(string $baseurl, ?string $licensekey = null, ?string $callercomponent = null) {
         $this->baseurl = $baseurl;
         $this->licensekey = $licensekey ?? get_config('aiprovider_datacurso', 'licensekey');
+        $this->callercomponent = $callercomponent !== null && trim($callercomponent) !== '' ? trim($callercomponent) : null;
     }
 
     /**
@@ -109,30 +114,19 @@ class datacurso_api_base {
     }
 
     /**
-     * Set the plugin that is making the requests, so the service knows which one is calling.
-     *
-     * The services refuse a plugin that does not identify itself or whose release is older than
-     * the minimum they accept. The provider is shared by several plugins, so each one names itself
-     * (for example local_coursegen); a client that is not told keeps identifying as this provider.
-     *
-     * @param string $component Frankenstyle name of the calling plugin, for example "local_coursegen".
-     * @return static
-     */
-    public function set_caller_component(string $component): static {
-        $this->callercomponent = $component;
-        return $this;
-    }
-
-    /**
      * Build the headers that identify the plugin making the request.
      *
      * These are X-Plugin-Name (the calling component) and X-Plugin-Version (its release, read from
-     * its version.php). The version header is left out when the component is not installed or has no
-     * release, and the service then asks for an update.
+     * its version.php). There are none when no component was given. The version header is left out when
+     * the component is not installed or has no release, and the service then asks for an update.
      *
      * @return string[] Header lines.
      */
     public function get_plugin_headers(): array {
+        if ($this->callercomponent === null) {
+            return [];
+        }
+
         $headers = ['X-Plugin-Name: ' . $this->callercomponent];
 
         $plugin = \core_plugin_manager::instance()->get_plugin_info($this->callercomponent);
