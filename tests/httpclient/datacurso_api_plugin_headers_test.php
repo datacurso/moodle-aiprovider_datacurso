@@ -103,6 +103,7 @@ final class datacurso_api_plugin_headers_test extends \advanced_testcase {
         $this->assertContains('License-Key: test-key', $headers);
         $this->assertContains('X-Plugin-Name: aiprovider_datacurso', $headers);
         $this->assertContains('X-Plugin-Version: ' . $release, $headers);
+        $this->assertContains('X-Plugin-Build: ' . $plugin->versiondisk, $headers);
     }
 
     /**
