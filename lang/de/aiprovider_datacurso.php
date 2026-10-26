@@ -174,6 +174,8 @@ $string['months'] = 'Monate';
 $string['notenoughtokens'] = 'Unzureichende KI-Kredite. Bitte besuchen Sie <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Kredite verwalten</a> im Datacurso-Shop, um mehr Kredite zuzuweisen oder zu erwerben. Oder wenden Sie sich an Ihren Administrator.';
 $string['of'] = 'von';
 $string['plugin'] = 'Plugin';
+$string['plugin_update_required'] = 'Diese Version des Plugins ({$a->plugin} {$a->version}) wird nicht mehr unterstützt. Aktualisieren Sie sie auf Version {$a->minimum} oder neuer, um die Datacurso-Dienste weiter zu nutzen.';
+$string['plugin_version_required'] = 'Diese Version des Plugins wird von den Datacurso-Diensten nicht mehr unterstützt. Aktualisieren Sie das Plugin auf die neueste Version, um sie weiter zu nutzen.';
 $string['plugindesc_assign_ai'] = 'Aufgaben mit KI-Unterstützung bewerten.';
 $string['plugindesc_coursegen'] = 'Vollständige Kurse, Aktivitäten und Ressourcen mit KI erstellen.';
 $string['plugindesc_datacurso_ratings'] = 'Ermöglicht Studierenden, Aktivitäten und Ressourcen zu bewerten; Lehrende und Administratoren können später KI-basierte Kursanalysen erstellen.';

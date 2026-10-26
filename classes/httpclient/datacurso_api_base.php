@@ -39,13 +39,18 @@ class datacurso_api_base {
     /** @var object|null $instanceprovider */
     protected $instanceprovider;
 
+    /** @var plugin_identity Says which plugin makes the requests, and its release. */
+    protected $pluginidentity;
+
     /**
      * Constructor.
      *
      * @param string $baseurl
      * @param string|null $licensekey
+     * @param string|null $callercomponent Frankenstyle name of the plugin that makes the requests, for example
+     *        "local_coursegen". Left null, no X-Plugin-* header is sent (see plugin_identity).
      */
-    public function __construct(string $baseurl, ?string $licensekey = null) {
+    public function __construct(string $baseurl, ?string $licensekey = null, ?string $callercomponent = null) {
         global $DB;
 
         $manager = new \core_ai\manager($DB);
@@ -67,6 +72,7 @@ class datacurso_api_base {
         }
         $this->baseurl = rtrim($baseurl, '/');
         $this->licensekey = $licensekey;
+        $this->pluginidentity = new plugin_identity($callercomponent);
     }
 
     /**
@@ -94,6 +100,15 @@ class datacurso_api_base {
         $siteuuid = \core\uuid::generate();
         set_config('site_uuid', $siteuuid, 'aiprovider_datacurso');
         return $siteuuid;
+    }
+
+    /**
+     * Build the headers that say which plugin makes the request and its release.
+     *
+     * @return string[] Header lines; empty when the client was not given a plugin.
+     */
+    public function get_plugin_headers(): array {
+        return $this->pluginidentity->get_headers();
     }
 
     /**
@@ -127,9 +142,9 @@ class datacurso_api_base {
         $fileinfo = array_merge($fileinfo, $filerecord);
 
         $options = [];
-        $options['headers'] = [
-            'License-Key: ' . $this->licensekey,
-        ];
+        $licenseheaders = ['License-Key: ' . $this->licensekey];
+        $pluginheaders = $this->get_plugin_headers();
+        $options['headers'] = array_merge($licenseheaders, $pluginheaders);
 
         return $fs->create_file_from_url($fileinfo, $packageurl, $options, true);
     }
@@ -170,9 +185,9 @@ class datacurso_api_base {
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
 
         $curl = $this->create_curl();
-        $baseheaders = [
-            'License-Key: ' . $this->licensekey,
-        ];
+        $licenseheaders = ['License-Key: ' . $this->licensekey];
+        $pluginheaders = $this->get_plugin_headers();
+        $baseheaders = array_merge($licenseheaders, $pluginheaders);
 
         // Forward the configured per-service rate limit to the Python service, which enforces it
         // centrally against the user's accumulated credit consumption within the window. The
@@ -253,6 +268,11 @@ class datacurso_api_base {
 
             debugging('Unknown error from Datacurso API', DEBUG_DEVELOPER);
             throw new \moodle_exception('forbidden', 'aiprovider_datacurso');
+        }
+
+        if ($httpcode == 426) {
+            $upgrade = new upgrade_required_response($response);
+            throw $upgrade->to_exception();
         }
 
         if ($httpcode >= 400) {

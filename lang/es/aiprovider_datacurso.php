@@ -174,6 +174,8 @@ $string['months'] = 'Meses';
 $string['notenoughtokens'] = 'Créditos de IA insuficientes. Por favor, visite <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Gestionar Créditos</a> en la Tienda Datacurso para asignar o comprar más créditos. O contacte a su administrador.';
 $string['of'] = 'de';
 $string['plugin'] = 'Plugin';
+$string['plugin_update_required'] = 'Esta versión del plugin ({$a->plugin} {$a->version}) ya no es compatible. Actualícela a la versión {$a->minimum} o posterior para seguir usando los servicios de Datacurso.';
+$string['plugin_version_required'] = 'Esta versión del plugin ya no es compatible con los servicios de Datacurso. Actualice el plugin a la última versión para seguir usándolos.';
 $string['plugindesc_assign_ai'] = 'Revisar tareas con asistencia de IA.';
 $string['plugindesc_coursegen'] = 'Crear cursos completos, actividades y recursos con IA.';
 $string['plugindesc_datacurso_ratings'] = 'Permite a los estudiantes calificar actividades y recursos; los profesores y administradores pueden generar análisis de cursos basados en IA.';
