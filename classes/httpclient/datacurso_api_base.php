@@ -38,6 +38,9 @@ class datacurso_api_base {
     /** @var string|null $licensekey The license key obtained from Datacurso SHOP */
     protected $licensekey;
 
+    /** @var string Component that identifies itself to the service in X-Plugin-Name. */
+    protected $callercomponent = 'aiprovider_datacurso';
+
     /**
      * Constructor.
      *
@@ -98,6 +101,42 @@ class datacurso_api_base {
     }
 
     /**
+     * Set the plugin that is making the requests, so the service knows which one is calling.
+     *
+     * The services refuse a plugin that does not identify itself or whose release is older than
+     * the minimum they accept. The provider is shared by several plugins, so each one names itself
+     * (for example local_coursegen); a client that is not told keeps identifying as this provider.
+     *
+     * @param string $component Frankenstyle name of the calling plugin, for example "local_coursegen".
+     * @return static
+     */
+    public function set_caller_component(string $component): static {
+        $this->callercomponent = $component;
+        return $this;
+    }
+
+    /**
+     * Build the headers that identify the plugin making the request.
+     *
+     * These are X-Plugin-Name (the calling component) and X-Plugin-Version (its release, read from
+     * its version.php). The version header is left out when the component is not installed or has no
+     * release, and the service then asks for an update.
+     *
+     * @return string[] Header lines.
+     */
+    public function get_plugin_headers(): array {
+        $headers = ['X-Plugin-Name: ' . $this->callercomponent];
+
+        $plugin = \core_plugin_manager::instance()->get_plugin_info($this->callercomponent);
+        $release = trim((string) ($plugin->release ?? ''));
+        if ($release !== '') {
+            $headers[] = 'X-Plugin-Version: ' . $release;
+        }
+
+        return $headers;
+    }
+
+    /**
      * Download a file from Datacurso API.
      *
      * @param string $endpoint Relative endpoint (starting with "/").
@@ -129,10 +168,40 @@ class datacurso_api_base {
         ];
         $fileinfo = array_merge($fileinfo, $filerecord);
         $options = [];
-        $options['headers'] = [$licenseheader];
+        $options['headers'] = array_merge([$licenseheader], $this->get_plugin_headers());
 
         $file = $fs->create_file_from_url($fileinfo, $packageurl, $options, true);
         return $file;
+    }
+
+    /**
+     * Turn the service's "upgrade required" answer (HTTP 426) into an exception with a clear message.
+     *
+     * The service says either that this plugin release is older than the minimum it accepts
+     * (plugin_update_required) or that the plugin did not report its version at all
+     * (plugin_version_required).
+     *
+     * @param string $response Raw body of the answer.
+     * @return never
+     * @throws \moodle_exception Always.
+     */
+    private function throw_plugin_update_required(string $response): never {
+        $decoded = json_decode($response, true);
+        $detail = is_array($decoded) && is_array($decoded['detail'] ?? null) ? $decoded['detail'] : [];
+
+        if (($detail['string_id'] ?? '') === 'plugin_update_required') {
+            $args = is_array($detail['string_args'] ?? null) ? $detail['string_args'] : [];
+            $a = new \stdClass();
+            foreach (['plugin', 'version', 'minimum'] as $name) {
+                // The values come from the service: keep them as plain short text.
+                $a->$name = \core_text::substr(clean_param((string) ($args[$name] ?? ''), PARAM_TEXT), 0, 64);
+            }
+            debugging('The service no longer supports this plugin release', DEBUG_DEVELOPER);
+            throw new \moodle_exception('plugin_update_required', 'aiprovider_datacurso', '', $a);
+        }
+
+        debugging('The service requires the plugin to report its version', DEBUG_DEVELOPER);
+        throw new \moodle_exception('plugin_version_required', 'aiprovider_datacurso');
     }
 
     /**
@@ -168,7 +237,7 @@ class datacurso_api_base {
         $serviceid = \aiprovider_datacurso\local\ratelimiter::resolve_service_for_path($path);
 
         $curl = $this->create_curl();
-        $baseheaders = [$licenseheader];
+        $baseheaders = array_merge([$licenseheader], $this->get_plugin_headers());
 
         // Forward the configured per-service rate limit to the Python service, which enforces it
         // centrally against the user's accumulated credit consumption within the window. The
@@ -259,6 +328,10 @@ class datacurso_api_base {
 
             debugging('Unknown error from Datacurso API', DEBUG_DEVELOPER);
             throw new \moodle_exception('forbidden', 'aiprovider_datacurso');
+        }
+
+        if ($httpcode == 426) {
+            $this->throw_plugin_update_required($response);
         }
 
         if ($httpcode >= 400) {

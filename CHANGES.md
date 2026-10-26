@@ -1,3 +1,15 @@
+## [1.6.3] - 2026-10-26
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Added
+- **Every request says which plugin makes it and its release**
+  The Datacurso services need to know which plugin release is calling so that one that is too old can be told to update instead of failing in a confusing way. `datacurso_api_base` now sends `X-Plugin-Name` and `X-Plugin-Version` (the release in the plugin's `version.php`) with every request and file download, next to `License-Key`. The provider identifies as `aiprovider_datacurso`; a plugin that uses the client names itself with the new `set_caller_component()` (`local_coursegen` and `local_coursedynamicrules` do). `get_plugin_headers()` returns the two lines.
+
+### Changed
+- **A plugin that is too old gets a clear message**
+  When a service answers HTTP 426 the person now sees "update the plugin to version X" (`plugin_update_required`, naming the plugin, its release and the minimum) or "update the plugin to the latest version" (`plugin_version_required`, when no release was reported) instead of a generic HTTP error. The texts are in all the plugin's languages.
+
 ## [1.6.1] - 2026-10-15
 
 **Compatibility note:** This version is compatible only with **Moodle 4.5**.

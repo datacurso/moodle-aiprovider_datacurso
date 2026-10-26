@@ -368,6 +368,118 @@ final class datacurso_api_base_test extends \advanced_testcase {
     }
 
     /**
+     * Every request tells the service which plugin is calling and its release.
+     */
+    public function test_request_identifies_the_plugin_and_its_release(): void {
+        $this->resetAfterTest();
+        $release = \core_plugin_manager::instance()->get_plugin_info('aiprovider_datacurso')->release;
+        $this->assertNotEmpty($release);
+
+        $curl = new fake_curl();
+        $curl->enqueue('{"ok": true}');
+        $this->make_client($curl)->request('GET', '/status');
+
+        $headers = $curl->calls[0]['options']['CURLOPT_HTTPHEADER'];
+        $this->assertContains('X-Plugin-Name: aiprovider_datacurso', $headers);
+        $this->assertContains('X-Plugin-Version: ' . $release, $headers);
+    }
+
+    /**
+     * A plugin that uses the client names itself, and the client keeps that name.
+     */
+    public function test_the_calling_plugin_can_name_itself(): void {
+        $this->resetAfterTest();
+        $curl = new fake_curl();
+        $curl->enqueue('{"ok": true}');
+        $client = $this->make_client($curl);
+
+        $this->assertSame($client, $client->set_caller_component('local_notinstalled'));
+        $client->request('GET', '/status');
+
+        $headers = $curl->calls[0]['options']['CURLOPT_HTTPHEADER'];
+        $this->assertContains('X-Plugin-Name: local_notinstalled', $headers);
+        $this->assertNotContains('X-Plugin-Name: aiprovider_datacurso', $headers);
+    }
+
+    /**
+     * Without a release to report, only the name is sent and the service asks for an update.
+     */
+    public function test_a_component_without_a_release_sends_no_version(): void {
+        $this->resetAfterTest();
+        $client = $this->make_client(new fake_curl())->set_caller_component('local_notinstalled');
+
+        $this->assertSame(['X-Plugin-Name: local_notinstalled'], $client->get_plugin_headers());
+    }
+
+    /**
+     * The service refusing an old release is shown with the plugin, its version and the minimum.
+     */
+    public function test_an_outdated_plugin_gets_a_message_with_the_minimum_version(): void {
+        $this->resetAfterTest();
+        $curl = new fake_curl();
+        $curl->enqueue(json_encode(['detail' => [
+            'string_id' => 'plugin_update_required',
+            'string' => 'English text from the service',
+            'string_args' => ['plugin' => 'local_coursegen', 'version' => '1.0.1', 'minimum' => '1.2.0'],
+        ]]), 426);
+
+        $e = $this->get_expecting_exception($this->make_client($curl));
+
+        $this->assertSame('plugin_update_required', $e->errorcode);
+        $this->assertStringContainsString('local_coursegen 1.0.1', $e->getMessage());
+        $this->assertStringContainsString('1.2.0', $e->getMessage());
+        $this->assertDebuggingCalled();
+    }
+
+    /**
+     * Values that come from the service are shown as plain text.
+     */
+    public function test_the_values_of_the_update_message_are_plain_text(): void {
+        $this->resetAfterTest();
+        $curl = new fake_curl();
+        $curl->enqueue(json_encode(['detail' => [
+            'string_id' => 'plugin_update_required',
+            'string_args' => ['plugin' => '<script>alert(1)</script>local_x', 'version' => str_repeat('9', 200), 'minimum' => '1.2'],
+        ]]), 426);
+
+        $e = $this->get_expecting_exception($this->make_client($curl));
+
+        $this->assertStringNotContainsString('<script>', $e->getMessage());
+        $this->assertLessThan(400, strlen($e->getMessage()));
+        $this->assertDebuggingCalled();
+    }
+
+    /**
+     * A plugin that reports no version is told to update to the latest one.
+     *
+     * @dataProvider unreadable_upgrade_answers
+     * @param string $body Body of the 426 answer.
+     */
+    public function test_a_plugin_that_reports_no_version_is_asked_to_update(string $body): void {
+        $this->resetAfterTest();
+        $curl = new fake_curl();
+        $curl->enqueue($body, 426);
+
+        $e = $this->get_expecting_exception($this->make_client($curl));
+
+        $this->assertSame('plugin_version_required', $e->errorcode);
+        $this->assertDebuggingCalled();
+    }
+
+    /**
+     * Answers of the service that ask for the version, and bodies that cannot be read.
+     *
+     * @return array
+     */
+    public static function unreadable_upgrade_answers(): array {
+        return [
+            'version required' => [json_encode(['detail' => ['string_id' => 'plugin_version_required', 'string' => 'x']])],
+            'not json' => ['<html>Upgrade Required</html>'],
+            'detail is text' => [json_encode(['detail' => 'upgrade'])],
+        ];
+    }
+
+    /**
      * A request without a license key stops before any network call.
      */
     public function test_request_without_a_key_never_reaches_the_service(): void {
