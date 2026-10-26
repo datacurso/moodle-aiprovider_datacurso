@@ -32,6 +32,12 @@ class plugin_identity {
     /** @var string|null Frankenstyle name of the calling plugin, or null when none was given. */
     private ?string $component;
 
+    /** @var string Release of the plugin (for example "2.0.10"); empty when not installed or without one. */
+    private string $release = '';
+
+    /** @var string Version of the plugin as a date-based number (for example "2026102600"); empty when not installed. */
+    private string $version = '';
+
     /**
      * Constructor.
      *
@@ -39,6 +45,34 @@ class plugin_identity {
      */
     public function __construct(?string $component = null) {
         $this->component = $this->clean_component($component);
+        $this->load_plugin_data();
+    }
+
+    /**
+     * Frankenstyle name of the calling plugin.
+     *
+     * @return string|null The trimmed name, or null when no plugin was given.
+     */
+    public function get_component(): ?string {
+        return $this->component;
+    }
+
+    /**
+     * Release of the calling plugin, read from its version.php.
+     *
+     * @return string The release, or an empty string when the plugin is not installed or has none.
+     */
+    public function get_release(): string {
+        return $this->release;
+    }
+
+    /**
+     * Date-based version of the calling plugin, read from its version.php.
+     *
+     * @return string The version, or an empty string when the plugin is not installed.
+     */
+    public function get_version(): string {
+        return $this->version;
     }
 
     /**
@@ -55,12 +89,11 @@ class plugin_identity {
         }
 
         $headers = ['X-Plugin-Name: ' . $this->component];
-        $release = $this->get_release();
-        if ($release === '') {
+        if ($this->release === '') {
             return $headers;
         }
 
-        $headers[] = 'X-Plugin-Version: ' . $release;
+        $headers[] = 'X-Plugin-Version: ' . $this->release;
         return $headers;
     }
 
@@ -84,22 +117,29 @@ class plugin_identity {
     }
 
     /**
-     * Read the release of the plugin from its version.php.
+     * Read the release and the version of the plugin from its version.php.
      *
-     * @return string The release, or an empty string when the plugin is not installed or has none.
+     * Both stay empty when no plugin was given or it is not installed.
      */
-    private function get_release(): string {
+    private function load_plugin_data(): void {
+        if ($this->component === null) {
+            return;
+        }
+
         $manager = \core_plugin_manager::instance();
         $plugin = $manager->get_plugin_info($this->component);
         if ($plugin === null) {
-            return '';
+            return;
         }
 
         $release = $plugin->release;
-        if ($release === null) {
-            return '';
+        if ($release !== null) {
+            $this->release = trim((string) $release);
         }
 
-        return trim((string) $release);
+        $version = $plugin->versiondisk;
+        if ($version !== null) {
+            $this->version = trim((string) $version);
+        }
     }
 }

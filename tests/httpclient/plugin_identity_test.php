@@ -107,4 +107,41 @@ final class plugin_identity_test extends \advanced_testcase {
 
         $this->assertSame(['X-Plugin-Name: mod_page'], $identity->get_headers());
     }
+
+    /**
+     * The properties of a named plugin are its name, its release and its date-based version.
+     */
+    public function test_properties_of_an_installed_plugin(): void {
+        $manager = \core_plugin_manager::instance();
+        $plugin = $manager->get_plugin_info('aiprovider_datacurso');
+
+        $identity = new plugin_identity(' aiprovider_datacurso ');
+
+        $this->assertSame('aiprovider_datacurso', $identity->get_component());
+        $this->assertSame(trim((string) $plugin->release), $identity->get_release());
+        $this->assertSame((string) $plugin->versiondisk, $identity->get_version());
+        $this->assertMatchesRegularExpression('/^\d{10}$/', $identity->get_version());
+    }
+
+    /**
+     * Without a plugin all three properties are empty.
+     */
+    public function test_properties_without_a_component(): void {
+        $identity = new plugin_identity('  ');
+
+        $this->assertNull($identity->get_component());
+        $this->assertSame('', $identity->get_release());
+        $this->assertSame('', $identity->get_version());
+    }
+
+    /**
+     * A plugin that is not installed keeps its name but has no release and no version.
+     */
+    public function test_properties_of_a_plugin_that_is_not_installed(): void {
+        $identity = new plugin_identity('local_notinstalled');
+
+        $this->assertSame('local_notinstalled', $identity->get_component());
+        $this->assertSame('', $identity->get_release());
+        $this->assertSame('', $identity->get_version());
+    }
 }
