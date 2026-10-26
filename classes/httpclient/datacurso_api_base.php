@@ -38,6 +38,14 @@ class datacurso_api_base {
     /** @var string|null $licensekey The license key obtained from Datacurso SHOP */
     protected $licensekey;
 
+    /**
+     * Value of detail.error_code when a service refuses a plugin release that is too old (HTTP 426).
+     *
+     * It is part of the contract with the services (python_course_ai-v2, app/core/plugin_version.py):
+     * do not rename it on one side only.
+     */
+    private const ERROR_PLUGIN_UPDATE_REQUIRED = 'PLUGIN_UPDATE_REQUIRED';
+
     /** @var string Component that identifies itself to the service in X-Plugin-Name. */
     protected $callercomponent = 'aiprovider_datacurso';
 
@@ -177,9 +185,12 @@ class datacurso_api_base {
     /**
      * Turn the service's "upgrade required" answer (HTTP 426) into an exception with a clear message.
      *
-     * The service says either that this plugin release is older than the minimum it accepts
-     * (plugin_update_required) or that the plugin did not report its version at all
-     * (plugin_version_required).
+     * What happened is read from detail.error_code, the stable code the services agree on with
+     * the plugins: PLUGIN_UPDATE_REQUIRED (this release is older than the minimum the service
+     * accepts, with the plugin, its release and the minimum as plain fields) or
+     * PLUGIN_VERSION_REQUIRED (no release was reported). The text of the answer is never used to
+     * decide: its string_id belongs to the translation and can change. Any other 426, or an
+     * update answer without its data, is shown as "update to the latest version".
      *
      * @param string $response Raw body of the answer.
      * @return never
@@ -189,15 +200,17 @@ class datacurso_api_base {
         $decoded = json_decode($response, true);
         $detail = is_array($decoded) && is_array($decoded['detail'] ?? null) ? $decoded['detail'] : [];
 
-        if (($detail['string_id'] ?? '') === 'plugin_update_required') {
-            $args = is_array($detail['string_args'] ?? null) ? $detail['string_args'] : [];
+        if (($detail['error_code'] ?? '') === self::ERROR_PLUGIN_UPDATE_REQUIRED) {
             $a = new \stdClass();
-            foreach (['plugin', 'version', 'minimum'] as $name) {
+            foreach (['plugin', 'version', 'minimum'] as $field) {
                 // The values come from the service: keep them as plain short text.
-                $a->$name = \core_text::substr(clean_param((string) ($args[$name] ?? ''), PARAM_TEXT), 0, 64);
+                $value = is_string($detail[$field] ?? null) ? $detail[$field] : '';
+                $a->$field = \core_text::substr(clean_param($value, PARAM_TEXT), 0, 64);
             }
-            debugging('The service no longer supports this plugin release', DEBUG_DEVELOPER);
-            throw new \moodle_exception('plugin_update_required', 'aiprovider_datacurso', '', $a);
+            if ($a->plugin !== '' && $a->minimum !== '') {
+                debugging('The service no longer supports this plugin release', DEBUG_DEVELOPER);
+                throw new \moodle_exception('plugin_update_required', 'aiprovider_datacurso', '', $a);
+            }
         }
 
         debugging('The service requires the plugin to report its version', DEBUG_DEVELOPER);

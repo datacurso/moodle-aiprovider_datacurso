@@ -418,9 +418,12 @@ final class datacurso_api_base_test extends \advanced_testcase {
         $this->resetAfterTest();
         $curl = new fake_curl();
         $curl->enqueue(json_encode(['detail' => [
+            'error_code' => 'PLUGIN_UPDATE_REQUIRED',
+            'plugin' => 'local_coursegen',
+            'version' => '1.0.1',
+            'minimum' => '1.2.0',
             'string_id' => 'plugin_update_required',
             'string' => 'English text from the service',
-            'string_args' => ['plugin' => 'local_coursegen', 'version' => '1.0.1', 'minimum' => '1.2.0'],
         ]]), 426);
 
         $e = $this->get_expecting_exception($this->make_client($curl));
@@ -432,14 +435,56 @@ final class datacurso_api_base_test extends \advanced_testcase {
     }
 
     /**
+     * The message is chosen by error_code, not by the id or the text the service uses to translate.
+     */
+    public function test_the_decision_does_not_depend_on_the_string_id(): void {
+        $this->resetAfterTest();
+        $curl = new fake_curl();
+        $curl->enqueue(json_encode(['detail' => [
+            'error_code' => 'PLUGIN_UPDATE_REQUIRED',
+            'plugin' => 'local_coursegen',
+            'version' => '1.0.1',
+            'minimum' => '1.2.0',
+            'string_id' => 'any_other_id_after_a_rename',
+            'string' => 'Another wording',
+        ]]), 426);
+
+        $e = $this->get_expecting_exception($this->make_client($curl));
+
+        $this->assertSame('plugin_update_required', $e->errorcode);
+        $this->assertDebuggingCalled();
+    }
+
+    /**
+     * A string_id alone is not enough: without the error_code the plugin asks for the latest version.
+     */
+    public function test_a_string_id_without_an_error_code_is_not_trusted(): void {
+        $this->resetAfterTest();
+        $curl = new fake_curl();
+        $curl->enqueue(json_encode(['detail' => [
+            'string_id' => 'plugin_update_required',
+            'plugin' => 'local_coursegen',
+            'version' => '1.0.1',
+            'minimum' => '1.2.0',
+        ]]), 426);
+
+        $e = $this->get_expecting_exception($this->make_client($curl));
+
+        $this->assertSame('plugin_version_required', $e->errorcode);
+        $this->assertDebuggingCalled();
+    }
+
+    /**
      * Values that come from the service are shown as plain text.
      */
     public function test_the_values_of_the_update_message_are_plain_text(): void {
         $this->resetAfterTest();
         $curl = new fake_curl();
         $curl->enqueue(json_encode(['detail' => [
-            'string_id' => 'plugin_update_required',
-            'string_args' => ['plugin' => '<script>alert(1)</script>local_x', 'version' => str_repeat('9', 200), 'minimum' => '1.2'],
+            'error_code' => 'PLUGIN_UPDATE_REQUIRED',
+            'plugin' => '<script>alert(1)</script>local_x',
+            'version' => str_repeat('9', 200),
+            'minimum' => '1.2',
         ]]), 426);
 
         $e = $this->get_expecting_exception($this->make_client($curl));
@@ -450,12 +495,12 @@ final class datacurso_api_base_test extends \advanced_testcase {
     }
 
     /**
-     * A plugin that reports no version is told to update to the latest one.
+     * Any other 426 asks for the latest version: no release reported, an unknown code, no data, no body.
      *
-     * @dataProvider unreadable_upgrade_answers
+     * @dataProvider other_upgrade_answers
      * @param string $body Body of the 426 answer.
      */
-    public function test_a_plugin_that_reports_no_version_is_asked_to_update(string $body): void {
+    public function test_any_other_426_asks_for_the_latest_version(string $body): void {
         $this->resetAfterTest();
         $curl = new fake_curl();
         $curl->enqueue($body, 426);
@@ -467,13 +512,16 @@ final class datacurso_api_base_test extends \advanced_testcase {
     }
 
     /**
-     * Answers of the service that ask for the version, and bodies that cannot be read.
+     * Answers that are not a readable "update to version X".
      *
      * @return array
      */
-    public static function unreadable_upgrade_answers(): array {
+    public static function other_upgrade_answers(): array {
         return [
-            'version required' => [json_encode(['detail' => ['string_id' => 'plugin_version_required', 'string' => 'x']])],
+            'version required' => [json_encode(['detail' => ['error_code' => 'PLUGIN_VERSION_REQUIRED', 'string' => 'x']])],
+            'unknown code' => [json_encode(['detail' => ['error_code' => 'SOMETHING_NEW', 'minimum' => '1.2', 'plugin' => 'a']])],
+            'update without its data' => [json_encode(['detail' => ['error_code' => 'PLUGIN_UPDATE_REQUIRED']])],
+            'data of the wrong type' => [json_encode(['detail' => ['error_code' => 'PLUGIN_UPDATE_REQUIRED', 'plugin' => ['a'], 'minimum' => 12]])],
             'not json' => ['<html>Upgrade Required</html>'],
             'detail is text' => [json_encode(['detail' => 'upgrade'])],
         ];
