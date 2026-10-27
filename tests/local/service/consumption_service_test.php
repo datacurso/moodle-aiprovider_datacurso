@@ -162,4 +162,29 @@ final class consumption_service_test extends \advanced_testcase {
 
         $this->assertEqualsWithDelta(15.0, $result['total'], 0.001);
     }
+
+    /**
+     * A synced Jedomi row is reported under the Jedomi service and chat labels.
+     *
+     * J6: Jedomi labels in the consumption history.
+     */
+    public function test_jedomi_consumption_is_labelled(): void {
+        global $DB;
+
+        $DB->insert_record('aiprovider_datacurso_consumption', (object) [
+            'externalid' => 5,
+            'userid' => $this->userid,
+            'service' => 'local_jedomi',
+            'action' => '/jedomi/v1/chat/completions',
+            'credits' => 2,
+            'balance' => 950,
+            'timecreated' => mktime(12, 0, 0, 3, 5, 2026),
+        ]);
+
+        $services = array_column(consumption_service::get_summary('service', 'local_jedomi')['summary'], 'label');
+        $actions = array_column(consumption_service::get_summary('action', 'local_jedomi')['summary'], 'label');
+
+        $this->assertSame(['Jedomi'], $services);
+        $this->assertSame([get_string('generate_jedomi_chat', 'aiprovider_datacurso')], $actions);
+    }
 }
