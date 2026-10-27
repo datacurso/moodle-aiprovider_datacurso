@@ -1,3 +1,11 @@
+## [1.7.0] - 2026-10-27
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Added
+- **Jedomi is a provider service with its own consumption limits**
+  `local_jedomi` is now registered as a service of the provider, so the Configuration tab offers it a per-window credit limit and a credits-per-action value like the other services. It has a single `default` action that costs 2 credits unless an administrator saves another value in `ratelimit_local_jedomi_creditperaction`. Requests to `/jedomi/` resolve to `local_jedomi`, so the `X-RateLimit-*` headers the Jedomi service already enforces carry its limit and its look-ahead cost; while the limit is disabled no header is sent, as for every other service. The consumption report and history show the service as "Jedomi" and the `/jedomi/v1/chat/completions` action as "Generate Jedomi chat message", with the new strings `pluginname_jedomi` and `generate_jedomi_chat` in all the plugin's languages. No upgrade step is needed: limits stay disabled until an administrator enables them, and the defaults are read from the catalog. The limits take effect on Jedomi requests once `local_jedomi` calls the service through the provider client classes. Backed by `provider_test::test_get_services_includes_jedomi`, `test_jedomi_has_a_single_default_action_of_two_credits`, `test_get_actions_includes_jedomi_chat` and `test_existing_services_and_catalogs_are_unchanged`, `ratelimiter_test::test_jedomi_path_resolves_to_jedomi_service`, `test_jedomi_headers_follow_its_limit_configuration` and `test_existing_path_mappings_are_unchanged`, and `consumption_service_test::test_jedomi_consumption_is_labelled`
+
 ## [1.6.4] - 2026-10-26
 
 **Compatibility note:** This version is compatible only with **Moodle 4.5**.
