@@ -20,8 +20,8 @@ namespace aiprovider_datacurso\httpclient;
  * Says which plugin makes the requests to a Datacurso service, and its release.
  *
  * The services that refuse plugin releases that are too old need the name and the release of the
- * caller. This class builds the two headers, X-Plugin-Name and X-Plugin-Version. The release is read
- * from the version.php of the named plugin. A client that is given no plugin sends no header: the
+ * caller. This class builds the headers X-Plugin-Name, X-Plugin-Version and X-Plugin-Build. The release and the build number are
+ * read from the version.php of the named plugin. A client that is given no plugin sends no header: the
  * provider does not speak for the plugins that use it.
  *
  * @package    aiprovider_datacurso
@@ -78,7 +78,7 @@ class plugin_identity {
     /**
      * Build the header lines that identify the plugin.
      *
-     * The version header is left out when the plugin is not installed or has no release, and the
+     * The version and build headers are left out when the plugin is not installed or has none, and the
      * service then asks for an update.
      *
      * @return string[] Header lines; empty when no plugin was given.
@@ -89,11 +89,14 @@ class plugin_identity {
         }
 
         $headers = ['X-Plugin-Name: ' . $this->component];
-        if ($this->release === '') {
-            return $headers;
+        if ($this->release !== '') {
+            $headers[] = 'X-Plugin-Version: ' . $this->release;
         }
 
-        $headers[] = 'X-Plugin-Version: ' . $this->release;
+        if ($this->version !== '') {
+            $headers[] = 'X-Plugin-Build: ' . $this->version;
+        }
+
         return $headers;
     }
 
