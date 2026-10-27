@@ -1,3 +1,11 @@
+## [2.1.9] - 2026-10-26
+
+**Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.
+
+### Changed
+- **Every request also carries the build number of the plugin**
+  Besides `X-Plugin-Name` and `X-Plugin-Version` (the release), the requests now send `X-Plugin-Build`, the number in `$plugin->version` of the calling plugin (for example `2026102601`). The services compare that whole number with the minimum they accept, so they do not have to read release names such as `1.6.3-wp`. `plugin_identity` builds the header from its `version` property.
+
 ## [2.1.8] - 2026-10-26
 
 **Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.

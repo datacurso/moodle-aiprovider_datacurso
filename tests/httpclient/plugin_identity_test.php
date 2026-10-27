@@ -72,7 +72,13 @@ final class plugin_identity_test extends \advanced_testcase {
         $identity = new plugin_identity('aiprovider_datacurso');
         $headers = $identity->get_headers();
 
-        $this->assertSame(['X-Plugin-Name: aiprovider_datacurso', 'X-Plugin-Version: ' . $release], $headers);
+        $build = (string) $plugin->versiondisk;
+        $expected = [
+            'X-Plugin-Name: aiprovider_datacurso',
+            'X-Plugin-Version: ' . $release,
+            'X-Plugin-Build: ' . $build,
+        ];
+        $this->assertSame($expected, $headers);
     }
 
     /**
@@ -94,7 +100,7 @@ final class plugin_identity_test extends \advanced_testcase {
     }
 
     /**
-     * A plugin that has no release in its version.php sends only its name.
+     * A plugin that has no release in its version.php sends its name and its build, but no release.
      */
     public function test_a_plugin_without_a_release_sends_only_its_name(): void {
         $manager = \core_plugin_manager::instance();
@@ -106,7 +112,8 @@ final class plugin_identity_test extends \advanced_testcase {
 
         $identity = new plugin_identity('mod_page');
 
-        $this->assertSame(['X-Plugin-Name: mod_page'], $identity->get_headers());
+        $expected = ['X-Plugin-Name: mod_page', 'X-Plugin-Build: ' . $plugin->versiondisk];
+        $this->assertSame($expected, $identity->get_headers());
     }
 
     /**
