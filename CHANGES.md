@@ -1,3 +1,11 @@
+## [2.1.10] - 2026-10-27
+
+**Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.
+
+### Changed
+- **Unique build number for the Moodle plugins directory**
+  The release `2.1.9` carried the same build number (`2026102602`) as the Moodle 4.5 release `1.6.4`, which the plugins directory rejects because every version of a listing must have a higher build number than the earlier ones. The build is raised to `2026102603`; the behaviour is the one of `2.1.9` (and `2.1.8`), which never reached the directory for the same reason.
+
 ## [2.1.9] - 2026-10-26
 
 **Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.
