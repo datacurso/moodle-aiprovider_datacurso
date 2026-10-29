@@ -243,6 +243,7 @@ $string['privacy:metadata:datacurso_course_service:timezone'] = 'The timezone of
 $string['privacy:metadata:datacurso_course_service:userid'] = 'A pseudonymous, site-scoped token derived from the ID of the user making the request, so the service can keep per-user accounting and rate limits. The raw Moodle user ID is not sent and cannot be recovered from the token.';
 $string['privacy:metadata:datacurso_shop'] = 'Datacurso shop (shop.datacurso.com): validates the license and keeps the credit consumption ledger per user (user ID, service, action, credits, balance and date), which it returns to this site for the local consumption report.';
 $string['privacy:metadata:datacurso_shop:licensekey'] = 'The site license key, sent as a request header to authenticate the site.';
+$string['providerdisabled'] = 'The Datacurso AI provider is disabled. An administrator must enable it in Site administration > AI > AI providers.';
 $string['ratelimit_creditperaction'] = 'Credits per action';
 $string['ratelimit_creditperaction_desc'] = 'Estimated maximum credits a single action of this plugin can cost. A request is blocked upfront when the credits remaining in the window are fewer than this value.';
 $string['ratelimit_creditperaction_help'] = 'Estimated maximum credits a single action of this plugin can cost. A request is blocked upfront when the credits remaining in the window are fewer than this value.';

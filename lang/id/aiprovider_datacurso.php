@@ -184,6 +184,7 @@ $string['pluginname_smartrules'] = 'SmartRules AI';
 $string['pluginname_socialcert'] = 'Bagikan Sertifikat AI';
 $string['privacy:metadata'] = 'Plugin Penyedia AI Datacurso tidak menyimpan data pribadi apa pun secara lokal. Semua data diproses oleh layanan AI eksternal Datacurso.';
 $string['privacy:metadata:aiprovider_datacurso'] = 'Muatan permintaan AI Datacurso yang dikirim ke layanan eksternal.';
+$string['providerdisabled'] = 'Penyedia AI Datacurso dinonaktifkan. Administrator harus mengaktifkannya di Administrasi situs > AI > Penyedia AI.';
 $string['ratelimit_enable'] = 'Aktifkan batas kredit';
 $string['ratelimit_enable_desc'] = 'Jika diaktifkan, batas kredit per pengguna akan diberlakukan untuk plugin ini.';
 $string['ratelimit_limit'] = 'Kredit per jendela';

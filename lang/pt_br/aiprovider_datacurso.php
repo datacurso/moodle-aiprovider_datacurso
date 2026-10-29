@@ -184,6 +184,7 @@ $string['pluginname_smartrules'] = 'SmartRules IA';
 $string['pluginname_socialcert'] = 'Compartilhar Certificado IA';
 $string['privacy:metadata'] = 'O plugin Provedor de IA Datacurso não armazena nenhum dado pessoal localmente. Todos os dados são processados pelos serviços externos de IA Datacurso.';
 $string['privacy:metadata:aiprovider_datacurso'] = 'Cargas úteis de solicitações de IA Datacurso enviadas ao serviço externo.';
+$string['providerdisabled'] = 'O provedor de IA Datacurso está desativado. Um administrador deve ativá-lo em Administração do site > IA > Provedores de IA.';
 $string['ratelimit_enable'] = 'Habilitar limite de taxa';
 $string['ratelimit_enable_desc'] = 'Se habilitado, o limite de créditos por usuário será aplicado para este plugin.';
 $string['ratelimit_limit'] = 'Créditos por janela';

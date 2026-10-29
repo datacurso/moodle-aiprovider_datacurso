@@ -243,6 +243,7 @@ $string['privacy:metadata:datacurso_course_service:timezone'] = 'La zona horaria
 $string['privacy:metadata:datacurso_course_service:userid'] = 'Un token seudónimo, limitado al sitio, derivado del ID del usuario que realiza la solicitud, para que el servicio pueda llevar la contabilidad y los límites por usuario. El ID de usuario de Moodle no se envía y no puede recuperarse a partir del token.';
 $string['privacy:metadata:datacurso_shop'] = 'Tienda Datacurso (shop.datacurso.com): valida la licencia y mantiene el libro de consumo de créditos por usuario (ID de usuario, servicio, acción, créditos, saldo y fecha), que devuelve a este sitio para el informe local de consumo.';
 $string['privacy:metadata:datacurso_shop:licensekey'] = 'La clave de licencia del sitio, enviada como cabecera de la solicitud para autenticar el sitio.';
+$string['providerdisabled'] = 'El proveedor de IA Datacurso está deshabilitado. Un administrador debe habilitarlo en Administración del sitio > IA > Proveedores de IA.';
 $string['ratelimit_creditperaction'] = 'Créditos por acción';
 $string['ratelimit_creditperaction_desc'] = 'Créditos máximos estimados que puede costar una sola acción de este plugin. La solicitud se bloquea de antemano cuando los créditos restantes en la ventana son menos que este valor.';
 $string['ratelimit_creditperaction_help'] = 'Créditos máximos estimados que puede costar una sola acción de este plugin. La solicitud se bloquea de antemano cuando los créditos restantes en la ventana son menos que este valor.';
