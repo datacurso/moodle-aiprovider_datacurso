@@ -40,8 +40,14 @@ class ai_services_api extends datacurso_api_base {
      * @param string|null $licensekey The license key obtained from Datacurso SHOP.
      * @param string|null $baseurl Optional standard-region base URL to override the default endpoint.
      * @param string|null $baseurleu Optional EU-region base URL to override the default endpoint.
+     * @param string|null $callercomponent Plugin that makes the requests, for example "local_jedomi"; see the parent.
      */
-    public function __construct(?string $licensekey = null, ?string $baseurl = null, ?string $baseurleu = null) {
+    public function __construct(
+        ?string $licensekey = null,
+        ?string $baseurl = null,
+        ?string $baseurleu = null,
+        ?string $callercomponent = null
+    ) {
         global $CFG;
 
         if ($this->is_for_ue()) {
@@ -50,7 +56,7 @@ class ai_services_api extends datacurso_api_base {
             $finalbaseurl    = $baseurl ?? self::DEFAULT_BASE_URL;
         }
 
-        parent::__construct($finalbaseurl, $licensekey);
+        parent::__construct($finalbaseurl, $licensekey, $callercomponent);
     }
 
     /**

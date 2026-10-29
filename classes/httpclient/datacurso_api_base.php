@@ -106,6 +106,8 @@ class datacurso_api_base {
     public function download_file($endpoint, $filename, $filerecord = []): ?\stored_file {
         global $USER;
 
+        self::require_provider_enabled();
+
         $baseurl = $this->get_base_url();
         $packageurl = $baseurl . ltrim($endpoint, '/');
 
@@ -134,6 +136,21 @@ class datacurso_api_base {
     }
 
     /**
+     * Refuse the request when the provider is disabled in Site administration > AI > AI providers.
+     *
+     * Every AI request goes through here before a connection is opened, so the "Enabled" switch
+     * stops all the plugins that use these clients. The shop client (datacurso_api) does not extend
+     * this class, so balance and consumption history keep working with the provider disabled.
+     *
+     * @throws \moodle_exception providerdisabled when the provider is disabled.
+     */
+    protected static function require_provider_enabled(): void {
+        if (!\core\plugininfo\aiprovider::is_plugin_enabled('datacurso')) {
+            throw new \moodle_exception('providerdisabled', 'aiprovider_datacurso');
+        }
+    }
+
+    /**
      * Create the cURL wrapper used for the requests.
      *
      * Seam for tests, so the transport can be replaced without touching the network.
@@ -156,6 +173,8 @@ class datacurso_api_base {
      */
     protected function send_request(string $method, string $path, $payload = [], array $headers = []): ?array {
         global $USER, $CFG;
+        self::require_provider_enabled();
+
         if (empty($this->licensekey)) {
             debugging('Cannot make this request: invalid license key', DEBUG_DEVELOPER);
             throw new \moodle_exception('invalidlicensekey', 'aiprovider_datacurso');

@@ -184,6 +184,7 @@ $string['pluginname_smartrules'] = 'SmartRules ИИ';
 $string['pluginname_socialcert'] = 'Поделиться сертификатом ИИ';
 $string['privacy:metadata'] = 'Плагин Провайдер ИИ Datacurso не хранит никаких персональных данных локально. Все данные обрабатываются внешними сервисами ИИ Datacurso.';
 $string['privacy:metadata:aiprovider_datacurso'] = 'Полезные нагрузки запросов ИИ Datacurso, отправляемые во внешний сервис.';
+$string['providerdisabled'] = 'Провайдер ИИ Datacurso отключён. Администратор должен включить его в разделе Администрирование > ИИ > Поставщики ИИ.';
 $string['ratelimit_enable'] = 'Включить лимит';
 $string['ratelimit_enable_desc'] = 'Если включено, для этого плагина будет применяться лимит кредитов на пользователя.';
 $string['ratelimit_limit'] = 'Кредиты за окно';

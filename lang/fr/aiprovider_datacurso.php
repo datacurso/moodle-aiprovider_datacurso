@@ -184,6 +184,7 @@ $string['pluginname_smartrules'] = 'SmartRules IA';
 $string['pluginname_socialcert'] = 'Partager certificat IA';
 $string['privacy:metadata'] = 'Le plugin Fournisseur IA Datacurso ne stocke aucune donnée personnelle localement. Toutes les données sont traitées par les services IA externes de Datacurso.';
 $string['privacy:metadata:aiprovider_datacurso'] = 'Charges utiles des demandes IA Datacurso envoyées au service externe.';
+$string['providerdisabled'] = 'Le fournisseur IA Datacurso est désactivé. Un administrateur doit l\'activer dans Administration du site > IA > Fournisseurs d\'IA.';
 $string['read_context_course'] = 'Lire le contexte pour la création de cours IA';
 $string['read_context_course_model'] = 'Télécharger le modèle académique pour la création de cours IA';
 $string['registers'] = 'Enregistrements';

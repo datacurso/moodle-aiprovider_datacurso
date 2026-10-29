@@ -184,6 +184,7 @@ $string['pluginname_smartrules'] = 'SmartRules-KI';
 $string['pluginname_socialcert'] = 'Zertifikat-teilen-KI';
 $string['privacy:metadata'] = 'Das Datacurso KI-Anbieter-Plugin speichert keine personenbezogenen Daten lokal. Alle Daten werden von externen Datacurso-KI-Diensten verarbeitet.';
 $string['privacy:metadata:aiprovider_datacurso'] = 'Datacurso KI-Anfrage-Nutzdaten, die an den externen Dienst gesendet werden.';
+$string['providerdisabled'] = 'Der Datacurso KI-Anbieter ist deaktiviert. Ein Administrator muss ihn unter Website-Administration > KI > KI-Anbieter aktivieren.';
 $string['ratelimit_window'] = 'Zeitfenster';
 $string['ratelimit_window_desc'] = 'Wählen Sie die Dauer und Einheit für das Limit-Fenster.';
 $string['ratelimits_heading'] = 'Plugin-spezifische Limits';
