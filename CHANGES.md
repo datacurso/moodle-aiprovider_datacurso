@@ -1,3 +1,19 @@
+## [2.1.11] - 2026-11-05
+
+**Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.3**.
+
+### Added
+- **Moodle 5.3 support**
+  `supported` is raised to `[500, 503]` and the CI also runs on Moodle 5.2 and 5.3.
+
+### Fixed
+- **The provider's error messages reach the user again**
+  core_ai builds the response of a failed action from its `errorcode`, `error` and `errormessage`. Every failure path of the provider left one of them out, so core threw a `TypeError`, the action was not recorded and the user only saw "Something went wrong". The rate limit message with its retry time, credits exhausted, licence not allowed, HTTP error, service unavailable and invalid response messages are now shown, under the title "The AI request could not be completed". On Moodle 5.0, which does not read `error`, only the invalid text response was affected. All failure paths go through the new `abstract_processor::error_response()`
+- **Readable name for the activity planning action**
+  `activity/planning`, recorded by the course creator when it plans an activity, is now shown as "Generate activity plan with AI" in the consumption history, the per-action chart and the action filter
+- **Translated folder name in the privacy export**
+  The consumption records of a user are exported under "Credit consumption history" instead of the English description of the table
+
 ## [2.1.10] - 2026-10-27
 
 **Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.2**.

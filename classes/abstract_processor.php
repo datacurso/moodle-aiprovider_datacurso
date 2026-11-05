@@ -133,11 +133,10 @@ abstract class abstract_processor extends process_base {
         } catch (TransferException $e) {
             // The transport message may contain hostnames or internal details: keep it for developers only.
             debugging('Datacurso AI transport error: ' . $e->getMessage(), DEBUG_DEVELOPER);
-            return [
-                'success' => false,
-                'errorcode' => (int)($e->getCode() ?: 500),
-                'errormessage' => get_string('serviceunavailable', 'aiprovider_datacurso'),
-            ];
+            return $this->error_response(
+                (int)($e->getCode() ?: 500),
+                get_string('serviceunavailable', 'aiprovider_datacurso')
+            );
         }
 
         $status = (int)$response->getStatusCode();
@@ -177,11 +176,7 @@ abstract class abstract_processor extends process_base {
                 $actionable = get_string('license_not_allowed', 'aiprovider_datacurso');
             }
             if ($actionable !== null) {
-                return [
-                    'success' => false,
-                    'errorcode' => 403,
-                    'errormessage' => $actionable,
-                ];
+                return $this->error_response(403, $actionable);
             }
         }
 
@@ -193,10 +188,27 @@ abstract class abstract_processor extends process_base {
             DEBUG_DEVELOPER
         );
 
+        return $this->error_response($status, get_string('httperror', 'aiprovider_datacurso', $status));
+    }
+
+    /**
+     * Builds a failed response with every key core_ai reads from it.
+     *
+     * process_base::prepare_response() passes errorcode, error and errormessage to the typed
+     * response constructor, so a missing key raises a TypeError and the user only gets core's
+     * generic message instead of the one built here. Moodle 5.0 does not read error yet and
+     * ignores it.
+     *
+     * @param int $errorcode Error code, usually the HTTP status.
+     * @param string $errormessage Message shown to the user.
+     * @return array{success: false, errorcode: int, error: string, errormessage: string}
+     */
+    protected function error_response(int $errorcode, string $errormessage): array {
         return [
             'success' => false,
-            'errorcode' => $status,
-            'errormessage' => get_string('httperror', 'aiprovider_datacurso', $status),
+            'errorcode' => $errorcode,
+            'error' => get_string('errorrequestfailed', 'aiprovider_datacurso'),
+            'errormessage' => $errormessage,
         ];
     }
 }
