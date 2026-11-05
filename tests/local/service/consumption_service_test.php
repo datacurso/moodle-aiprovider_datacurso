@@ -217,6 +217,20 @@ final class consumption_service_test extends \advanced_testcase {
     }
 
     /**
+     * MDL-UNIT-008: the activity planning step of the course creator has a readable name.
+     */
+    public function test_activity_planning_resolves_to_a_human_name(): void {
+        $this->insert_consumption('local_coursegen', 'activity/planning', 5, '2026-02-11 08:00:00');
+
+        $result = consumption_service::get_summary('action');
+
+        $this->assertSame(
+            [get_string('generate_activity_plan', 'aiprovider_datacurso')],
+            array_column($result['summary'], 'label')
+        );
+    }
+
+    /**
      * Service ids resolve to their plugin name; an unknown service id passes through verbatim.
      *
      * Ported from 4.5's tests/local/service/consumption_service_test.php::test_service_ids_resolve_to_plugin_names.

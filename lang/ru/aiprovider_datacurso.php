@@ -127,6 +127,7 @@ $string['errorrequestfailed'] = 'Не удалось выполнить запр
 $string['filter_year'] = 'Year';
 $string['forbidden'] = 'Вам не разрешено выполнять это действие с текущей лицензией. Пожалуйста, проверьте вашу лицензию и доступные кредиты в <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Управление кредитами</a> в магазине Datacurso.';
 $string['generate_activitie'] = 'Создать активность или ресурс с помощью ИИ';
+$string['generate_activity_plan'] = 'Создать план активности с помощью ИИ';
 $string['generate_ai_reinforcement_activity'] = 'Создать активность для закрепления с ИИ';
 $string['generate_analysis_comments'] = 'Создать анализ оценки активности/ресурса с помощью ИИ';
 $string['generate_analysis_course'] = 'Создать анализ оценки курса с помощью ИИ';

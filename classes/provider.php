@@ -246,6 +246,7 @@ class provider extends \core_ai\provider {
             ['id' => '/course/execute_image', 'name' => get_string('generate_creation_course_image', 'aiprovider_datacurso')],
             ['id' => '/course/execute_noimage', 'name' => get_string('generate_creation_course_noimage', 'aiprovider_datacurso')],
             ['id' => '/course/start', 'name' => get_string('generate_plan_course', 'aiprovider_datacurso')],
+            ['id' => 'activity/planning', 'name' => get_string('generate_activity_plan', 'aiprovider_datacurso')],
             ['id' => '/resources/create-mod', 'name' => get_string('generate_activitie', 'aiprovider_datacurso')],
             ['id' => '/assign/answer', 'name' => get_string('generate_assign_answer', 'aiprovider_datacurso')],
             ['id' => '/forum/chat', 'name' => get_string('generate_forum_chat', 'aiprovider_datacurso')],

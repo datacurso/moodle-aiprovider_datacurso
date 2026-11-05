@@ -127,6 +127,7 @@ $string['errorrequestfailed'] = 'Permintaan AI tidak dapat diselesaikan';
 $string['filter_year'] = 'Year';
 $string['forbidden'] = 'Anda tidak diizinkan untuk melakukan tindakan ini dengan lisensi saat ini. Silakan verifikasi lisensi dan kredit yang tersedia Anda di <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Kelola Kredit</a> di Toko Datacurso.';
 $string['generate_activitie'] = 'Hasilkan aktivitas atau sumber daya dengan AI';
+$string['generate_activity_plan'] = 'Hasilkan rencana aktivitas dengan AI';
 $string['generate_ai_reinforcement_activity'] = 'Buat aktivitas penguatan AI';
 $string['generate_analysis_comments'] = 'Hasilkan analisis penilaian aktivitas/sumber daya dengan AI';
 $string['generate_analysis_course'] = 'Hasilkan analisis penilaian kursus dengan AI';

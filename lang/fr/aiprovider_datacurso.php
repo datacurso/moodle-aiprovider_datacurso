@@ -127,6 +127,7 @@ $string['errorrequestfailed'] = 'La requête d\'IA n\'a pas pu aboutir';
 $string['filter_year'] = 'Year';
 $string['forbidden'] = 'Vous n\'êtes pas autorisé à effectuer cette action avec la licence actuelle. Veuillez vérifier votre licence et les crédits disponibles dans <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Gérer les crédits</a> dans la boutique Datacurso.';
 $string['generate_activitie'] = 'Générer une activité ou une ressource avec l\'IA';
+$string['generate_activity_plan'] = 'Générer un plan d\'activité avec l\'IA';
 $string['generate_ai_reinforcement_activity'] = 'Créer une activité de renforcement IA';
 $string['generate_analysis_comments'] = 'Générer une analyse de notation d\'une activité/ressource avec l\'IA';
 $string['generate_analysis_course'] = 'Générer une analyse de notation du cours avec l\'IA';

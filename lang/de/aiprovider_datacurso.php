@@ -127,6 +127,7 @@ $string['errorrequestfailed'] = 'Die KI-Anfrage konnte nicht abgeschlossen werde
 $string['filter_year'] = 'Year';
 $string['forbidden'] = 'Sie dürfen diese Aktion mit der aktuellen Lizenz nicht ausführen. Bitte überprüfen Sie Ihre Lizenz und verfügbaren Kredite unter <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Kredite verwalten</a> im Datacurso-Shop.';
 $string['generate_activitie'] = 'Aktivität oder Ressource mit KI generieren';
+$string['generate_activity_plan'] = 'Aktivitätsplan mit KI generieren';
 $string['generate_ai_reinforcement_activity'] = 'KI-Verstärkungsaktivität erstellen';
 $string['generate_analysis_comments'] = 'Bewertungsanalyse einer Aktivität/Ressource mit KI generieren';
 $string['generate_analysis_course'] = 'Kursbewertungsanalyse mit KI generieren';

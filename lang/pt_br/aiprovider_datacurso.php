@@ -127,6 +127,7 @@ $string['errorrequestfailed'] = 'Não foi possível concluir a solicitação de 
 $string['filter_year'] = 'Year';
 $string['forbidden'] = 'Você não tem permissão para executar esta ação com a licença atual. Por favor, verifique sua licença e créditos disponíveis em <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Gerenciar Créditos</a> na Loja Datacurso.';
 $string['generate_activitie'] = 'Gerar atividade ou recurso com IA';
+$string['generate_activity_plan'] = 'Gerar plano de atividade com IA';
 $string['generate_ai_reinforcement_activity'] = 'Criar atividade de reforço com IA';
 $string['generate_analysis_comments'] = 'Gerar análise de avaliação de uma atividade/recurso com IA';
 $string['generate_analysis_course'] = 'Gerar análise de avaliação do curso com IA';
