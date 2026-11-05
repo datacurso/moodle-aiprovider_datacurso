@@ -31,10 +31,10 @@ use Psr\Http\Message\UriInterface;
 /**
  * Every failure of the provider reaches core_ai as a complete error response.
  *
- * core_ai builds the response object from the errorcode, error and errormessage keys returned
- * by the processor. When one of them was missing, the typed constructor threw a TypeError, the
- * action was not recorded and the user saw core's generic message instead of the provider's
- * one (for example the time when the rate limit resets).
+ * core_ai builds the response object from the errorcode, error (not read by Moodle 5.0) and
+ * errormessage keys returned by the processor. When one of them was missing, the typed
+ * constructor threw a TypeError, the action was not recorded and the user saw core's generic
+ * message instead of the provider's one (for example the time when the rate limit resets).
  *
  * @package    aiprovider_datacurso
  * @category   test
@@ -118,8 +118,11 @@ final class error_response_test extends \advanced_testcase {
     private function assert_error_response($response, int $errorcode, string $errormessage): void {
         $this->assertFalse($response->get_success());
         $this->assertSame($errorcode, $response->get_errorcode());
-        $this->assertSame(get_string('errorrequestfailed', 'aiprovider_datacurso'), $response->get_error());
         $this->assertSame($errormessage, $response->get_errormessage());
+        // The error title only exists in the responses of the newer releases; Moodle 5.0 has none.
+        if (method_exists($response, 'get_error')) {
+            $this->assertSame(get_string('errorrequestfailed', 'aiprovider_datacurso'), $response->get_error());
+        }
     }
 
     /**

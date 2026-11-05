@@ -196,7 +196,8 @@ abstract class abstract_processor extends process_base {
      *
      * process_base::prepare_response() passes errorcode, error and errormessage to the typed
      * response constructor, so a missing key raises a TypeError and the user only gets core's
-     * generic message instead of the one built here.
+     * generic message instead of the one built here. Moodle 5.0 does not read error yet and
+     * ignores it.
      *
      * @param int $errorcode Error code, usually the HTTP status.
      * @param string $errormessage Message shown to the user.
