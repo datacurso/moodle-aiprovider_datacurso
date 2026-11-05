@@ -123,6 +123,7 @@ $string['entity_consumption'] = 'Verbrauch';
 $string['error_ratelimit_exceeded'] = 'Das zulässige Verbrauchslimit wurde überschritten. Bitte versuchen Sie es erneut um {$a}.';
 $string['errorgetbalancecredits'] = 'Das Kreditguthaben konnte nicht von der externen API abgerufen werden';
 $string['errorgetusers'] = 'Die Liste der Benutzer konnte nicht abgerufen werden. Bitte versuchen Sie es später erneut.';
+$string['errorrequestfailed'] = 'Die KI-Anfrage konnte nicht abgeschlossen werden';
 $string['filter_year'] = 'Year';
 $string['forbidden'] = 'Sie dürfen diese Aktion mit der aktuellen Lizenz nicht ausführen. Bitte überprüfen Sie Ihre Lizenz und verfügbaren Kredite unter <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Kredite verwalten</a> im Datacurso-Shop.';
 $string['generate_activitie'] = 'Aktivität oder Ressource mit KI generieren';

@@ -123,6 +123,7 @@ $string['entity_consumption'] = 'Consommation';
 $string['error_ratelimit_exceeded'] = 'La limite de consommation autorisée a été dépassée. Veuillez réessayer à {$a}.';
 $string['errorgetbalancecredits'] = 'Impossible de récupérer le solde de crédits depuis l\'API externe';
 $string['errorgetusers'] = 'Impossible de récupérer la liste des utilisateurs. Veuillez réessayer plus tard.';
+$string['errorrequestfailed'] = 'La requête d\'IA n\'a pas pu aboutir';
 $string['filter_year'] = 'Year';
 $string['forbidden'] = 'Vous n\'êtes pas autorisé à effectuer cette action avec la licence actuelle. Veuillez vérifier votre licence et les crédits disponibles dans <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Gérer les crédits</a> dans la boutique Datacurso.';
 $string['generate_activitie'] = 'Générer une activité ou une ressource avec l\'IA';

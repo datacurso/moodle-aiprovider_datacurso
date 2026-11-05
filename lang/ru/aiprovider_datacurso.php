@@ -123,6 +123,7 @@ $string['entity_consumption'] = 'Потребление';
 $string['error_ratelimit_exceeded'] = 'Разрешенный лимит потребления превышен. Пожалуйста, попробуйте снова в {$a}.';
 $string['errorgetbalancecredits'] = 'Не удалось получить баланс кредитов из внешнего API';
 $string['errorgetusers'] = 'Не удалось получить список пользователей. Пожалуйста, попробуйте снова позже.';
+$string['errorrequestfailed'] = 'Не удалось выполнить запрос к ИИ';
 $string['filter_year'] = 'Year';
 $string['forbidden'] = 'Вам не разрешено выполнять это действие с текущей лицензией. Пожалуйста, проверьте вашу лицензию и доступные кредиты в <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Управление кредитами</a> в магазине Datacurso.';
 $string['generate_activitie'] = 'Создать активность или ресурс с помощью ИИ';
