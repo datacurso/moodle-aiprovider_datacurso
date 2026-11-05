@@ -8,7 +8,7 @@
 
 ### Fixed
 - **The provider's error messages reach the user again**
-  core_ai builds the response of a failed action from its `errorcode`, `error` and `errormessage`. Every failure path of the provider left one of them out, so core threw a `TypeError`, the action was not recorded and the user only saw "Something went wrong". The rate limit message with its retry time, credits exhausted, licence not allowed, HTTP error, service unavailable and invalid response messages are now shown, under the title "The AI request could not be completed". All failure paths go through the new `abstract_processor::error_response()`
+  core_ai builds the response of a failed action from its `errorcode`, `error` and `errormessage`. Every failure path of the provider left one of them out, so core threw a `TypeError`, the action was not recorded and the user only saw "Something went wrong". The rate limit message with its retry time, credits exhausted, licence not allowed, HTTP error, service unavailable and invalid response messages are now shown, under the title "The AI request could not be completed". On Moodle 5.0, which does not read `error`, only the invalid text response was affected. All failure paths go through the new `abstract_processor::error_response()`
 - **Readable name for the activity planning action**
   `activity/planning`, recorded by the course creator when it plans an activity, is now shown as "Generate activity plan with AI" in the consumption history, the per-action chart and the action filter
 - **Translated folder name in the privacy export**
