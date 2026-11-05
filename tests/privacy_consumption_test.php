@@ -88,7 +88,7 @@ final class privacy_consumption_test extends provider_testcase {
     private function consumption_subcontext(): array {
         return [
             get_string('privacy:metadata:aiprovider_datacurso', 'aiprovider_datacurso'),
-            get_string('privacy:metadata:aiprovider_datacurso_consumption', 'aiprovider_datacurso'),
+            get_string('privacy:path:aiprovider_datacurso_consumption', 'aiprovider_datacurso'),
         ];
     }
 

@@ -231,6 +231,7 @@ $string['privacy:metadata:datacurso_course_service:timezone'] = 'La zona horaria
 $string['privacy:metadata:datacurso_course_service:userid'] = 'El ID del usuario de Moodle que realiza la solicitud.';
 $string['privacy:metadata:datacurso_shop'] = 'Tienda Datacurso (shop.datacurso.com): valida la licencia y mantiene el libro de consumo de créditos por usuario (ID de usuario, servicio, acción, créditos, saldo y fecha), que devuelve a este sitio para el informe local de consumo.';
 $string['privacy:metadata:datacurso_shop:licensekey'] = 'La clave de licencia del sitio, enviada como cabecera de la solicitud para autenticar el sitio.';
+$string['privacy:path:aiprovider_datacurso_consumption'] = 'Historial de consumo de créditos';
 $string['ratelimit_creditperaction'] = 'Créditos por acción';
 $string['ratelimit_creditperaction_desc'] = 'Créditos máximos estimados que puede costar una sola acción de este plugin. La solicitud se bloquea de antemano cuando los créditos restantes en la ventana son menos que este valor.';
 $string['ratelimit_creditperaction_help'] = 'Créditos máximos estimados que puede costar una sola acción de este plugin. La solicitud se bloquea de antemano cuando los créditos restantes en la ventana son menos que este valor.';

@@ -231,6 +231,7 @@ $string['privacy:metadata:datacurso_course_service:timezone'] = 'Zona waktu peng
 $string['privacy:metadata:datacurso_course_service:userid'] = 'ID pengguna Moodle yang membuat permintaan.';
 $string['privacy:metadata:datacurso_shop'] = 'Toko Datacurso (shop.datacurso.com): memvalidasi lisensi dan menyimpan buku besar konsumsi kredit per pengguna (ID pengguna, layanan, tindakan, kredit, saldo, dan tanggal), yang dikembalikan ke situs ini untuk laporan konsumsi lokal.';
 $string['privacy:metadata:datacurso_shop:licensekey'] = 'Kunci lisensi situs, dikirim sebagai header permintaan untuk mengautentikasi situs.';
+$string['privacy:path:aiprovider_datacurso_consumption'] = 'Riwayat pemakaian kredit';
 $string['ratelimit_creditperaction'] = 'Credits per action';
 $string['ratelimit_creditperaction_desc'] = 'Estimated maximum credits a single action of this plugin can cost. A request is blocked upfront when the credits remaining in the window are fewer than this value.';
 $string['ratelimit_creditperaction_help'] = 'Estimated maximum credits a single action of this plugin can cost. A request is blocked upfront when the credits remaining in the window are fewer than this value.';

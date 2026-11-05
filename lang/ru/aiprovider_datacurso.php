@@ -231,6 +231,7 @@ $string['privacy:metadata:datacurso_course_service:timezone'] = 'Часовой 
 $string['privacy:metadata:datacurso_course_service:userid'] = 'ID пользователя Moodle, отправляющего запрос.';
 $string['privacy:metadata:datacurso_shop'] = 'Магазин Datacurso (shop.datacurso.com): проверяет лицензию и ведёт учёт потребления кредитов по каждому пользователю (ID пользователя, сервис, действие, кредиты, баланс и дата), который возвращается на этот сайт для локального отчёта о потреблении.';
 $string['privacy:metadata:datacurso_shop:licensekey'] = 'Лицензионный ключ сайта, отправляемый в качестве заголовка запроса для аутентификации сайта.';
+$string['privacy:path:aiprovider_datacurso_consumption'] = 'История расхода кредитов';
 $string['ratelimit_creditperaction'] = 'Credits per action';
 $string['ratelimit_creditperaction_desc'] = 'Estimated maximum credits a single action of this plugin can cost. A request is blocked upfront when the credits remaining in the window are fewer than this value.';
 $string['ratelimit_creditperaction_help'] = 'Estimated maximum credits a single action of this plugin can cost. A request is blocked upfront when the credits remaining in the window are fewer than this value.';

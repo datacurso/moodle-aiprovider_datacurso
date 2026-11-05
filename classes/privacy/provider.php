@@ -154,7 +154,7 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
 
             writer::with_context($context)->export_data([
                 get_string('privacy:metadata:aiprovider_datacurso', 'aiprovider_datacurso'),
-                get_string('privacy:metadata:' . $table, 'aiprovider_datacurso'),
+                get_string('privacy:path:' . $table, 'aiprovider_datacurso'),
             ], (object) ['records' => $rows]);
         }
     }

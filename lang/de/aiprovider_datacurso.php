@@ -231,6 +231,7 @@ $string['privacy:metadata:datacurso_course_service:timezone'] = 'Die Zeitzone de
 $string['privacy:metadata:datacurso_course_service:userid'] = 'Die Moodle-Benutzer-ID, die die Anfrage stellt.';
 $string['privacy:metadata:datacurso_shop'] = 'Datacurso-Shop (shop.datacurso.com): validiert die Lizenz und führt das Kreditverbrauchsbuch pro Benutzer (Benutzer-ID, Dienst, Aktion, Kredite, Guthaben und Datum), das er an diese Website für den lokalen Verbrauchsbericht zurückgibt.';
 $string['privacy:metadata:datacurso_shop:licensekey'] = 'Der Website-Lizenzschlüssel, der als Anfrage-Header gesendet wird, um die Website zu authentifizieren.';
+$string['privacy:path:aiprovider_datacurso_consumption'] = 'Verlauf des Guthabenverbrauchs';
 $string['ratelimit_creditperaction'] = 'Credits per action';
 $string['ratelimit_creditperaction_desc'] = 'Estimated maximum credits a single action of this plugin can cost. A request is blocked upfront when the credits remaining in the window are fewer than this value.';
 $string['ratelimit_creditperaction_help'] = 'Estimated maximum credits a single action of this plugin can cost. A request is blocked upfront when the credits remaining in the window are fewer than this value.';
