@@ -17,38 +17,139 @@
 {{!
     @template aiprovider_datacurso/plugin_list_page
 
-    TODO describe template plugins_list
+    Table of the Datacurso suite plugins in the plugins tab of the provider reports: name, description,
+    whether the plugin is installed, a switch that enables or disables it in the provider (installed
+    plugins only), a link to its settings page in the provider (only when the plugin adds its own fields)
+    and an icon link to its page on moodle.org. The switch follows the core AI "Actions" tables.
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * data-region="aiprovider_datacurso/plugin_list" - Root of the table.
+    * data-action="aiprovider_datacurso/plugin_list/toggle-enabled" - Switch of one plugin.
+    * data-component - Component the switch belongs to.
+    * data-name - Display name of the plugin, for the "Enable X" / "Disable X" label.
+    * data-state - Current state of the switch, 1 or 0.
+
+    Context variables required for this template:
+    * hasplugins bool - True when there is at least one plugin to list.
+    * plugins array - One entry per suite plugin, each with:
+        * component string - Frankenstyle component name.
+        * name string - Display name of the plugin.
+        * description string - Short description of the plugin.
+        * url string - Page of the plugin on moodle.org.
+        * linktitle string - Accessible name of the moodle.org link.
+        * installed bool - Whether the plugin is installed on this site.
+        * enabled bool - Whether the plugin is enabled in the provider.
+        * hastoggle bool - Whether to show the switch (only installed plugins).
+        * toggle object - Context of the core/toggle switch; present when hastoggle is true.
+        * hassettings bool - Whether to show the settings link (only plugins with their own fields).
+        * settingsurl string - Settings page of the plugin in the provider; empty when hassettings is false.
 
     Example context (json):
     {
+        "hasplugins": true,
+        "plugins": [
+            {
+                "component": "local_jedomi",
+                "name": "Jedomi",
+                "description": "AI assistant for Moodle users with chat, tools and scheduled agents.",
+                "url": "https://moodle.org/plugins/local_jedomi",
+                "linktitle": "Jedomi link",
+                "installed": true,
+                "enabled": true,
+                "hastoggle": true,
+                "toggle": {
+                    "id": "aiprovider_datacurso-plugin-toggle-local_jedomi",
+                    "checked": true,
+                    "dataattributes": [
+                        {
+                            "name": "action",
+                            "value": "aiprovider_datacurso/plugin_list/toggle-enabled"
+                        },
+                        {
+                            "name": "component",
+                            "value": "local_jedomi"
+                        },
+                        {
+                            "name": "name",
+                            "value": "Jedomi"
+                        },
+                        {
+                            "name": "state",
+                            "value": 1
+                        }
+                    ],
+                    "title": "Disable Jedomi",
+                    "label": "Disable Jedomi",
+                    "labelclasses": "sr-only"
+                },
+                "hassettings": true,
+                "settingsurl": "https://example.com/ai/provider/datacurso/admin/plugin_settings.php?component=local_jedomi"
+            },
+            {
+                "component": "report_lifestory",
+                "name": "Student Life Story AI",
+                "description": "AI-powered report and analysis of the student's academic progress.",
+                "url": "https://moodle.org/plugins/report_lifestory",
+                "linktitle": "Student Life Story AI link",
+                "installed": false,
+                "enabled": true,
+                "hastoggle": false,
+                "hassettings": false,
+                "settingsurl": ""
+            }
+        ]
     }
 }}
+<div class="aiprovider_datacurso-plugin_list_page" data-region="aiprovider_datacurso/plugin_list">
+    <p>{{#str}}descriptionpagelistplugins, aiprovider_datacurso{{/str}}</p>
 
-<p>{{#str}}descriptionpagelistplugins, aiprovider_datacurso{{/str}}</p>
-
-<table class="generaltable">
-    <thead>
-        <tr>
-            <th>{{#str}}plugin, aiprovider_datacurso{{/str}}</th>
-            <th>{{#str}}description, aiprovider_datacurso{{/str}}</th>
-            <th>{{#str}}installed, aiprovider_datacurso{{/str}}</th>
-            <th>{{#str}}link_plugin, aiprovider_datacurso{{/str}}</th>
-        </tr>
-    </thead>
-    <tbody>
-        {{#plugins}}
-        <tr>
-            <td>{{name}}</td>
-            <td>{{description}}</td>
-            <td>{{#installed}}{{#str}}yes, core{{/str}}{{/installed}}{{^installed}}{{#str}}no, core{{/str}}{{/installed}}</td>
-            <td><a href="{{url}}" target="_blank">{{url}}</a></td>
-        </tr>
-        {{/plugins}}
-
-        {{^plugins}}
-        <tr>
-            <td colspan="4">{{#str}}message_no_there_plugins, aiprovider_datacurso{{/str}}</td>
-        </tr>
-        {{/plugins}}
-    </tbody>
-</table>
+    <table class="generaltable">
+        <thead>
+            <tr>
+                <th scope="col">{{#str}}plugin, aiprovider_datacurso{{/str}}</th>
+                <th scope="col">{{#str}}description, aiprovider_datacurso{{/str}}</th>
+                <th scope="col">{{#str}}installed, aiprovider_datacurso{{/str}}</th>
+                <th scope="col">{{#str}}pluginenabled, core_plugin{{/str}}</th>
+                <th scope="col">{{#str}}pluginsettings, aiprovider_datacurso{{/str}}</th>
+                <th scope="col">{{#str}}link_plugin, aiprovider_datacurso{{/str}}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#hasplugins}}
+            {{#plugins}}
+            <tr data-component="{{component}}"{{^enabled}} class="dimmed_text"{{/enabled}}>
+                <td>{{name}}</td>
+                <td>{{description}}</td>
+                <td>{{#installed}}{{#str}}yes, core{{/str}}{{/installed}}{{^installed}}{{#str}}no, core{{/str}}{{/installed}}</td>
+                <td>
+                    {{#hastoggle}}{{#toggle}}{{> core/toggle }}{{/toggle}}{{/hastoggle}}
+                    {{^hastoggle}}-{{/hastoggle}}
+                </td>
+                <td>
+                    {{#hassettings}}<a href="{{settingsurl}}">{{#str}}pluginsettings, aiprovider_datacurso{{/str}}</a>{{/hassettings}}
+                    {{^hassettings}}-{{/hassettings}}
+                </td>
+                <td>
+                    <a href="{{url}}" target="_blank" rel="noopener" title="{{linktitle}}" aria-label="{{linktitle}}">
+                        {{#pix}}i/externallink, core{{/pix}}
+                    </a>
+                </td>
+            </tr>
+            {{/plugins}}
+            {{/hasplugins}}
+            {{^hasplugins}}
+            <tr>
+                <td colspan="6">{{#str}}message_no_there_plugins, aiprovider_datacurso{{/str}}</td>
+            </tr>
+            {{/hasplugins}}
+        </tbody>
+    </table>
+</div>
+{{#js}}
+require(['aiprovider_datacurso/plugin_list'], function(PluginList) {
+    PluginList.init();
+});
+{{/js}}
