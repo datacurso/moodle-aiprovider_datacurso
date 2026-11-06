@@ -174,6 +174,8 @@ $string['plugindesc_jedomi'] = 'KI-Assistent für Moodle-Nutzer mit Chat, Werkze
 $string['plugindesc_lifestory'] = 'KI-gestützter Bericht und Analyse des akademischen Fortschritts des Studierenden.';
 $string['plugindesc_smartrules'] = 'Automatisierte Aktivitäten basierend auf früheren Bedingungen der Studierenden erstellen.';
 $string['plugindesc_socialcert'] = 'Personalisierte Zertifikate bei Kursabschluss automatisch generieren.';
+$string['plugindisabled'] = '{$a} ist auf dieser Website nicht aktiviert. Bitte wenden Sie sich an Ihren Website-Administrator.';
+$string['plugindisabled_admin'] = '{$a->name} ist im Datacurso KI-Anbieter deaktiviert. Sie können es in der <a href="{$a->url}">Datacurso-Pluginliste</a> aktivieren.';
 $string['pluginname'] = 'Datacurso KI-Anbieter';
 $string['pluginlink_title'] = 'Link zu {$a}';
 $string['pluginname_assign_ai'] = 'Aufgaben-KI';

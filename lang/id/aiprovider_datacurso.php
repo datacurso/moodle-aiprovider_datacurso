@@ -174,6 +174,8 @@ $string['plugindesc_jedomi'] = 'Asisten AI untuk pengguna Moodle, dengan obrolan
 $string['plugindesc_lifestory'] = 'Laporan dan analisis bertenaga AI tentang kemajuan akademik siswa.';
 $string['plugindesc_smartrules'] = 'Buat aktivitas otomatis berdasarkan kondisi sebelumnya siswa.';
 $string['plugindesc_socialcert'] = 'Hasilkan sertifikat yang dipersonalisasi secara otomatis setelah menyelesaikan kursus.';
+$string['plugindisabled'] = '{$a} tidak diaktifkan di situs ini. Silakan hubungi administrator situs Anda.';
+$string['plugindisabled_admin'] = '{$a->name} dinonaktifkan di penyedia AI Datacurso. Anda dapat mengaktifkannya di <a href="{$a->url}">daftar plugin Datacurso</a>.';
 $string['pluginname'] = 'Penyedia AI Datacurso';
 $string['pluginlink_title'] = 'Tautan {$a}';
 $string['pluginname_assign_ai'] = 'Tugas AI';

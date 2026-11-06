@@ -174,6 +174,8 @@ $string['plugindesc_jedomi'] = 'ИИ-ассистент для пользова�
 $string['plugindesc_lifestory'] = 'Отчет и анализ академического прогресса студента на основе ИИ.';
 $string['plugindesc_smartrules'] = 'Создание автоматизированных активностей на основе предыдущих условий студентов.';
 $string['plugindesc_socialcert'] = 'Автоматическое создание персонализированных сертификатов при завершении курса.';
+$string['plugindisabled'] = '{$a} не включён на этом сайте. Обратитесь к администратору сайта.';
+$string['plugindisabled_admin'] = '{$a->name} отключён в провайдере ИИ Datacurso. Вы можете включить его в <a href="{$a->url}">списке плагинов Datacurso</a>.';
 $string['pluginname'] = 'Провайдер ИИ Datacurso';
 $string['pluginlink_title'] = 'Ссылка на {$a}';
 $string['pluginname_assign_ai'] = 'Задание ИИ';

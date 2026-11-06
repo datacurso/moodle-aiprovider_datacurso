@@ -78,6 +78,20 @@ class suite_plugins {
     }
 
     /**
+     * Display name of a plugin: the provider's name string for suite plugins, else its own pluginname.
+     *
+     * @param string $component Frankenstyle component name.
+     * @return string
+     */
+    public static function get_display_name(string $component): string {
+        $plugin = self::get($component);
+        if ($plugin !== null) {
+            return get_string($plugin['namestring'], 'aiprovider_datacurso');
+        }
+        return get_string('pluginname', $component);
+    }
+
+    /**
      * Whether a component is one of the suite plugins.
      *
      * @param string $component Frankenstyle component name.

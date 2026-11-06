@@ -58,6 +58,30 @@ class plugin_settings {
     }
 
     /**
+     * Stop the request when a suite plugin is disabled in the provider.
+     *
+     * Suite plugins call it at the top of their pages and web services. A site administrator is told
+     * where to enable the plugin and gets a Continue link to the plugins list; anyone else is told to
+     * contact the administrator.
+     *
+     * @param string $component Frankenstyle component name, e.g. 'local_forum_ai'.
+     * @return void
+     * @throws \moodle_exception plugindisabled or plugindisabled_admin when the plugin is disabled.
+     */
+    public static function require_enabled(string $component): void {
+        if (self::is_enabled($component)) {
+            return;
+        }
+        $name = suite_plugins::get_display_name($component);
+        if (has_capability('moodle/site:config', \context_system::instance())) {
+            $url = new \moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'pluginslist']);
+            $a = (object) ['name' => $name, 'url' => $url->out()];
+            throw new \moodle_exception('plugindisabled_admin', 'aiprovider_datacurso', $url, $a);
+        }
+        throw new \moodle_exception('plugindisabled', 'aiprovider_datacurso', '', $name);
+    }
+
+    /**
      * Enable or disable a suite plugin, writing a config_log row when the state changes.
      *
      * @param string $component Frankenstyle component name of a suite plugin.

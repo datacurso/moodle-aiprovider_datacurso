@@ -199,6 +199,8 @@ $string['plugindesc_jedomi'] = 'AI assistant for Moodle users, with chat, tools 
 $string['plugindesc_lifestory'] = 'AI-powered report and analysis of the student’s academic progress.';
 $string['plugindesc_smartrules'] = 'Create automated activities based on students’ previous conditions.';
 $string['plugindesc_socialcert'] = 'Automatically generate personalized certificates upon course completion.';
+$string['plugindisabled'] = '{$a} is not enabled on this site. Please contact your site administrator.';
+$string['plugindisabled_admin'] = '{$a->name} is disabled in the Datacurso AI provider. You can enable it in the <a href="{$a->url}">Datacurso plugins list</a>.';
 $string['pluginname'] = 'Datacurso AI Provider';
 $string['pluginlink_title'] = '{$a} link';
 $string['pluginname_assign_ai'] = 'Assign AI';

@@ -174,6 +174,8 @@ $string['plugindesc_jedomi'] = 'Assistant IA pour les utilisateurs de Moodle, av
 $string['plugindesc_lifestory'] = 'Rapport et analyse alimentés par l\'IA des progrès académiques de l\'étudiant.';
 $string['plugindesc_smartrules'] = 'Créer des activités automatisées basées sur les conditions antérieures des étudiants.';
 $string['plugindesc_socialcert'] = 'Générer automatiquement des certificats personnalisés à la fin du cours.';
+$string['plugindisabled'] = '{$a} n\'est pas activé sur ce site. Veuillez contacter l\'administrateur du site.';
+$string['plugindisabled_admin'] = '{$a->name} est désactivé dans le fournisseur IA Datacurso. Vous pouvez l\'activer dans la <a href="{$a->url}">liste des plugins Datacurso</a>.';
 $string['pluginname'] = 'Fournisseur IA Datacurso';
 $string['pluginlink_title'] = 'Lien vers {$a}';
 $string['pluginname_assign_ai'] = 'Devoir IA';
