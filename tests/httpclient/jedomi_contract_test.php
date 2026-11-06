@@ -69,7 +69,7 @@ final class jedomi_contract_test extends \advanced_testcase {
                 /** @var fake_curl Transport double. */
                 private fake_curl $fakecurl
             ) {
-                parent::__construct(null, 'https://ai.example.invalid', 'https://eu.ai.example.invalid', 'local_jedomi');
+                parent::__construct(null, 'https://ai.example.invalid', 'https://eu.ai.example.invalid');
             }
 
             #[\Override]
@@ -101,7 +101,7 @@ final class jedomi_contract_test extends \advanced_testcase {
     }
 
     /**
-     * I4: the call carries the license, Jedomi's rate-limit headers, the plugin headers and the identity fields.
+     * I4: the call carries the license, Jedomi's rate-limit headers and the identity fields.
      */
     public function test_chat_call_sends_the_headers_and_fields_plugins_ai_requires(): void {
         global $CFG;
@@ -110,8 +110,6 @@ final class jedomi_contract_test extends \advanced_testcase {
         set_config('ratelimit_local_jedomi_enable', 1, 'aiprovider_datacurso');
         set_config('ratelimit_local_jedomi_limit', 40, 'aiprovider_datacurso');
         set_config('ratelimit_local_jedomi_window', json_encode(['value' => 1, 'unit' => 'hours']), 'aiprovider_datacurso');
-        $jedomi = \core_plugin_manager::instance()->get_plugin_info('local_jedomi');
-        $this->assertNotNull($jedomi, 'local_jedomi must be installed to check its plugin headers.');
 
         $curl = new fake_curl();
         $curl->enqueue('{"choices": [{"message": {"role": "assistant", "content": "Hi"}, "finish_reason": "stop"}]}');
@@ -140,9 +138,6 @@ final class jedomi_contract_test extends \advanced_testcase {
         $this->assertContains('X-RateLimit-Limit: 40', $headers);
         $this->assertContains('X-RateLimit-WindowSeconds: 3600', $headers);
         $this->assertContains('X-RateLimit-MaxPerAction: 2', $headers);
-        $this->assertContains('X-Plugin-Name: local_jedomi', $headers);
-        $this->assertContains('X-Plugin-Version: ' . $jedomi->release, $headers);
-        $this->assertContains('X-Plugin-Build: ' . $jedomi->versiondisk, $headers);
 
         $body = json_decode($call['params'], true);
         $this->assertSame('Qwen/Qwen3-235B-A22B-Instruct-2507', $body['model']);

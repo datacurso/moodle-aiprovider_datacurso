@@ -259,5 +259,14 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026100900, 'aiprovider', 'datacurso');
     }
 
+    if ($oldversion < 2026102900) {
+        // The suite plugins drop their own "Enabled" setting and ask the provider instead. Copy the current
+        // value of each one first, so that no site changes state when it upgrades. Plugins without a setting
+        // stay enabled.
+        \aiprovider_datacurso\local\plugin_settings::migrate_legacy_flags();
+
+        upgrade_plugin_savepoint(true, 2026102900, 'aiprovider', 'datacurso');
+    }
+
     return true;
 }

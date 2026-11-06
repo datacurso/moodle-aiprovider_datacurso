@@ -309,6 +309,7 @@ final class outbound_privacy_test extends \advanced_testcase {
         xmldb_aiprovider_datacurso_upgrade(2026100500);
 
         $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', (string) get_config('aiprovider_datacurso', 'pseudonym_secret'));
-        $this->assertSame('2026100900', get_config('aiprovider_datacurso', 'version'));
+        // Later steps also run, so the savepoint of this step is reached or passed.
+        $this->assertGreaterThanOrEqual(2026100900, (int) get_config('aiprovider_datacurso', 'version'));
     }
 }
