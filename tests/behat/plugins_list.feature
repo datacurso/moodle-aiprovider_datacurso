@@ -1,23 +1,55 @@
 @aiprovider @aiprovider_datacurso @MDL-E2E-004
 Feature: Datacurso plugins list tab
-  In order to know which ecosystem plugins are installed
-  As an administrator with the view-reports permission
-  I need the plugins list to show each plugin, its install status and a link
+  In order to know which suite plugins are installed and switch them on or off
+  As an administrator
+  I need the plugins list to show each plugin, its install status, an "Enabled" switch and a link to its settings
 
   Background:
     Given I log in as "admin"
-    And I navigate to the Datacurso AI provider reports page
-    And I follow "Datacurso plugins"
+    And I visit "/ai/provider/datacurso/admin/report_sections.php?tab=pluginslist"
 
-  Scenario: The eight ecosystem plugins are listed with status and link
-    Then I should see "AI Course Creator"
-    And I should see "Datacurso Ratings"
+  Scenario: The nine suite plugins are listed with their switch, settings and moodle.org link
+    Then I should see "Course Creator AI"
+    And I should see "Ranking Activities AI"
     And I should see "Forum AI"
-    And I should see "Assignment AI"
-    And I should see "DT Tutor"
-    And I should see "Social Certificate"
-    And I should see "Life Story"
-    And I should see "Smart Rules"
-    And I should see "8" plugins listed
-    And each listed plugin should show an installation status of "Installed" or "Not installed"
-    And each listed plugin should expose a link
+    And I should see "Assign AI"
+    And I should see "Tutor AI"
+    And I should see "Share Certificate AI"
+    And I should see "Student Life Story AI"
+    And I should see "SmartRules AI"
+    And I should see "Jedomi"
+    And I should see "Enabled"
+    And "Disable Forum AI" "checkbox" should exist in the "Forum AI" "table_row"
+    And "Settings" "link" should not exist in the "Forum AI" "table_row"
+    And "Settings" "link" should exist in the "Jedomi" "table_row"
+    And "Jedomi link" "link" should exist in the "Jedomi" "table_row"
+    And I should not see "https://moodle.org/plugins/local_jedomi"
+
+  @javascript
+  Scenario: Disable and enable a suite plugin from its switch without leaving the tab
+    When I toggle the "Disable Forum AI" admin switch "off"
+    Then I should see "Forum AI disabled."
+    And I reload the page
+    And "Enable Forum AI" "checkbox" should exist in the "Forum AI" "table_row"
+    And I toggle the "Enable Forum AI" admin switch "on"
+    And I should see "Forum AI enabled."
+    And I reload the page
+    And "Disable Forum AI" "checkbox" should exist in the "Forum AI" "table_row"
+
+  Scenario: Disable and enable a suite plugin from its settings page
+    When I click on "Settings" "link" in the "Jedomi" "table_row"
+    Then I should see "Jedomi settings"
+    And I set the field "Enabled" to "0"
+    And I press "Save changes"
+    And I should see "The settings of Jedomi have been saved."
+    And "Enable Jedomi" "checkbox" should exist in the "Jedomi" "table_row"
+    And I click on "Settings" "link" in the "Jedomi" "table_row"
+    And I set the field "Enabled" to "1"
+    And I press "Save changes"
+    And "Disable Jedomi" "checkbox" should exist in the "Jedomi" "table_row"
+
+  Scenario: Cancelling the settings page returns to the plugins list without changes
+    When I click on "Settings" "link" in the "Jedomi" "table_row"
+    And I set the field "Enabled" to "0"
+    And I press "Cancel"
+    Then "Disable Jedomi" "checkbox" should exist in the "Jedomi" "table_row"

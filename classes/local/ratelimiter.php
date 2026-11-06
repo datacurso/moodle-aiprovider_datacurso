@@ -51,6 +51,7 @@ class ratelimiter {
             '/smartrules/' => 'local_coursedynamicrules',
             '/provider/' => 'aiprovider_datacurso',
             '/chat/' => 'local_dttutor',
+            '/jedomi/' => 'local_jedomi',
         ];
 
         foreach ($map as $prefix => $service) {
