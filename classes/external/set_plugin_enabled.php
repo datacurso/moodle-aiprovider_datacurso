@@ -1,0 +1,119 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+namespace aiprovider_datacurso\external;
+
+use aiprovider_datacurso\local\plugin_settings;
+use aiprovider_datacurso\local\suite_plugins;
+use core_external\external_api;
+use core_external\external_function_parameters;
+use core_external\external_single_structure;
+use core_external\external_value;
+
+/**
+ * Web service behind the "Enabled" switch of the Datacurso plugins tab.
+ *
+ * Mirrors core_ai\external\set_action, scoped to a tenant as the tenant configuration page is: it requires
+ * the same permission (moodle/site:config, or aiprovider/datacurso:manageconfig) at system context, changes
+ * the state of one scope through plugin_settings::set_enabled() and queues the same "{plugin}
+ * enabled/disabled" notification the core AI tables show. The scope is the tenant of the current user
+ * unless a site administrator names another one, or the site default (tenant 0). Only installed suite
+ * plugins have a switch, so anything else is refused.
+ *
+ * @package    aiprovider_datacurso
+ * @category   external
+ * @copyright  2026 Datacurso
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class set_plugin_enabled extends external_api {
+    /**
+     * Describes the parameters of the service.
+     *
+     * @return external_function_parameters
+     */
+    public static function execute_parameters(): external_function_parameters {
+        return new external_function_parameters([
+            'component' => new external_value(PARAM_COMPONENT, 'Frankenstyle component name of the suite plugin'),
+            'enabled' => new external_value(PARAM_BOOL, 'New state of the plugin'),
+            'tenantid' => new external_value(
+                PARAM_INT,
+                'Tenant to change: 0 for the site default, null for the tenant of the current user',
+                VALUE_DEFAULT,
+                null,
+                NULL_ALLOWED
+            ),
+        ]);
+    }
+
+    /**
+     * Enable or disable an installed suite plugin for a tenant or for the site default.
+     *
+     * @param string $component Frankenstyle component name of the suite plugin.
+     * @param bool $enabled New state of the plugin.
+     * @param int|null $tenantid Tenant to change, 0 for the site default, null for the tenant of the current user.
+     * @return array{enabled: bool, tenantid: int} The saved state and the scope it was saved for.
+     * @throws \required_capability_exception When the user cannot change the provider configuration.
+     * @throws \moodle_exception When the scope is another tenant, or the component is not an installed suite plugin.
+     */
+    public static function execute(string $component, bool $enabled, ?int $tenantid = null): array {
+        [
+            'component' => $component,
+            'enabled' => $enabled,
+            'tenantid' => $tenantid,
+        ] = self::validate_parameters(self::execute_parameters(), [
+            'component' => $component,
+            'enabled' => $enabled,
+            'tenantid' => $tenantid,
+        ]);
+
+        $context = \context_system::instance();
+        self::validate_context($context);
+        $tenantid = plugin_settings::require_manage_scope($tenantid);
+
+        $plugin = suite_plugins::get($component);
+        if ($plugin === null) {
+            throw new \moodle_exception('invalidsuiteplugin', 'aiprovider_datacurso', '', s($component));
+        }
+        $name = get_string($plugin['namestring'], 'aiprovider_datacurso');
+        if (!suite_plugins::is_installed($component)) {
+            throw new \moodle_exception('pluginnotinstalled', 'aiprovider_datacurso', '', $name);
+        }
+
+        plugin_settings::set_enabled($component, $enabled, $tenantid);
+
+        \core\notification::add(
+            get_string($enabled ? 'plugin_enabled' : 'plugin_disabled', 'core_admin', $name),
+            \core\notification::SUCCESS
+        );
+
+        return [
+            'enabled' => plugin_settings::is_enabled($component, $tenantid),
+            'tenantid' => $tenantid,
+        ];
+    }
+
+    /**
+     * Describes the value returned by the service.
+     *
+     * @return external_single_structure
+     */
+    public static function execute_returns(): external_single_structure {
+        return new external_single_structure([
+            'enabled' => new external_value(PARAM_BOOL, 'State of the plugin after the change'),
+            'tenantid' => new external_value(PARAM_INT, 'Tenant the state was saved for; 0 is the site default'),
+        ]);
+    }
+}

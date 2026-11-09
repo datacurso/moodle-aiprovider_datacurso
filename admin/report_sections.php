@@ -108,70 +108,47 @@ switch ($tab) {
         break;
 
     case 'pluginslist':
-        // List of compatible AI-related plugins.
-        global $DB;
-
-        $pluginslist = [
-            [
-                'name' => get_string('pluginname_coursegen', 'aiprovider_datacurso'),
-                'description' => get_string('plugindesc_coursegen', 'aiprovider_datacurso'),
-                'component' => 'local_coursegen',
-                'url' => 'https://moodle.org/plugins/local_coursegen',
-            ],
-            [
-                'name' => get_string('pluginname_forum_ai', 'aiprovider_datacurso'),
-                'description' => get_string('plugindesc_forum_ai', 'aiprovider_datacurso'),
-                'component' => 'local_forum_ai',
-                'url' => 'https://moodle.org/plugins/local_forum_ai',
-            ],
-            [
-                'name' => get_string('pluginname_datacurso_ratings', 'aiprovider_datacurso'),
-                'description' => get_string('plugindesc_datacurso_ratings', 'aiprovider_datacurso'),
-                'component' => 'local_datacurso_ratings',
-                'url' => 'https://moodle.org/plugins/local_datacurso_ratings',
-            ],
-            [
-                'name' => get_string('pluginname_assign_ai', 'aiprovider_datacurso'),
-                'description' => get_string('plugindesc_assign_ai', 'aiprovider_datacurso'),
-                'component' => 'local_assign_ai',
-                'url' => 'https://moodle.org/plugins/local_assign_ai',
-            ],
-            [
-                'name' => get_string('pluginname_dttutor', 'aiprovider_datacurso'),
-                'description' => get_string('plugindesc_dttutor', 'aiprovider_datacurso'),
-                'component' => 'local_dttutor',
-                'url' => 'https://moodle.org/plugins/local_dttutor',
-            ],
-            [
-                'name' => get_string('pluginname_socialcert', 'aiprovider_datacurso'),
-                'description' => get_string('plugindesc_socialcert', 'aiprovider_datacurso'),
-                'component' => 'local_socialcert',
-                'url' => 'https://moodle.org/plugins/local_socialcert',
-            ],
-            [
-                'name' => get_string('pluginname_lifestory', 'aiprovider_datacurso'),
-                'description' => get_string('plugindesc_lifestory', 'aiprovider_datacurso'),
-                'component' => 'report_lifestory',
-                'url' => 'https://moodle.org/plugins/report_lifestory',
-            ],
-            [
-                'name' => get_string('pluginname_smartrules', 'aiprovider_datacurso'),
-                'description' => get_string('plugindesc_smartrules', 'aiprovider_datacurso'),
-                'component' => 'local_coursedynamicrules',
-                'url' => 'https://moodle.org/plugins/local_coursedynamicrules',
-            ],
-        ];
-
-        // Check installed status of each plugin.
-        foreach ($pluginslist as &$plugin) {
-            $plugin['installed'] = $DB->record_exists('config_plugins', [
-                'plugin' => $plugin['component'],
-            ]);
-            unset($plugin['component']);
+        // Datacurso suite plugins with their install status and their state in the provider. On Moodle
+        // Workplace the state is kept per tenant, as the rate limits are: a tenant administrator sees and
+        // switches the state of their own tenant, and a site administrator also manages the site default,
+        // which every tenant without its own value inherits.
+        $owntenant = \aiprovider_datacurso\local\tenant_resolver::get_tenant_id();
+        $notenant = \aiprovider_datacurso\local\tenant_resolver::NO_TENANT;
+        $scope = $owntenant;
+        $scopenotice = '';
+        $scopeselector = null;
+        if (\aiprovider_datacurso\local\tenant_resolver::is_tenancy_available()) {
+            if (is_siteadmin()) {
+                $scope = optional_param('plugintenant', $notenant, PARAM_INT);
+                $options = [
+                    $notenant => get_string('pluginscope_site', 'aiprovider_datacurso'),
+                    $owntenant => get_string('pluginscope_tenant', 'aiprovider_datacurso'),
+                ];
+                if (!array_key_exists($scope, $options)) {
+                    $options[$scope] = get_string('pluginscope_othertenant', 'aiprovider_datacurso', $scope);
+                }
+                $scopeselector = new \core\output\single_select(
+                    new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'pluginslist']),
+                    'plugintenant',
+                    $options,
+                    $scope,
+                    null
+                );
+                $scopeselector->set_label(get_string('pluginscope', 'aiprovider_datacurso'));
+            }
+            $scopenotice = get_string(
+                $scope === $notenant ? 'pluginscope_site_desc' : 'pluginscope_tenant_desc',
+                'aiprovider_datacurso'
+            );
         }
-        unset($plugin);
 
-        $page = new \aiprovider_datacurso\output\plugin_list_page($pluginslist);
+        $page = new \aiprovider_datacurso\output\plugin_list_page(
+            \aiprovider_datacurso\local\suite_plugins::get_overview($scope),
+            $scope,
+            $scopenotice,
+            $scopeselector,
+            \aiprovider_datacurso\local\plugin_settings::can_manage_scope($scope)
+        );
         echo $OUTPUT->render($page);
         break;
 }

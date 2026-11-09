@@ -113,20 +113,46 @@ class provider extends \core_ai\provider {
     /**
      * Return all available AI services for this provider.
      *
-     * @return array
+     * The services are the suite plugins listed in \aiprovider_datacurso\local\suite_plugins plus the provider
+     * itself (its own text and image actions), which keeps its historical place after local_assign_ai. The ids are
+     * the ones the rate limits and the consumption report use, so they must not change. A suite plugin that is
+     * listed only once installed (Jedomi) is left out until it is installed.
+     *
+     * @return array<int, array{id: string, name: string}>
      */
     public static function get_services(): array {
-        return [
-            ['id' => 'local_coursegen', 'name' => get_string('pluginname_coursegen', 'aiprovider_datacurso')],
-            ['id' => 'local_datacurso_ratings', 'name' => get_string('pluginname_datacurso_ratings', 'aiprovider_datacurso')],
-            ['id' => 'local_forum_ai', 'name' => get_string('pluginname_forum_ai', 'aiprovider_datacurso')],
-            ['id' => 'local_assign_ai', 'name' => get_string('pluginname_assign_ai', 'aiprovider_datacurso')],
-            ['id' => 'aiprovider_datacurso', 'name' => get_string('pluginname', 'aiprovider_datacurso')],
-            ['id' => 'local_dttutor', 'name' => get_string('pluginname_dttutor', 'aiprovider_datacurso')],
-            ['id' => 'local_socialcert', 'name' => get_string('pluginname_socialcert', 'aiprovider_datacurso')],
-            ['id' => 'report_lifestory', 'name' => get_string('pluginname_lifestory', 'aiprovider_datacurso')],
-            ['id' => 'local_coursedynamicrules', 'name' => get_string('pluginname_smartrules', 'aiprovider_datacurso')],
-        ];
+        $services = [];
+        foreach (\aiprovider_datacurso\local\suite_plugins::get_all() as $plugin) {
+            $services[] = [
+                'id' => $plugin['serviceid'],
+                'name' => get_string($plugin['namestring'], 'aiprovider_datacurso'),
+            ];
+            if ($plugin['serviceid'] === 'local_assign_ai') {
+                $services[] = ['id' => 'aiprovider_datacurso', 'name' => get_string('pluginname', 'aiprovider_datacurso')];
+            }
+        }
+        return $services;
+    }
+
+    /**
+     * Display name of every service, keyed by service id, for labelling consumption rows.
+     *
+     * Besides the services of get_services() it names every known suite plugin, including one that is not
+     * listed because it is not installed, so rows already recorded for it still show its name.
+     *
+     * @return array<string, string>
+     */
+    public static function get_service_names(): array {
+        $names = [];
+        foreach (self::get_services() as $service) {
+            $names[$service['id']] = $service['name'];
+        }
+        foreach (\aiprovider_datacurso\local\suite_plugins::get_all_known() as $plugin) {
+            if (!isset($names[$plugin['serviceid']])) {
+                $names[$plugin['serviceid']] = get_string($plugin['namestring'], 'aiprovider_datacurso');
+            }
+        }
+        return $names;
     }
 
     /**
@@ -180,6 +206,9 @@ class provider extends \core_ai\provider {
                 ['key' => 'default', 'name' => self::lang('action_default'), 'default' => 3],
             ],
             'local_dttutor' => [
+                ['key' => 'default', 'name' => self::lang('action_default'), 'default' => 2],
+            ],
+            'local_jedomi' => [
                 ['key' => 'default', 'name' => self::lang('action_default'), 'default' => 2],
             ],
         ];
@@ -309,6 +338,7 @@ class provider extends \core_ai\provider {
             ['id' => '/story/analysis', 'name' => get_string('generate_analysis_story_student', 'aiprovider_datacurso')],
             ['id' => '/smartrules/create-mod', 'name' => get_string('generate_ai_reinforcement_activity', 'aiprovider_datacurso')],
             ['id' => '/chat/message', 'name' => get_string('generate_chat_message', 'aiprovider_datacurso')],
+            ['id' => '/jedomi/v1/chat/completions', 'name' => get_string('generate_jedomi_chat', 'aiprovider_datacurso')],
             // Moodle activity types.
             self::make_action('create_activity_assign_image'),
             self::make_action('create_activity_assign_noimage'),
