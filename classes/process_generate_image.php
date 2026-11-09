@@ -261,12 +261,13 @@ class process_generate_image extends abstract_processor {
         // The audit log keeps the folder of the image only: the file name is left out.
         $audit = $this->create_request_audit('GET', rtrim(dirname($parts['path'] ?? '/'), '/') . '/');
         try {
-            $response = \core\di::get(http_client::class)->get($imageurl, [
-                RequestOptions::ALLOW_REDIRECTS => false,
-                RequestOptions::STREAM => true,
-                RequestOptions::HTTP_ERRORS => false,
-                RequestOptions::TIMEOUT => self::FETCH_TIMEOUT,
-            ]);
+            $response = \core\di::get(http_client::class)->get(
+                $imageurl,
+                \aiprovider_datacurso\local\transport_policy::guzzle_options(self::FETCH_TIMEOUT) + [
+                    RequestOptions::STREAM => true,
+                    RequestOptions::HTTP_ERRORS => false,
+                ]
+            );
         } catch (TransferException $e) {
             $audit->failed($e);
             debugging('Image fetch failed: ' . $e->getMessage(), DEBUG_DEVELOPER);

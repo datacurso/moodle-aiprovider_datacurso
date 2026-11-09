@@ -57,8 +57,8 @@ final class outbound_privacy {
      *
      * Frozen contract: the secret is generated once per site (32 random bytes, stored as 64 hex
      * characters in the plugin configuration) at install or upgrade, lazily on first use only as
-     * a fallback, and must never be regenerated or transmitted. The remote services keep every per-user counter and rate-limit window under
-     * the tokens it produces, and the reverse lookup of the consumption history depends on it.
+     * a fallback, and must never be regenerated or transmitted. The remote services keep every per-user counter and
+     * rate-limit window under the tokens it produces, and the reverse lookup of the consumption history depends on it.
      * It is deliberately NOT the site UUID sent to the services as `site_id`: a key known to the
      * recipient would make the tokens reversible by enumerating user ids.
      *
@@ -163,14 +163,21 @@ final class outbound_privacy {
     }
 
     /**
-     * Drop a deleted user's token from the reverse map, so its consumption is no longer
-     * attributed to the deleted account.
+     * Unlink a deleted user from the consumption history: the records already copied to the local
+     * history are attributed to nobody (userid 0), and the token is dropped from the reverse map so
+     * the records synchronised later are not attributed to the account either.
+     *
+     * The records are kept, unlinked, so the credits stay in the totals of the site.
      *
      * Observer of {@see \core\event\user_deleted}, declared in db/events.php.
      *
      * @param \core\event\user_deleted $event
      */
     public static function user_deleted(\core\event\user_deleted $event): void {
+        global $DB;
+
+        $DB->set_field('aiprovider_datacurso_consumption', 'userid', 0, ['userid' => $event->objectid]);
+
         $token = self::pseudonymise_userid($event->objectid);
 
         \cache::make('aiprovider_datacurso', self::CACHE_AREA)->delete($token);

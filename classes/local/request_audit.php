@@ -71,7 +71,7 @@ final class request_audit {
         /** @var int|null User the request was made for. */
         private ?int $relateduserid = null
     ) {
-        $this->endpoint = self::strip_query($endpoint);
+        $this->endpoint = self::normalise_endpoint($endpoint);
     }
 
     /**
@@ -125,6 +125,49 @@ final class request_audit {
      */
     public static function strip_query(string $endpoint): string {
         return preg_replace('/[?#].*$/s', '', $endpoint);
+    }
+
+    /**
+     * The endpoint as it is logged: without its query string, and with identifiers in its path replaced by {id}.
+     *
+     * A path segment made of digits, a UUID, a long hexadecimal string or a long token mixing
+     * letters and digits (such as a session id) identifies a record or a session, not a route, so
+     * it is left out of the log. Route names, including versions such as v1, are kept.
+     *
+     * @param string $endpoint Endpoint as requested.
+     * @return string
+     */
+    public static function normalise_endpoint(string $endpoint): string {
+        $segments = explode('/', self::strip_query($endpoint));
+        foreach ($segments as $index => $segment) {
+            if (self::is_identifier($segment)) {
+                $segments[$index] = '{id}';
+            }
+        }
+        return implode('/', $segments);
+    }
+
+    /**
+     * Whether a path segment is an identifier rather than the name of a route.
+     *
+     * @param string $segment One segment of the path.
+     * @return bool
+     */
+    private static function is_identifier(string $segment): bool {
+        if ($segment === '') {
+            return false;
+        }
+        if (ctype_digit($segment)) {
+            return true;
+        }
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $segment)) {
+            return true;
+        }
+        if (preg_match('/^[0-9a-f]{16,}$/i', $segment)) {
+            return true;
+        }
+        return strlen($segment) >= 16 && preg_match('/^[A-Za-z0-9_-]+$/', $segment)
+            && preg_match('/[0-9]/', $segment) && preg_match('/[A-Za-z]/', $segment);
     }
 
     /**
