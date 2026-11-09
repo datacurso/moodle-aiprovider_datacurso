@@ -182,6 +182,51 @@ The third section shows the list of Datacurso plugins that are compatible with t
 
 ![List plugins](./_docs/images/aiprovider_datacurso_page-report-listplugins.png)
 
+## Privacy and audit
+
+### Audit log of external requests
+
+Every request the plugin sends to a Datacurso service is recorded in the Moodle log as the event
+`\aiprovider_datacurso\event\external_request_completed`: requests of the AI services and course service clients
+(including uploads and downloads), of the shop client, and of the core AI actions (text, summary, image and the image
+download). Each event records the user, the context, the client, the service, the HTTP method, the endpoint path without
+its query string, the result (`success`, `failure`, or `refused` when nothing left the site, for example with the
+provider disabled or without a license key), the HTTP status and, on failure, an error code.
+
+The event never records the license key, the headers, the payload or prompt, file names, the response body, the site URL,
+the user pseudonym or the transport error text. It is logged in the system context unless the plugin making the request
+passes its own with `set_audit_context()` on the client. Logging never breaks a request.
+
+### What the services receive about the site and the user
+
+The requests of the AI services and course service clients carry `site_id`, `site_url`, `userid` and `lang`. The course
+service also receives the user's `timezone`; the AI services receive it only on the CV and job matching routes, which use
+it.
+
+### How the user pseudonym is computed
+
+The `userid` sent to the services is never the Moodle user id. It is computed in
+`classes/local/outbound_privacy.php` as an HMAC-SHA256 of the user id, keyed with a secret of 32 random bytes generated
+once per site and stored in the plugin configuration, truncated to 32 hexadecimal characters. The secret is never sent to
+any service and is not the `site_id`, so the services cannot recover the user id from the pseudonym, and pseudonyms of
+the same person on different sites cannot be matched.
+
+### Deletion of user data
+
+When a Moodle user is deleted, the plugin removes the pseudonym of that user from its local cache, so consumption
+records are no longer linked to the account. The plugin does not delete data at the remote services: whether and how a
+service deletes what it keeps for a pseudonym depends on each service.
+
+### What the token manager service keeps per user
+
+The token manager service, which applies the per-user consumption limits and reports consumption to the shop, keeps one
+record (in its MongoDB collection `ratelimit`) per license key, site, user pseudonym and service, with the start of the current window, the credits used in it
+and the time of the last update. Records are written only while a consumption limit is enabled for the service. They
+have no expiry and the service has no way to delete them. For each request it forwards the user pseudonym, the action,
+the service, the credits and the cost detail to the consumption API of the shop.
+
+The retention of the request logs of the services and of the consumption records of the shop is not documented yet.
+
 ## License ##
 
 2025 Data Curso LLC <https://datacurso.com>
