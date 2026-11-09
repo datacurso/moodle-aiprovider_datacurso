@@ -123,6 +123,7 @@ $string['error_positivevalue'] = 'The value must be a positive number.';
 $string['error_ratelimit_exceeded'] = 'The allowed consumption limit has been exceeded. Please try again at {$a}.';
 $string['errorgetbalancecredits'] = 'Could not retrieve credits balance from external API';
 $string['errorgetusers'] = 'Could not retrieve the list of users. Please try again later.';
+$string['event_external_request_completed'] = 'External request to a Datacurso service';
 $string['exists'] = 'Exists';
 $string['filter_year'] = 'Year';
 $string['forbidden'] = 'You are not allowed to perform this action with the current license. Please verify your license and available credits in <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Manage Credits</a> in the Datacurso Shop.';

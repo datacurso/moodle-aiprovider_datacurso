@@ -147,7 +147,8 @@ final class jedomi_contract_test extends \advanced_testcase {
         $this->assertNotSame((string) $user->id, $body['userid']);
         $this->assertSame(datacurso_api_base::get_site_uuid(), $body['site_id']);
         $this->assertSame('en', $body['lang']);
-        $this->assertSame('America/Bogota', $body['timezone']);
+        // The AI services do not read the timezone on this route, so it is not sent.
+        $this->assertArrayNotHasKey('timezone', $body);
         $this->assertSame($CFG->wwwroot, $body['site_url']);
     }
 

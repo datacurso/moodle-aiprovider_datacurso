@@ -258,6 +258,8 @@ class process_generate_image extends abstract_processor {
             return null;
         }
 
+        // The audit log keeps the folder of the image only: the file name is left out.
+        $audit = $this->create_request_audit('GET', rtrim(dirname($parts['path'] ?? '/'), '/') . '/');
         try {
             $response = \core\di::get(http_client::class)->get($imageurl, [
                 RequestOptions::ALLOW_REDIRECTS => false,
@@ -266,14 +268,17 @@ class process_generate_image extends abstract_processor {
                 RequestOptions::TIMEOUT => self::FETCH_TIMEOUT,
             ]);
         } catch (TransferException $e) {
+            $audit->failed($e);
             debugging('Image fetch failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
             return null;
         }
 
         if ((int)$response->getStatusCode() !== 200) {
+            $audit->failed('httperror', (int)$response->getStatusCode());
             debugging('Image fetch rejected: HTTP ' . $response->getStatusCode(), DEBUG_DEVELOPER);
             return null;
         }
+        $audit->succeeded(200);
 
         $contentlength = $response->getHeaderLine('Content-Length');
         if ($contentlength !== '' && (int)$contentlength > self::MAX_IMAGE_BYTES) {
