@@ -74,12 +74,16 @@ class consumption extends base {
     }
 
     /**
-     * Map of service identifier => display name, including known services that are not listed.
+     * Map of service identifier => display name.
      *
      * @return array<string, string>
      */
     private static function service_names(): array {
-        return provider::get_service_names();
+        $map = [];
+        foreach (provider::get_services() as $service) {
+            $map[$service['id']] = $service['name'];
+        }
+        return $map;
     }
 
     /**
@@ -209,8 +213,7 @@ class consumption extends base {
         ))
             ->add_joins($this->get_joins())
             ->set_options_callback(static function (): array {
-                // Only the listed services: a suite plugin that is not installed is not offered.
-                return array_column(provider::get_services(), 'name', 'id');
+                return self::service_names();
             });
 
         // Action filter.

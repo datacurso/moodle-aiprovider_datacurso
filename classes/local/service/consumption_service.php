@@ -63,7 +63,10 @@ class consumption_service {
         foreach (\aiprovider_datacurso\provider::get_actions() as $item) {
             $actionmap[$item['id']] = $item['name'];
         }
-        $servicemap = \aiprovider_datacurso\provider::get_service_names();
+        $servicemap = [];
+        foreach (\aiprovider_datacurso\provider::get_services() as $item) {
+            $servicemap[$item['id']] = $item['name'];
+        }
 
         $recordset = $DB->get_recordset_select(
             self::TABLE,

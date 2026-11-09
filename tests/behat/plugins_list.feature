@@ -8,7 +8,7 @@ Feature: Datacurso plugins list tab
     Given I log in as "admin"
     And I visit "/ai/provider/datacurso/admin/report_sections.php?tab=pluginslist"
 
-  Scenario: The published suite plugins are listed with their switch and moodle.org link
+  Scenario: The nine suite plugins are listed with their switch and moodle.org link
     Then I should see "Course Creator AI"
     And I should see "Ranking Activities AI"
     And I should see "Forum AI"
@@ -17,13 +17,11 @@ Feature: Datacurso plugins list tab
     And I should see "Share Certificate AI"
     And I should see "Student Life Story AI"
     And I should see "SmartRules AI"
+    And I should see "Jedomi"
     And I should see "Enabled"
     And "Forum AI link" "link" should exist in the "Forum AI" "table_row"
     And "Settings" "link" should not exist in the "Forum AI" "table_row"
     And I should not see "https://moodle.org/plugins/local_forum_ai"
-
-  Scenario: Jedomi is not listed while it is not installed
-    Then I should not see "Jedomi"
 
   @javascript
   Scenario: Disable and enable a suite plugin from its switch without leaving the tab

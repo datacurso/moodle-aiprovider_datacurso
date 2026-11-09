@@ -29,29 +29,11 @@ use aiprovider_datacurso\provider;
  */
 final class suite_plugins_test extends \advanced_testcase {
     /**
-     * Mark Jedomi as installed or not, whatever the test site has.
+     * The list holds the nine suite plugins, Jedomi included, each with every field filled in.
      *
-     * @param bool $installed Whether Jedomi is installed.
-     * @return void
+     * S1: one list of suite plugins.
      */
-    private function set_jedomi_installed(bool $installed): void {
-        global $DB;
-        if ($installed) {
-            set_config('version', 2026010100, 'local_jedomi');
-        } else {
-            $DB->delete_records('config_plugins', ['plugin' => 'local_jedomi']);
-        }
-    }
-
-    /**
-     * Without Jedomi installed the list holds the eight published suite plugins, each with every field filled in.
-     *
-     * S1: one list of suite plugins; Jedomi is listed only once installed.
-     */
-    public function test_lists_the_published_suite_plugins_without_jedomi(): void {
-        $this->resetAfterTest();
-        $this->set_jedomi_installed(false);
-
+    public function test_lists_the_nine_suite_plugins(): void {
         $plugins = suite_plugins::get_all();
 
         $this->assertSame([
@@ -63,38 +45,17 @@ final class suite_plugins_test extends \advanced_testcase {
             'local_socialcert',
             'report_lifestory',
             'local_coursedynamicrules',
+            'local_jedomi',
         ], array_keys($plugins));
 
         $stringmanager = get_string_manager();
-        foreach (suite_plugins::get_all_known() as $component => $plugin) {
+        foreach ($plugins as $component => $plugin) {
             $this->assertSame($component, $plugin['component']);
             $this->assertSame($component, $plugin['serviceid']);
             $this->assertSame('https://moodle.org/plugins/' . $component, $plugin['url']);
             $this->assertTrue($stringmanager->string_exists($plugin['namestring'], 'aiprovider_datacurso'));
             $this->assertTrue($stringmanager->string_exists($plugin['descstring'], 'aiprovider_datacurso'));
         }
-    }
-
-    /**
-     * Once Jedomi is installed it is listed last, and the plugins tab shows it.
-     *
-     * S1: Jedomi appears when a config_plugins version row exists for it.
-     */
-    public function test_lists_jedomi_once_installed(): void {
-        $this->resetAfterTest();
-        $this->set_jedomi_installed(true);
-
-        $this->assertSame('local_jedomi', array_key_last(suite_plugins::get_all()));
-        $this->assertCount(9, suite_plugins::get_all());
-        $this->assertContains('local_jedomi', array_column(suite_plugins::get_overview(), 'component'));
-
-        $this->set_jedomi_installed(false);
-        $this->assertArrayNotHasKey('local_jedomi', suite_plugins::get_all());
-        $this->assertNotContains('local_jedomi', array_column(suite_plugins::get_overview(), 'component'));
-        // It stays a suite plugin, so its state and its legacy flag keep working.
-        $this->assertTrue(suite_plugins::is_suite_plugin('local_jedomi'));
-        $this->assertSame('pluginname_jedomi', suite_plugins::get('local_jedomi')['namestring']);
-        $this->assertArrayHasKey('local_jedomi', suite_plugins::get_all_known());
     }
 
     /**
@@ -116,13 +77,12 @@ final class suite_plugins_test extends \advanced_testcase {
     /**
      * The provider services are the suite plugins plus the provider itself, with the same ids and order as before.
      *
-     * S1: get_services() keeps its identifiers; Jedomi is a service only once installed.
+     * S1: get_services() keeps its identifiers.
      */
     public function test_services_are_built_from_the_list_with_unchanged_ids(): void {
-        $this->resetAfterTest();
-        $this->set_jedomi_installed(false);
+        $services = provider::get_services();
 
-        $expected = [
+        $this->assertSame([
             'local_coursegen',
             'local_datacurso_ratings',
             'local_forum_ai',
@@ -132,12 +92,8 @@ final class suite_plugins_test extends \advanced_testcase {
             'local_socialcert',
             'report_lifestory',
             'local_coursedynamicrules',
-        ];
-        $this->assertSame($expected, array_column(provider::get_services(), 'id'));
-
-        $this->set_jedomi_installed(true);
-        $services = provider::get_services();
-        $this->assertSame(array_merge($expected, ['local_jedomi']), array_column($services, 'id'));
+            'local_jedomi',
+        ], array_column($services, 'id'));
 
         $names = array_column($services, 'name', 'id');
         $this->assertSame(get_string('pluginname', 'aiprovider_datacurso'), $names['aiprovider_datacurso']);
@@ -147,22 +103,6 @@ final class suite_plugins_test extends \advanced_testcase {
                 $names[$plugin['serviceid']]
             );
         }
-    }
-
-    /**
-     * Consumption already recorded for Jedomi keeps its name while Jedomi is not installed.
-     *
-     * S1: the service names used to label consumption rows include the suite plugins that are not listed.
-     */
-    public function test_service_names_name_jedomi_when_not_installed(): void {
-        $this->resetAfterTest();
-        $this->set_jedomi_installed(false);
-
-        $names = provider::get_service_names();
-
-        $this->assertSame(get_string('pluginname_jedomi', 'aiprovider_datacurso'), $names['local_jedomi']);
-        $this->assertSame(get_string('pluginname_forum_ai', 'aiprovider_datacurso'), $names['local_forum_ai']);
-        $this->assertNotContains('local_jedomi', array_column(provider::get_services(), 'id'));
     }
 
     /**

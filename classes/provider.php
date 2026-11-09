@@ -115,8 +115,7 @@ class provider extends \core_ai\provider {
      *
      * The services are the suite plugins listed in \aiprovider_datacurso\local\suite_plugins plus the provider
      * itself (its own text and image actions), which keeps its historical place after local_assign_ai. The ids are
-     * the ones the rate limits and the consumption report use, so they must not change. A suite plugin that is
-     * listed only once installed (Jedomi) is left out until it is installed.
+     * the ones the rate limits and the consumption report use, so they must not change.
      *
      * @return array<int, array{id: string, name: string}>
      */
@@ -132,27 +131,6 @@ class provider extends \core_ai\provider {
             }
         }
         return $services;
-    }
-
-    /**
-     * Display name of every service, keyed by service id, for labelling consumption rows.
-     *
-     * Besides the services of get_services() it names every known suite plugin, including one that is not
-     * listed because it is not installed, so rows already recorded for it still show its name.
-     *
-     * @return array<string, string>
-     */
-    public static function get_service_names(): array {
-        $names = [];
-        foreach (self::get_services() as $service) {
-            $names[$service['id']] = $service['name'];
-        }
-        foreach (\aiprovider_datacurso\local\suite_plugins::get_all_known() as $plugin) {
-            if (!isset($names[$plugin['serviceid']])) {
-                $names[$plugin['serviceid']] = get_string($plugin['namestring'], 'aiprovider_datacurso');
-            }
-        }
-        return $names;
     }
 
     /**

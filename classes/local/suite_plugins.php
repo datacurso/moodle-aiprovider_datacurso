@@ -49,72 +49,32 @@ class suite_plugins {
     ];
 
     /**
-     * Suite plugins that are listed only once they are installed on the site.
-     *
-     * They are not published yet, so the plugins tab and provider::get_services() leave them out until the
-     * plugin is installed. Everything else (is_suite_plugin(), the state kept by plugin_settings, the legacy
-     * flags and the rate limiter path map) keeps knowing them, so nothing changes when they are installed.
-     *
-     * @var string[]
-     */
-    private const LISTED_WHEN_INSTALLED = ['local_jedomi'];
-
-    /**
-     * All listed suite plugins, keyed by component, in display order.
-     *
-     * A plugin in LISTED_WHEN_INSTALLED is included only while it is installed.
+     * All suite plugins, keyed by component, in display order.
      *
      * @return array<string, array{component: string, namestring: string, descstring: string, url: string, serviceid: string}>
      */
     public static function get_all(): array {
         $plugins = [];
-        foreach (array_keys(self::PLUGINS) as $component) {
-            if (in_array($component, self::LISTED_WHEN_INSTALLED, true) && !self::is_installed($component)) {
-                continue;
-            }
-            $plugins[$component] = self::build($component);
+        foreach (self::PLUGINS as $component => [$namestring, $descstring]) {
+            $plugins[$component] = [
+                'component' => $component,
+                'namestring' => $namestring,
+                'descstring' => $descstring,
+                'url' => self::DIRECTORY_URL . $component,
+                'serviceid' => $component,
+            ];
         }
         return $plugins;
     }
 
     /**
-     * Every suite plugin, listed or not yet listed, keyed by component, in display order.
-     *
-     * @return array<string, array{component: string, namestring: string, descstring: string, url: string, serviceid: string}>
-     */
-    public static function get_all_known(): array {
-        $plugins = [];
-        foreach (array_keys(self::PLUGINS) as $component) {
-            $plugins[$component] = self::build($component);
-        }
-        return $plugins;
-    }
-
-    /**
-     * One suite plugin, listed or not yet listed, or null when the component is not a suite plugin.
+     * One suite plugin, or null when the component is not in the list.
      *
      * @param string $component Frankenstyle component name.
      * @return array{component: string, namestring: string, descstring: string, url: string, serviceid: string}|null
      */
     public static function get(string $component): ?array {
-        return self::is_suite_plugin($component) ? self::build($component) : null;
-    }
-
-    /**
-     * Description of one suite plugin.
-     *
-     * @param string $component Frankenstyle component name of a suite plugin.
-     * @return array{component: string, namestring: string, descstring: string, url: string, serviceid: string}
-     */
-    private static function build(string $component): array {
-        [$namestring, $descstring] = self::PLUGINS[$component];
-        return [
-            'component' => $component,
-            'namestring' => $namestring,
-            'descstring' => $descstring,
-            'url' => self::DIRECTORY_URL . $component,
-            'serviceid' => $component,
-        ];
+        return self::get_all()[$component] ?? null;
     }
 
     /**
