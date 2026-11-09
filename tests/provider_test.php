@@ -25,7 +25,7 @@ namespace aiprovider_datacurso;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(\aiprovider_datacurso\provider::class)]
-final class provider_test extends \basic_testcase {
+final class provider_test extends \advanced_testcase {
     /**
      * Ensure provider no longer exposes legacy user-mapping API.
      */
@@ -56,6 +56,69 @@ final class provider_test extends \basic_testcase {
             name: 'test',
             config: json_encode($config),
             actionconfig: '{}',
+        );
+    }
+
+    /**
+     * Jedomi is registered as a provider service where it is installed, and its name resolves to the product name.
+     *
+     * J1: Jedomi service registration.
+     */
+    public function test_get_services_includes_jedomi(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $DB->delete_records('config_plugins', ['plugin' => 'local_jedomi', 'name' => 'version']);
+        $DB->insert_record('config_plugins', (object) ['plugin' => 'local_jedomi', 'name' => 'version', 'value' => '2026010100']);
+
+        $servicemap = array_column(provider::get_services(), 'name', 'id');
+
+        $this->assertArrayHasKey('local_jedomi', $servicemap);
+        $this->assertSame('Jedomi', $servicemap['local_jedomi']);
+    }
+
+    /**
+     * Jedomi is not published yet, so it is not a provider service where it is not installed.
+     *
+     * J1: Jedomi service registration only when installed.
+     */
+    public function test_get_services_excludes_jedomi_when_not_installed(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $DB->delete_records('config_plugins', ['plugin' => 'local_jedomi', 'name' => 'version']);
+
+        $this->assertNotContains('local_jedomi', array_column(provider::get_services(), 'id'));
+    }
+
+    /**
+     * Jedomi exposes a single 'default' action costing 2 credits, which an admin override replaces.
+     *
+     * J2: Jedomi credits-per-action catalog and override.
+     */
+    public function test_jedomi_has_a_single_default_action_of_two_credits(): void {
+        $actions = provider::get_actions_for_service('local_jedomi');
+
+        $this->assertCount(1, $actions);
+        $this->assertSame('default', $actions[0]['key']);
+        $this->assertSame(2, $actions[0]['default']);
+        $this->assertArrayHasKey('local_jedomi', provider::get_service_actions());
+        $this->assertSame(2, $this->make_instance([])->get_credit_for_action('local_jedomi', 'default'));
+
+        $overridden = $this->make_instance(['ratelimit_local_jedomi_credit_default' => 7]);
+        $this->assertSame(7, $overridden->get_credit_for_action('local_jedomi', 'default'));
+    }
+
+    /**
+     * The Jedomi chat endpoint is a known action with a readable label.
+     *
+     * J3: Jedomi action label for the consumption history.
+     */
+    public function test_get_actions_includes_jedomi_chat(): void {
+        $actionmap = array_column(provider::get_actions(), 'name', 'id');
+
+        $this->assertArrayHasKey('/jedomi/v1/chat/completions', $actionmap);
+        $this->assertSame(
+            get_string('generate_jedomi_chat', 'aiprovider_datacurso'),
+            $actionmap['/jedomi/v1/chat/completions']
         );
     }
 
@@ -116,5 +179,49 @@ final class provider_test extends \basic_testcase {
         $this->assertSame(30, provider::get_default_window_limit('aiprovider_datacurso'));
         $this->assertSame(2000, provider::get_default_window_limit('local_coursegen'));
         $this->assertSame(10, provider::get_default_window_limit('service_without_catalog'));
+    }
+
+    /**
+     * Registering Jedomi leaves the other services and their action catalogs untouched.
+     *
+     * J7: no regression on the existing services.
+     */
+    public function test_existing_services_and_catalogs_are_unchanged(): void {
+        $serviceids = array_column(provider::get_services(), 'id');
+        $this->assertSame([
+            'local_coursegen',
+            'local_datacurso_ratings',
+            'local_forum_ai',
+            'local_assign_ai',
+            'aiprovider_datacurso',
+            'local_dttutor',
+            'local_socialcert',
+            'report_lifestory',
+            'local_coursedynamicrules',
+        ], array_values(array_diff($serviceids, ['local_jedomi'])));
+
+        $catalog = [];
+        foreach (provider::get_service_actions() as $serviceid => $actions) {
+            if ($serviceid === 'local_jedomi') {
+                continue;
+            }
+            $catalog[$serviceid] = array_column($actions, 'default', 'key');
+        }
+        $this->assertSame([
+            'local_coursegen' => [
+                'course_image' => 2000,
+                'course_noimage' => 1000,
+                'activity_image' => 100,
+                'activity_noimage' => 50,
+            ],
+            'aiprovider_datacurso' => ['text' => 1, 'image' => 30],
+            'local_coursedynamicrules' => ['activity_image' => 100, 'activity_noimage' => 50],
+            'local_datacurso_ratings' => ['default' => 1],
+            'local_socialcert' => ['default' => 1],
+            'local_forum_ai' => ['default' => 3],
+            'report_lifestory' => ['default' => 5],
+            'local_assign_ai' => ['default' => 3],
+            'local_dttutor' => ['default' => 2],
+        ], $catalog);
     }
 }

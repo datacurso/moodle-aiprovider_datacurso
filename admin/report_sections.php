@@ -118,70 +118,9 @@ switch ($tab) {
         break;
 
     case 'pluginslist':
-        // List of compatible AI-related plugins.
-        global $DB;
-
-        $pluginslist = [
-            [
-                'name' => get_string('pluginname_coursegen', 'aiprovider_datacurso'),
-                'description' => get_string('plugindesc_coursegen', 'aiprovider_datacurso'),
-                'component' => 'local_coursegen',
-                'url' => 'https://moodle.org/plugins/local_coursegen',
-            ],
-            [
-                'name' => get_string('pluginname_forum_ai', 'aiprovider_datacurso'),
-                'description' => get_string('plugindesc_forum_ai', 'aiprovider_datacurso'),
-                'component' => 'local_forum_ai',
-                'url' => 'https://moodle.org/plugins/local_forum_ai',
-            ],
-            [
-                'name' => get_string('pluginname_datacurso_ratings', 'aiprovider_datacurso'),
-                'description' => get_string('plugindesc_datacurso_ratings', 'aiprovider_datacurso'),
-                'component' => 'local_datacurso_ratings',
-                'url' => 'https://moodle.org/plugins/local_datacurso_ratings',
-            ],
-            [
-                'name' => get_string('pluginname_assign_ai', 'aiprovider_datacurso'),
-                'description' => get_string('plugindesc_assign_ai', 'aiprovider_datacurso'),
-                'component' => 'local_assign_ai',
-                'url' => 'https://moodle.org/plugins/local_assign_ai',
-            ],
-            [
-                'name' => get_string('pluginname_dttutor', 'aiprovider_datacurso'),
-                'description' => get_string('plugindesc_dttutor', 'aiprovider_datacurso'),
-                'component' => 'local_dttutor',
-                'url' => 'https://moodle.org/plugins/local_dttutor',
-            ],
-            [
-                'name' => get_string('pluginname_socialcert', 'aiprovider_datacurso'),
-                'description' => get_string('plugindesc_socialcert', 'aiprovider_datacurso'),
-                'component' => 'local_socialcert',
-                'url' => 'https://moodle.org/plugins/local_socialcert',
-            ],
-            [
-                'name' => get_string('pluginname_lifestory', 'aiprovider_datacurso'),
-                'description' => get_string('plugindesc_lifestory', 'aiprovider_datacurso'),
-                'component' => 'report_lifestory',
-                'url' => 'https://moodle.org/plugins/report_lifestory',
-            ],
-            [
-                'name' => get_string('pluginname_smartrules', 'aiprovider_datacurso'),
-                'description' => get_string('plugindesc_smartrules', 'aiprovider_datacurso'),
-                'component' => 'local_coursedynamicrules',
-                'url' => 'https://moodle.org/plugins/local_coursedynamicrules',
-            ],
-        ];
-
-        // Check installed status of each plugin.
-        foreach ($pluginslist as &$plugin) {
-            $plugin['installed'] = $DB->record_exists('config_plugins', [
-                'plugin' => $plugin['component'],
-            ]);
-            unset($plugin['component']);
-        }
-        unset($plugin);
-
-        $page = new \aiprovider_datacurso\output\plugin_list_page($pluginslist);
+        // Datacurso suite plugins with their install status, their state in the provider and a link to
+        // their settings page here.
+        $page = new \aiprovider_datacurso\output\plugin_list_page(\aiprovider_datacurso\local\suite_plugins::get_overview());
         echo $OUTPUT->render($page);
         break;
 }

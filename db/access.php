@@ -33,4 +33,14 @@ $capabilities = [
             'manager' => CAP_ALLOW,
         ],
     ],
+
+    // Capability to switch the Datacurso suite plugins on and off and to change their settings
+    // from the plugins tab. Deliberately granted to no archetype: viewing the reports must not
+    // imply being able to change the site configuration.
+    'aiprovider/datacurso:manageconfig' => [
+        'riskbitmask' => RISK_CONFIG,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [],
+    ],
 ];
