@@ -33,4 +33,15 @@ $capabilities = [
             'manager' => CAP_ALLOW,
         ],
     ],
+
+    // Capability to switch the Datacurso suite plugins on and off from the plugins tab, for the tenant of
+    // the user (and the site default for site administrators). Users with moodle/site:config, as on the
+    // tenant configuration page, may do it too. Deliberately granted to no archetype: viewing the reports
+    // must not imply being able to change the configuration.
+    'aiprovider/datacurso:manageconfig' => [
+        'riskbitmask' => RISK_CONFIG,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [],
+    ],
 ];

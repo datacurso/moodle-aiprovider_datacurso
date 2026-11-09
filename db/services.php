@@ -74,4 +74,13 @@ $functions = [
         'ajax'        => true,
         'capabilities' => 'aiprovider/datacurso:viewreports',
     ],
+    'aiprovider_datacurso_set_plugin_enabled' => [
+        'classname'   => 'aiprovider_datacurso\external\set_plugin_enabled',
+        'methodname'  => 'execute',
+        'classpath'   => '',
+        'description' => 'Enables or disables a Datacurso suite plugin for a tenant, or the site default, from the plugins tab.',
+        'type'        => 'write',
+        'ajax'        => true,
+        'capabilities' => 'aiprovider/datacurso:manageconfig, moodle/site:config',
+    ],
 ];
