@@ -312,4 +312,33 @@ final class outbound_privacy_test extends \advanced_testcase {
         // Later steps also run, so the savepoint of this step is reached or passed.
         $this->assertGreaterThanOrEqual(2026100900, (int) get_config('aiprovider_datacurso', 'version'));
     }
+
+    /**
+     * Deleting a user unlinks the consumption records already copied to the local history.
+     */
+    public function test_deleted_user_consumption_rows_are_unlinked(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $user = $this->getDataGenerator()->create_user();
+        $other = $this->getDataGenerator()->create_user();
+        foreach ([[1, $user->id], [2, $user->id], [3, $other->id]] as [$externalid, $userid]) {
+            $DB->insert_record('aiprovider_datacurso_consumption', (object) [
+                'externalid' => $externalid,
+                'userid' => $userid,
+                'service' => 'local_coursegen',
+                'action' => '/course/execute',
+                'credits' => 5,
+                'balance' => 100,
+                'timecreated' => time(),
+            ]);
+        }
+
+        delete_user($user);
+
+        $this->assertSame(0, $DB->count_records('aiprovider_datacurso_consumption', ['userid' => $user->id]));
+        // The credits stay in the site totals, attributed to nobody.
+        $this->assertSame(2, $DB->count_records('aiprovider_datacurso_consumption', ['userid' => 0]));
+        $this->assertSame(1, $DB->count_records('aiprovider_datacurso_consumption', ['userid' => $other->id]));
+    }
 }

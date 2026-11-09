@@ -194,8 +194,30 @@ its query string, the result (`success`, `failure`, or `refused` when nothing le
 provider disabled or without a license key), the HTTP status and, on failure, an error code.
 
 The event never records the license key, the headers, the payload or prompt, file names, the response body, the site URL,
-the user pseudonym or the transport error text. It is logged in the system context unless the plugin making the request
-passes its own with `set_audit_context()` on the client. Logging never breaks a request.
+the user pseudonym or the transport error text. Path segments that identify a record or a session (numbers, UUIDs, long
+hexadecimal strings and long tokens mixing letters and digits) are logged as `{id}`. It is logged in the system context
+unless the plugin making the request passes its own with `set_audit_context()` on the client. Logging never breaks a
+request.
+
+Only requests sent by the Moodle server are logged. The streams that a browser opens directly to a service, such as the
+chat stream whose URL `ai_services_api::get_streaming_url_for_session()` builds, do not pass through the server and are
+not in the log.
+
+### Transport security
+
+Every request to a Datacurso service travels over HTTPS with the certificate chain and the host name verified. A
+redirect answer is never followed, because it would hand the license key and the content to another host: the request
+fails instead. Requests to the AI services give up after 300 seconds, file downloads after 300 seconds and requests to
+the shop after 30 seconds; opening the connection may take up to 30 seconds.
+
+Developers who run the services locally over plain HTTP can allow it by adding this line to `config.php`:
+
+```php
+$CFG->aiprovider_datacurso_allow_insecure_transport = true;
+```
+
+It only allows the `http` scheme; certificates are still verified on HTTPS and redirects are still refused. Never set it
+on a production site.
 
 ### What the services receive about the site and the user
 
@@ -213,9 +235,11 @@ the same person on different sites cannot be matched.
 
 ### Deletion of user data
 
-When a Moodle user is deleted, the plugin removes the pseudonym of that user from its local cache, so consumption
-records are no longer linked to the account. The plugin does not delete data at the remote services: whether and how a
-service deletes what it keeps for a pseudonym depends on each service.
+When a Moodle user is deleted, the consumption records of that user already copied to the local history are unlinked
+from the account (they are attributed to nobody and stay in the totals of the site), and the pseudonym of that user is
+removed from the local cache, so records synchronised later are not linked to the account either. The plugin does not
+delete data at the remote services: whether and how a service deletes what it keeps for a pseudonym depends on each
+service.
 
 ### What the token manager service keeps per user
 

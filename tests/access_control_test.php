@@ -122,4 +122,16 @@ final class access_control_test extends \advanced_testcase {
 
         $this->assertSame('NEW-KEY', get_config('aiprovider_datacurso', 'licensekey'));
     }
+
+    /**
+     * Viewing the reports shows the consumption of every user by name, so it is flagged as a personal data risk.
+     */
+    public function test_viewreports_capability_is_flagged_as_personal_risk(): void {
+        global $CFG;
+
+        $capabilities = [];
+        require($CFG->dirroot . '/ai/provider/datacurso/db/access.php');
+
+        $this->assertSame(RISK_PERSONAL, $capabilities['aiprovider/datacurso:viewreports']['riskbitmask']);
+    }
 }
