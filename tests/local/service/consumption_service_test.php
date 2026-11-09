@@ -238,4 +238,19 @@ final class consumption_service_test extends \advanced_testcase {
         $this->assertContains($servicemap['aiprovider_datacurso'], $labels);
         $this->assertContains('ghost_service', $labels);
     }
+
+    /**
+     * A synced Jedomi row is reported under the Jedomi service and chat labels.
+     *
+     * J6: Jedomi labels in the consumption history.
+     */
+    public function test_jedomi_consumption_is_labelled(): void {
+        $this->insert_consumption('local_jedomi', '/jedomi/v1/chat/completions', 2, '2026-03-05 12:00:00', 7);
+
+        $services = array_column(consumption_service::get_summary('service', 'local_jedomi')['summary'], 'label');
+        $actions = array_column(consumption_service::get_summary('action', 'local_jedomi')['summary'], 'label');
+
+        $this->assertSame(['Jedomi'], $services);
+        $this->assertSame([get_string('generate_jedomi_chat', 'aiprovider_datacurso')], $actions);
+    }
 }

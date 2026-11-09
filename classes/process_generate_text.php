@@ -117,10 +117,7 @@ class process_generate_text extends abstract_processor {
         $body = json_decode($response->getBody()->getContents());
 
         if (empty($body) || empty($body->choices[0]->message->content)) {
-            return [
-                'success' => false,
-                'error' => get_string('responseinvalidai', 'aiprovider_datacurso'),
-            ];
+            return $this->error_response(400, get_string('responseinvalidai', 'aiprovider_datacurso'));
         }
 
         return [

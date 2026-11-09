@@ -146,4 +146,76 @@ final class ratelimiter_test extends \advanced_testcase {
         $this->assertFalse($params[0]->isOptional());
         $this->assertSame(provider::class, $params[0]->getType()->getName());
     }
+
+    /**
+     * Jedomi endpoints resolve to the local_jedomi service and its single 'default' action.
+     *
+     * J4: Jedomi path resolution for the rate-limit headers.
+     */
+    public function test_jedomi_path_resolves_to_jedomi_service(): void {
+        $path = '/jedomi/v1/chat/completions';
+        $serviceid = ratelimiter::resolve_service_for_path($path);
+
+        $this->assertSame('local_jedomi', $serviceid);
+        $this->assertSame('default', ratelimiter::resolve_action_key($serviceid, $path));
+    }
+
+    /**
+     * With Jedomi's limit enabled the headers carry its 2-credit look-ahead; disabled sends none.
+     *
+     * J5: Jedomi rate-limit headers.
+     */
+    public function test_jedomi_headers_follow_its_limit_configuration(): void {
+        $disabled = new ratelimiter($this->make_instance(['licensekey' => 'test-key']));
+        $this->assertSame([], $disabled->get_rate_limit_header_map('local_jedomi', 'default'));
+
+        $enabled = new ratelimiter($this->make_instance([
+            'licensekey' => 'test-key',
+            'ratelimit_local_jedomi_enable' => 1,
+            'ratelimit_local_jedomi_limit' => 40,
+            'ratelimit_local_jedomi_window_value' => 1,
+            'ratelimit_local_jedomi_window_unit' => 'hours',
+        ]));
+
+        $map = $enabled->get_rate_limit_header_map('local_jedomi', 'default');
+
+        $this->assertSame('1', $map['X-RateLimit-Enable']);
+        $this->assertSame('40', $map['X-RateLimit-Limit']);
+        $this->assertSame('3600', $map['X-RateLimit-WindowSeconds']);
+        $this->assertSame('2', $map['X-RateLimit-MaxPerAction']);
+
+        $switchedoff = new ratelimiter($this->make_instance([
+            'licensekey' => 'test-key',
+            'ratelimit_local_jedomi_enable' => 0,
+            'ratelimit_local_jedomi_limit' => 40,
+        ]));
+
+        $this->assertSame([], $switchedoff->get_rate_limit_header_map('local_jedomi', 'default'));
+    }
+
+    /**
+     * Adding the Jedomi prefix leaves every existing path mapping untouched.
+     *
+     * J7: no regression on the existing path mappings.
+     */
+    public function test_existing_path_mappings_are_unchanged(): void {
+        $expected = [
+            '/course/execute' => 'local_coursegen',
+            '/resources/create-mod' => 'local_coursegen',
+            '/context/upload' => 'local_coursegen',
+            '/assign/answer' => 'local_assign_ai',
+            '/forum/chat' => 'local_forum_ai',
+            '/rating/general' => 'local_datacurso_ratings',
+            '/certificate/answer' => 'local_socialcert',
+            '/story/analysis' => 'report_lifestory',
+            '/smartrules/create-mod' => 'local_coursedynamicrules',
+            '/provider/chat/completions' => 'aiprovider_datacurso',
+            '/chat/message' => 'local_dttutor',
+            '/unknown/path' => null,
+        ];
+
+        foreach ($expected as $path => $serviceid) {
+            $this->assertSame($serviceid, ratelimiter::resolve_service_for_path($path), $path);
+        }
+    }
 }

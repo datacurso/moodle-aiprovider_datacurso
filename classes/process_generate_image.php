@@ -163,11 +163,7 @@ class process_generate_image extends abstract_processor {
         // Validate response structure.
         if (empty($body) || empty($body->data[0])) {
             debugging('Invalid API response: missing data array', DEBUG_DEVELOPER);
-            return [
-                'success' => false,
-                'errorcode' => 400,
-                'errormessage' => get_string('responseinvalidaimage', 'aiprovider_datacurso'),
-            ];
+            return $this->error_response(400, get_string('responseinvalidaimage', 'aiprovider_datacurso'));
         }
 
         $userid = (int)($this->action->get_configuration('userid') ?? 0);
@@ -179,11 +175,7 @@ class process_generate_image extends abstract_processor {
             $binary = base64_decode($b64, true);
             if ($binary === false || $binary === '') {
                 debugging('Invalid API response: could not decode base64 image', DEBUG_DEVELOPER);
-                return [
-                    'success' => false,
-                    'errorcode' => 400,
-                    'errormessage' => get_string('responseinvalidaimage', 'aiprovider_datacurso'),
-                ];
+                return $this->error_response(400, get_string('responseinvalidaimage', 'aiprovider_datacurso'));
             }
             $file = $this->save_to_draft_area($userid, $binary);
             $sourceurl = '';
@@ -196,20 +188,12 @@ class process_generate_image extends abstract_processor {
             $sourceurl = $imageurl;
         } else {
             debugging('Invalid API response: no valid image format provided', DEBUG_DEVELOPER);
-            return [
-                'success' => false,
-                'errorcode' => 400,
-                'errormessage' => get_string('responseinvalidaimage', 'aiprovider_datacurso'),
-            ];
+            return $this->error_response(400, get_string('responseinvalidaimage', 'aiprovider_datacurso'));
         }
 
         // Every rejection (transport, size, host or image gate) is reported as an invalid image.
         if (!$file instanceof \stored_file) {
-            return [
-                'success' => false,
-                'errorcode' => 400,
-                'errormessage' => get_string('responseinvalidaimage', 'aiprovider_datacurso'),
-            ];
+            return $this->error_response(400, get_string('responseinvalidaimage', 'aiprovider_datacurso'));
         }
 
         return [
