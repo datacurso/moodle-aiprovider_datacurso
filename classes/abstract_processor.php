@@ -18,6 +18,7 @@ namespace aiprovider_datacurso;
 
 use aiprovider_datacurso\local\outbound_privacy;
 use aiprovider_datacurso\local\request_audit;
+use aiprovider_datacurso\local\transport_policy;
 use core\http_client;
 use core_ai\process_base;
 use GuzzleHttp\Exception\TransferException;
@@ -144,9 +145,21 @@ abstract class abstract_processor extends process_base {
         $audit = $this->create_request_audit('POST', $path, $serviceid);
 
         try {
+            transport_policy::require_secure_url((string) $this->resolve_endpoint());
+        } catch (\moodle_exception $e) {
+            $audit->refused($e);
+            return [
+                'success' => false,
+                'errorcode' => 500,
+                'errormessage' => get_string('insecuretransport', 'aiprovider_datacurso'),
+            ];
+        }
+
+        try {
+            // Verified HTTPS, no redirect (it would hand the license key to another host) and a total timeout.
             $response = $client->post(
                 $this->resolve_endpoint(),
-                [
+                transport_policy::guzzle_options(transport_policy::AI_SERVICES_TIMEOUT) + [
                     RequestOptions::HEADERS => array_merge(
                         [
                             'Content-Type' => 'application/json',

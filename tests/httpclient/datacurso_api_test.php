@@ -76,20 +76,20 @@ final class datacurso_api_test extends \advanced_testcase {
     }
 
     /**
-     * A missing license key raises the localized invalidlicensekey exception.
+     * A missing license key raises the localized invalidlicensekey exception when a request is made,
+     * without opening a connection.
      */
     public function test_missing_license_key_raises_localized_exception(): void {
         $this->resetAfterTest();
         unset_config('licensekey', 'aiprovider_datacurso');
+        $curl = new fake_curl();
 
-        try {
-            new datacurso_api();
-            $this->fail('Expected a moodle_exception.');
-        } catch (\moodle_exception $e) {
-            $this->assertSame('invalidlicensekey', $e->errorcode);
-            $this->assertSame('aiprovider_datacurso', $e->module);
-            $this->assertStringNotContainsString('baseurl', $e->getMessage());
-        }
+        $e = $this->get_expecting_exception($this->make_client($curl));
+
+        $this->assertSame('invalidlicensekey', $e->errorcode);
+        $this->assertSame('aiprovider_datacurso', $e->module);
+        $this->assertStringNotContainsString('baseurl', $e->getMessage());
+        $this->assertSame([], $curl->calls);
     }
 
     /**

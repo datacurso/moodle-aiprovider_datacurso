@@ -22,6 +22,7 @@ use aiprovider_datacurso\local\license_region;
 use aiprovider_datacurso\local\outbound_privacy;
 use aiprovider_datacurso\local\ratelimiter;
 use aiprovider_datacurso\local\request_audit;
+use aiprovider_datacurso\local\transport_policy;
 
 require_once($CFG->libdir . '/filelib.php');
 
@@ -197,16 +198,16 @@ class datacurso_api_base {
     public function download_file($endpoint, $filename, $filerecord = []): ?\stored_file {
         global $USER;
 
+        $baseurl = $this->get_base_url();
+        $packageurl = $baseurl . ltrim($endpoint, '/');
+
         $audit = $this->create_request_audit('GET', '/' . ltrim($endpoint, '/'), []);
         try {
-            self::require_provider_enabled();
+            $this->require_sendable($packageurl);
         } catch (\moodle_exception $e) {
             $audit->refused($e);
             throw $e;
         }
-
-        $baseurl = $this->get_base_url();
-        $packageurl = $baseurl . ltrim($endpoint, '/');
 
         $userid = $USER->id;
         $draftid = file_get_unused_draft_itemid();
@@ -241,7 +242,9 @@ class datacurso_api_base {
     /**
      * Fetch a file from a URL into the file storage.
      *
-     * Seam for tests, so a download can be replaced without touching the network.
+     * The file is downloaded with the same transport rules as the other requests (see
+     * transport_policy): a redirect answer is not followed, so the license key never reaches
+     * another host, and only an answer 200 is stored.
      *
      * @param array $fileinfo File record of the file to create.
      * @param string $url URL to fetch the file from.
@@ -250,7 +253,35 @@ class datacurso_api_base {
      * @throws \file_exception When the file cannot be fetched or stored.
      */
     protected function fetch_file_from_url(array $fileinfo, string $url, array $options): ?\stored_file {
-        return get_file_storage()->create_file_from_url($fileinfo, $url, $options, true);
+        $tempfile = make_request_directory() . DIRECTORY_SEPARATOR . 'download';
+        $curl = $this->create_curl();
+        $curloptions = transport_policy::curl_options(transport_policy::DOWNLOAD_TIMEOUT);
+        $curloptions['CURLOPT_HTTPHEADER'] = $options['headers'] ?? [];
+        $curloptions['filepath'] = $tempfile;
+
+        $result = $curl->download_one($url, null, $curloptions);
+        $httpstatus = (int)($curl->get_info()['http_code'] ?? 0);
+        if ($result !== true || $curl->error || $httpstatus !== 200 || !file_exists($tempfile)) {
+            debugging('Datacurso download failed: HTTP ' . $httpstatus . ', cURL errno ' . (int)$curl->errno, DEBUG_DEVELOPER);
+            throw new \file_exception('storedfileproblem', 'Cannot fetch file from URL');
+        }
+
+        return get_file_storage()->create_file_from_pathname($fileinfo, $tempfile);
+    }
+
+    /**
+     * Refuse a request that must not leave the site: provider disabled, no license key or no HTTPS.
+     *
+     * @param string $url Absolute URL of the request.
+     * @throws \moodle_exception providerdisabled, invalidlicensekey or insecuretransport.
+     */
+    private function require_sendable(string $url): void {
+        self::require_provider_enabled();
+        if (empty($this->licensekey)) {
+            debugging('Cannot make this request: invalid license key', DEBUG_DEVELOPER);
+            throw new \moodle_exception('invalidlicensekey', 'aiprovider_datacurso');
+        }
+        transport_policy::require_secure_url($url);
     }
 
     /**
@@ -297,11 +328,7 @@ class datacurso_api_base {
         // Every request is logged once with its outcome; refused means nothing left the site.
         $audit = $this->create_request_audit($method, $path, $payload);
         try {
-            self::require_provider_enabled();
-            if (empty($this->licensekey)) {
-                debugging('Cannot make this request: invalid license key', DEBUG_DEVELOPER);
-                throw new \moodle_exception('invalidlicensekey', 'aiprovider_datacurso');
-            }
+            $this->require_sendable($this->baseurl . $path);
         } catch (\moodle_exception $e) {
             $audit->refused($e);
             throw $e;
@@ -354,7 +381,7 @@ class datacurso_api_base {
 
         $headers = array_merge($baseheaders, $headers);
 
-        $options = [
+        $options = transport_policy::curl_options(transport_policy::AI_SERVICES_TIMEOUT) + [
             'CURLOPT_RETURNTRANSFER' => true,
             'CURLOPT_HTTPHEADER' => $headers,
         ];
@@ -399,6 +426,12 @@ class datacurso_api_base {
                 throw new \coding_exception('Invalid HTTP method: ' . $method);
         }
         $httpstatus = (int)($curl->get_info()['http_code'] ?? 0);
+
+        if (transport_policy::is_redirect($httpstatus)) {
+            // A redirect is never followed: it would hand the license key and the payload to another host.
+            debugging("Redirect answer {$httpstatus} from Datacurso API was not followed", DEBUG_DEVELOPER);
+            throw new \moodle_exception('httperror', 'aiprovider_datacurso', '', $httpstatus);
+        }
 
         if (!$response) {
             debugging('Empty response from Datacurso API', DEBUG_DEVELOPER);
