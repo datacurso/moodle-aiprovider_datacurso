@@ -43,7 +43,12 @@
         * installed bool - Whether the plugin is installed on this site.
         * enabled bool - Whether the plugin is enabled in the provider.
         * hastoggle bool - Whether to show the switch (only installed plugins).
-        * toggle object - Context of the core/toggle switch; present when hastoggle is true.
+        * toggle object - Context of the core/toggle switch; present when hastoggle is true. Built by
+          plugin_list_page::toggle_context() with id, checked, title, label, labelclasses and the
+          dataattributes action, component, name and state listed above.
+
+    The example context leaves the switch out: on Moodle 5.2 core/toggle renders autocomplete="off" on its
+    checkbox, which the HTML validator of the template linter rejects.
         * hassettings bool - Whether to show the settings link (only plugins with their own fields).
         * settingsurl string - Settings page of the plugin in the provider; empty when hassettings is false.
 
@@ -59,32 +64,7 @@
                 "linktitle": "Jedomi link",
                 "installed": true,
                 "enabled": true,
-                "hastoggle": true,
-                "toggle": {
-                    "id": "aiprovider_datacurso-plugin-toggle-local_jedomi",
-                    "checked": true,
-                    "dataattributes": [
-                        {
-                            "name": "action",
-                            "value": "aiprovider_datacurso/plugin_list/toggle-enabled"
-                        },
-                        {
-                            "name": "component",
-                            "value": "local_jedomi"
-                        },
-                        {
-                            "name": "name",
-                            "value": "Jedomi"
-                        },
-                        {
-                            "name": "state",
-                            "value": 1
-                        }
-                    ],
-                    "title": "Disable Jedomi",
-                    "label": "Disable Jedomi",
-                    "labelclasses": "sr-only"
-                },
+                "hastoggle": false,
                 "hassettings": true,
                 "settingsurl": "https://example.com/ai/provider/datacurso/admin/plugin_settings.php?component=local_jedomi"
             },
