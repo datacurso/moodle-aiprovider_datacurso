@@ -106,6 +106,7 @@ $string['enableglobalratelimit_desc'] = 'Jika diaktifkan, batas permintaan globa
 $string['enableuserratelimit'] = 'Aktifkan batas per pengguna';
 $string['enableuserratelimit_desc'] = 'Jika diaktifkan, setiap pengguna akan memiliki batas permintaan per jam.';
 $string['errorgetbalancecredits'] = 'Tidak dapat mengambil saldo kredit dari API eksternal';
+$string['event_external_request_completed'] = 'Permintaan eksternal ke layanan Datacurso';
 $string['exists'] = 'Ada';
 $string['forbidden'] = 'Anda tidak diizinkan untuk melakukan tindakan ini dengan lisensi saat ini. Silakan verifikasi lisensi dan kredit yang tersedia Anda di <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Kelola Kredit</a> di Toko Datacurso.';
 $string['generate_activitie'] = 'Hasilkan aktivitas atau sumber daya dengan AI';

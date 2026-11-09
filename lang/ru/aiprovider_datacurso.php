@@ -106,6 +106,7 @@ $string['enableglobalratelimit_desc'] = 'Если включено, будет �
 $string['enableuserratelimit'] = 'Включить ограничение для пользователя';
 $string['enableuserratelimit_desc'] = 'Если включено, каждый пользователь будет иметь почасовое ограничение запросов.';
 $string['errorgetbalancecredits'] = 'Не удалось получить баланс кредитов из внешнего API';
+$string['event_external_request_completed'] = 'Внешний запрос к сервису Datacurso';
 $string['exists'] = 'Существует';
 $string['forbidden'] = 'Вам не разрешено выполнять это действие с текущей лицензией. Пожалуйста, проверьте вашу лицензию и доступные кредиты в <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Управление кредитами</a> в магазине Datacurso.';
 $string['generate_activitie'] = 'Создать активность или ресурс с помощью ИИ';

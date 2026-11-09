@@ -106,6 +106,7 @@ $string['enableglobalratelimit_desc'] = 'Wenn aktiviert, wird ein globales Anfra
 $string['enableuserratelimit'] = 'Benutzerlimit aktivieren';
 $string['enableuserratelimit_desc'] = 'Wenn aktiviert, hat jeder Benutzer ein stündliches Anfragelimit.';
 $string['errorgetbalancecredits'] = 'Das Kreditguthaben konnte nicht von der externen API abgerufen werden';
+$string['event_external_request_completed'] = 'Externe Anfrage an einen Datacurso-Dienst';
 $string['exists'] = 'Existiert';
 $string['forbidden'] = 'Sie dürfen diese Aktion mit der aktuellen Lizenz nicht ausführen. Bitte überprüfen Sie Ihre Lizenz und verfügbaren Kredite unter <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Kredite verwalten</a> im Datacurso-Shop.';
 $string['generate_activitie'] = 'Aktivität oder Ressource mit KI generieren';

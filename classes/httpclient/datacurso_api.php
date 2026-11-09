@@ -16,6 +16,7 @@
 
 namespace aiprovider_datacurso\httpclient;
 
+use aiprovider_datacurso\local\request_audit;
 use moodle_exception;
 use moodle_url;
 
@@ -85,7 +86,7 @@ class datacurso_api {
     public function get(string $endpoint, array $params = []): array {
         $url = $this->build_url($endpoint, $params);
         $headers = $this->default_headers();
-        return $this->curl_request($url, 'GET', null, $headers);
+        return $this->curl_request($endpoint, $url, 'GET', null, $headers);
     }
 
     /**
@@ -99,7 +100,7 @@ class datacurso_api {
     public function post(string $endpoint, array $data = []): array {
         $url = $this->build_url($endpoint);
         $headers = $this->default_headers(true);
-        return $this->curl_request($url, 'POST', $data, $headers);
+        return $this->curl_request($endpoint, $url, 'POST', $data, $headers);
     }
 
     /**
@@ -121,8 +122,9 @@ class datacurso_api {
     }
 
     /**
-     * Execute the HTTP request using Moodle's \curl wrapper.
+     * Execute the HTTP request and record it, with its outcome, in the audit log.
      *
+     * @param string $endpoint The API endpoint, logged without its parameters.
      * @param string $url The request URL.
      * @param string $method The request method (GET/POST).
      * @param array|null $data Data to send (only for POST).
@@ -130,7 +132,31 @@ class datacurso_api {
      * @return array
      * @throws moodle_exception
      */
-    private function curl_request(string $url, string $method, ?array $data, array $headers): array {
+    private function curl_request(string $endpoint, string $url, string $method, ?array $data, array $headers): array {
+        $audit = new request_audit(request_audit::CLIENT_SHOP, 'aiprovider_datacurso', $method, $endpoint);
+        $httpstatus = 0;
+        try {
+            $decoded = $this->perform_curl_request($url, $method, $data, $headers, $httpstatus);
+        } catch (\Throwable $e) {
+            $audit->failed($e, $httpstatus);
+            throw $e;
+        }
+        $audit->succeeded($httpstatus);
+        return $decoded;
+    }
+
+    /**
+     * Execute the HTTP request using Moodle's \curl wrapper.
+     *
+     * @param string $url The request URL.
+     * @param string $method The request method (GET/POST).
+     * @param array|null $data Data to send (only for POST).
+     * @param array $headers Request headers.
+     * @param int $httpstatus Set to the HTTP status of the answer, 0 while there is none.
+     * @return array
+     * @throws moodle_exception
+     */
+    private function perform_curl_request(string $url, string $method, ?array $data, array $headers, int &$httpstatus): array {
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
 
@@ -151,6 +177,7 @@ class datacurso_api {
         // those details are only made available to developers via debugging().
         $info = $curl->get_info();
         $httpcode = (int)($info['http_code'] ?? 0);
+        $httpstatus = $httpcode;
 
         if ($curl->error) {
             debugging(
