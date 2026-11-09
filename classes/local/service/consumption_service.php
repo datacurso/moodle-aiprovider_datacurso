@@ -67,8 +67,6 @@ class consumption_service {
         foreach (\aiprovider_datacurso\provider::get_services() as $item) {
             $servicemap[$item['id']] = $item['name'];
         }
-        // Rows of a suite plugin that is not listed on this site (not installed) keep a readable name.
-        $servicemap += \aiprovider_datacurso\local\suite_plugins::get_service_names();
 
         $recordset = $DB->get_recordset_select(
             self::TABLE,

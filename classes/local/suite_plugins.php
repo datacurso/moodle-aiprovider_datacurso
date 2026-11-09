@@ -23,10 +23,6 @@ namespace aiprovider_datacurso\local;
  * plugin is added or removed in one place. The service id is the one the rate limits and the
  * consumption report already use, which today is the component name of each plugin.
  *
- * A plugin in LISTED_WHEN_INSTALLED (an unpublished one) is only listed by get_all(), and so by the
- * plugins tab and provider::get_services(), on sites where it is installed. It is still a suite plugin
- * for is_suite_plugin(), get(), get_display_name() and the plugin settings.
- *
  * @package    aiprovider_datacurso
  * @copyright  2026 Datacurso
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -53,71 +49,32 @@ class suite_plugins {
     ];
 
     /**
-     * Suite plugins listed only on sites where they are installed, because they are not published yet.
-     *
-     * @var string[]
-     */
-    private const LISTED_WHEN_INSTALLED = ['local_jedomi'];
-
-    /**
-     * Suite plugins to list, keyed by component, in display order.
-     *
-     * A plugin in LISTED_WHEN_INSTALLED is left out unless it is installed on this site.
+     * All suite plugins, keyed by component, in display order.
      *
      * @return array<string, array{component: string, namestring: string, descstring: string, url: string, serviceid: string}>
      */
     public static function get_all(): array {
         $plugins = [];
-        foreach (array_keys(self::PLUGINS) as $component) {
-            if (in_array($component, self::LISTED_WHEN_INSTALLED, true) && !self::is_installed($component)) {
-                continue;
-            }
-            $plugins[$component] = self::build($component);
+        foreach (self::PLUGINS as $component => [$namestring, $descstring]) {
+            $plugins[$component] = [
+                'component' => $component,
+                'namestring' => $namestring,
+                'descstring' => $descstring,
+                'url' => self::DIRECTORY_URL . $component,
+                'serviceid' => $component,
+            ];
         }
         return $plugins;
     }
 
     /**
-     * One suite plugin, listed or not, or null when the component is not a suite plugin.
+     * One suite plugin, or null when the component is not in the list.
      *
      * @param string $component Frankenstyle component name.
      * @return array{component: string, namestring: string, descstring: string, url: string, serviceid: string}|null
      */
     public static function get(string $component): ?array {
-        return self::is_suite_plugin($component) ? self::build($component) : null;
-    }
-
-    /**
-     * Display names of every suite plugin, listed or not, keyed by service id.
-     *
-     * Used to label consumption rows of a service that get_all() does not list on this site.
-     *
-     * @return array<string, string>
-     */
-    public static function get_service_names(): array {
-        $names = [];
-        foreach (array_keys(self::PLUGINS) as $component) {
-            $plugin = self::build($component);
-            $names[$plugin['serviceid']] = get_string($plugin['namestring'], 'aiprovider_datacurso');
-        }
-        return $names;
-    }
-
-    /**
-     * Fields of one suite plugin.
-     *
-     * @param string $component Frankenstyle component name, which must be a key of PLUGINS.
-     * @return array{component: string, namestring: string, descstring: string, url: string, serviceid: string}
-     */
-    private static function build(string $component): array {
-        [$namestring, $descstring] = self::PLUGINS[$component];
-        return [
-            'component' => $component,
-            'namestring' => $namestring,
-            'descstring' => $descstring,
-            'url' => self::DIRECTORY_URL . $component,
-            'serviceid' => $component,
-        ];
+        return self::get_all()[$component] ?? null;
     }
 
     /**
@@ -157,8 +114,6 @@ class suite_plugins {
 
     /**
      * Rows of the plugins tab: name, description, moodle.org link, installed, enabled and settings link.
-     *
-     * One row per plugin of get_all(), so an unpublished plugin only has a row where it is installed.
      *
      * The settings link is only offered for installed plugins that add their own fields to the settings
      * page; a plugin with nothing beyond "Enabled" is switched from the tab itself.

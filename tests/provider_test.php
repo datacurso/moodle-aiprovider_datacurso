@@ -60,33 +60,15 @@ final class provider_test extends \advanced_testcase {
     }
 
     /**
-     * Jedomi is registered as a provider service where it is installed, and its name resolves to the product name.
+     * Jedomi is registered as a provider service and its name resolves to the product name.
      *
      * J1: Jedomi service registration.
      */
     public function test_get_services_includes_jedomi(): void {
-        global $DB;
-        $this->resetAfterTest();
-        $DB->delete_records('config_plugins', ['plugin' => 'local_jedomi', 'name' => 'version']);
-        $DB->insert_record('config_plugins', (object) ['plugin' => 'local_jedomi', 'name' => 'version', 'value' => '2026010100']);
-
         $servicemap = array_column(provider::get_services(), 'name', 'id');
 
         $this->assertArrayHasKey('local_jedomi', $servicemap);
         $this->assertSame('Jedomi', $servicemap['local_jedomi']);
-    }
-
-    /**
-     * Jedomi is not published yet, so it is not a provider service where it is not installed.
-     *
-     * J1: Jedomi service registration only when installed.
-     */
-    public function test_get_services_excludes_jedomi_when_not_installed(): void {
-        global $DB;
-        $this->resetAfterTest();
-        $DB->delete_records('config_plugins', ['plugin' => 'local_jedomi', 'name' => 'version']);
-
-        $this->assertNotContains('local_jedomi', array_column(provider::get_services(), 'id'));
     }
 
     /**

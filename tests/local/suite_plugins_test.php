@@ -29,31 +29,11 @@ use aiprovider_datacurso\provider;
  */
 final class suite_plugins_test extends \advanced_testcase {
     /**
-     * Mark Jedomi as installed or not installed on the test site, whatever the codebase has.
-     *
-     * @param bool $installed Whether Jedomi has a version recorded in config_plugins.
-     */
-    private function set_jedomi_installed(bool $installed): void {
-        global $DB;
-        $DB->delete_records('config_plugins', ['plugin' => 'local_jedomi', 'name' => 'version']);
-        if ($installed) {
-            $DB->insert_record('config_plugins', (object) [
-                'plugin' => 'local_jedomi',
-                'name' => 'version',
-                'value' => '2026010100',
-            ]);
-        }
-    }
-
-    /**
-     * With Jedomi installed the list holds the nine suite plugins, each with every field filled in.
+     * The list holds the nine suite plugins, Jedomi included, each with every field filled in.
      *
      * S1: one list of suite plugins.
      */
-    public function test_lists_the_nine_suite_plugins_when_jedomi_is_installed(): void {
-        $this->resetAfterTest();
-        $this->set_jedomi_installed(true);
-
+    public function test_lists_the_nine_suite_plugins(): void {
         $plugins = suite_plugins::get_all();
 
         $this->assertSame([
@@ -79,34 +59,6 @@ final class suite_plugins_test extends \advanced_testcase {
     }
 
     /**
-     * Jedomi is not published yet: it is left out of the list where it is not installed, the rest stays.
-     *
-     * S1: unpublished plugins are only listed when installed.
-     */
-    public function test_jedomi_is_not_listed_when_not_installed(): void {
-        $this->resetAfterTest();
-        $this->set_jedomi_installed(false);
-
-        $this->assertSame([
-            'local_coursegen',
-            'local_datacurso_ratings',
-            'local_forum_ai',
-            'local_assign_ai',
-            'local_dttutor',
-            'local_socialcert',
-            'report_lifestory',
-            'local_coursedynamicrules',
-        ], array_keys(suite_plugins::get_all()));
-        $this->assertNotContains('local_jedomi', array_column(suite_plugins::get_overview(), 'component'));
-
-        // It is still a suite plugin, so its settings and name keep working once it is installed.
-        $this->assertTrue(suite_plugins::is_suite_plugin('local_jedomi'));
-        $this->assertSame('pluginname_jedomi', suite_plugins::get('local_jedomi')['namestring']);
-        $this->assertSame('Jedomi', suite_plugins::get_display_name('local_jedomi'));
-        $this->assertSame('Jedomi', suite_plugins::get_service_names()['local_jedomi']);
-    }
-
-    /**
      * Only components in the list are recognised as suite plugins.
      *
      * S1: the list is the only source of valid components.
@@ -128,9 +80,6 @@ final class suite_plugins_test extends \advanced_testcase {
      * S1: get_services() keeps its identifiers.
      */
     public function test_services_are_built_from_the_list_with_unchanged_ids(): void {
-        $this->resetAfterTest();
-        $this->set_jedomi_installed(true);
-
         $services = provider::get_services();
 
         $this->assertSame([
@@ -155,29 +104,6 @@ final class suite_plugins_test extends \advanced_testcase {
             );
         }
     }
-
-    /**
-     * Jedomi is not a provider service where it is not installed; the other ids keep their order.
-     *
-     * S1: get_services() follows the listed plugins.
-     */
-    public function test_services_leave_out_jedomi_when_not_installed(): void {
-        $this->resetAfterTest();
-        $this->set_jedomi_installed(false);
-
-        $this->assertSame([
-            'local_coursegen',
-            'local_datacurso_ratings',
-            'local_forum_ai',
-            'local_assign_ai',
-            'aiprovider_datacurso',
-            'local_dttutor',
-            'local_socialcert',
-            'report_lifestory',
-            'local_coursedynamicrules',
-        ], array_column(provider::get_services(), 'id'));
-    }
-
     /**
      * A plugin is installed when its version is recorded in config_plugins.
      *

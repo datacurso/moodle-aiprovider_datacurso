@@ -16,7 +16,6 @@
 
 namespace aiprovider_datacurso\reportbuilder\local\entities;
 
-use aiprovider_datacurso\local\suite_plugins;
 use aiprovider_datacurso\provider;
 use core_reportbuilder\local\entities\base;
 use core_reportbuilder\local\filters\date;
@@ -152,8 +151,7 @@ class consumption extends base {
             ->add_callback(static function ($value): string {
                 static $map = null;
                 if ($map === null) {
-                    // Rows of a suite plugin that is not listed on this site (not installed) keep a readable name.
-                    $map = self::service_names() + suite_plugins::get_service_names();
+                    $map = self::service_names();
                 }
                 return $map[$value] ?? (string) $value;
             });

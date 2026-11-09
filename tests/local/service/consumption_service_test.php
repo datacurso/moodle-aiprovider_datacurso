@@ -253,20 +253,4 @@ final class consumption_service_test extends \advanced_testcase {
         $this->assertSame(['Jedomi'], $services);
         $this->assertSame([get_string('generate_jedomi_chat', 'aiprovider_datacurso')], $actions);
     }
-
-    /**
-     * Jedomi rows keep their readable service name where Jedomi is not installed (and so not a listed service).
-     *
-     * J6: Jedomi labels without the plugin installed.
-     */
-    public function test_jedomi_consumption_is_labelled_when_not_installed(): void {
-        global $DB;
-        $DB->delete_records('config_plugins', ['plugin' => 'local_jedomi', 'name' => 'version']);
-        $this->insert_consumption('local_jedomi', '/jedomi/v1/chat/completions', 2, '2026-03-05 12:00:00', 7);
-
-        $this->assertNotContains('local_jedomi', array_column(provider::get_services(), 'id'));
-        $services = array_column(consumption_service::get_summary('service', 'local_jedomi')['summary'], 'label');
-
-        $this->assertSame([get_string('pluginname_jedomi', 'aiprovider_datacurso')], $services);
-    }
 }

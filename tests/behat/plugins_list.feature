@@ -8,7 +8,7 @@ Feature: Datacurso plugins list tab
     Given I log in as "admin"
     And I visit "/ai/provider/datacurso/admin/report_sections.php?tab=pluginslist"
 
-  Scenario: The published suite plugins are listed with their switch and moodle.org link
+  Scenario: The nine suite plugins are listed with their switch, settings and moodle.org link
     Then I should see "Course Creator AI"
     And I should see "Ranking Activities AI"
     And I should see "Forum AI"
@@ -17,14 +17,10 @@ Feature: Datacurso plugins list tab
     And I should see "Share Certificate AI"
     And I should see "Student Life Story AI"
     And I should see "SmartRules AI"
+    And I should see "Jedomi"
     And I should see "Enabled"
     And "Disable Forum AI" "checkbox" should exist in the "Forum AI" "table_row"
     And "Settings" "link" should not exist in the "Forum AI" "table_row"
-
-  # Jedomi is not published yet and is only listed where it is installed, so this scenario and the
-  # settings page scenarios below need local_jedomi in the codebase. Its absence is covered by PHPUnit.
-  Scenario: Jedomi is listed with its settings and moodle.org link when it is installed
-    Then I should see "Jedomi"
     And "Settings" "link" should exist in the "Jedomi" "table_row"
     And "Jedomi link" "link" should exist in the "Jedomi" "table_row"
     And I should not see "https://moodle.org/plugins/local_jedomi"

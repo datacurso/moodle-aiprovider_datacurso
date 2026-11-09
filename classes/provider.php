@@ -86,10 +86,9 @@ class provider extends \core_ai\provider {
     /**
      * Return all available AI services for this provider.
      *
-     * The services are the suite plugins listed by \aiprovider_datacurso\local\suite_plugins::get_all() plus the
-     * provider itself (its own text and image actions), which keeps its historical place after local_assign_ai. An
-     * unpublished suite plugin (Jedomi) is only a service on sites where it is installed. The ids are the ones the
-     * rate limits and the consumption report use, so they must not change.
+     * The services are the suite plugins listed in \aiprovider_datacurso\local\suite_plugins plus the provider
+     * itself (its own text and image actions), which keeps its historical place after local_assign_ai. The ids are
+     * the ones the rate limits and the consumption report use, so they must not change.
      *
      * @return array<int, array{id: string, name: string}>
      */

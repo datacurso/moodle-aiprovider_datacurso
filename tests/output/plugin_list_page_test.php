@@ -33,15 +33,12 @@ final class plugin_list_page_test extends \advanced_testcase {
     /**
      * Each suite plugin is listed with its state; the settings link only when the plugin adds its own fields.
      *
-     * S1: the table lists the nine plugins (Jedomi installed) with Enabled and Settings columns.
+     * S1: the table lists the nine plugins with Enabled and Settings columns.
      */
     public function test_rows_show_state_and_settings_link_only_for_plugins_with_extra_settings(): void {
         global $DB;
         $this->resetAfterTest();
 
-        // Jedomi is only listed where it is installed.
-        $DB->delete_records('config_plugins', ['plugin' => 'local_jedomi', 'name' => 'version']);
-        $DB->insert_record('config_plugins', (object) ['plugin' => 'local_jedomi', 'name' => 'version', 'value' => '2026010100']);
         set_config('plugin_enabled_local_forum_ai', '0', 'aiprovider_datacurso');
         // Forum AI is installed but ships no settings extension: state only, no settings link.
         set_config('version', 2026010100, 'local_forum_ai');
@@ -76,23 +73,6 @@ final class plugin_list_page_test extends \advanced_testcase {
                 $this->assertSame('', $row['settingsurl']);
             }
         }
-    }
-
-    /**
-     * Jedomi is not published yet, so the tab has no row for it where it is not installed.
-     *
-     * S1: unpublished plugins are only listed when installed.
-     */
-    public function test_rows_leave_out_jedomi_when_not_installed(): void {
-        global $DB;
-        $this->resetAfterTest();
-
-        $DB->delete_records('config_plugins', ['plugin' => 'local_jedomi', 'name' => 'version']);
-
-        $components = array_column(suite_plugins::get_overview(), 'component');
-
-        $this->assertCount(8, $components);
-        $this->assertNotContains('local_jedomi', $components);
     }
 
     /**
