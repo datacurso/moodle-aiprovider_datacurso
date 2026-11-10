@@ -374,4 +374,33 @@ final class consumption_sync_test extends \advanced_testcase {
 
         $this->assertEquals(0, $DB->count_records(self::TABLE));
     }
+
+    /**
+     * Markup sent by the shop in the service or action of a record is stripped before it is stored.
+     */
+    public function test_markup_in_service_and_action_is_stripped(): void {
+        global $DB;
+
+        $client = new test_consumption_api_client();
+        $client->responsesbypage[1] = $this->make_page([
+            array_merge($this->make_consumption(901), [
+                'id_servicio' => '<b id="probe">local_forum_ai</b>',
+                'accion' => '<img src=x onerror="alert(1)">/forum/chat',
+            ]),
+            array_merge($this->make_consumption(900), [
+                'id_servicio' => 'local_coursegen',
+                'accion' => '/course/execute',
+            ]),
+        ]);
+
+        consumption_sync::sync($client);
+
+        $records = $DB->get_records(self::TABLE, null, 'externalid', 'externalid, service, action');
+        $this->assertSame('bidprobelocal_forum_aib', $records[901]->service);
+        $this->assertStringNotContainsString('<', $records[901]->action);
+        $this->assertStringNotContainsString('"', $records[901]->action);
+        // Real values are stored unchanged.
+        $this->assertSame('local_coursegen', $records[900]->service);
+        $this->assertSame('/course/execute', $records[900]->action);
+    }
 }

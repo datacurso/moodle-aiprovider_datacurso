@@ -26,7 +26,9 @@ defined('MOODLE_INTERNAL') || die();
 
 $capabilities = [
     // Capability to view AI usage reports and statistics.
+    // It shows the AI consumption of every user by name, hence the personal data risk.
     'aiprovider/datacurso:viewreports' => [
+        'riskbitmask' => RISK_PERSONAL,
         'captype' => 'read',
         'contextlevel' => CONTEXT_SYSTEM,
         'archetypes' => [

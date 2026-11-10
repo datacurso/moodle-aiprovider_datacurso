@@ -260,6 +260,7 @@ $string['ratelimit_window_value'] = 'Значение окна';
 $string['read_context_course'] = 'Чтение контекста для создания курса с ИИ';
 $string['read_context_course_model'] = 'Загрузка академической модели для создания курса с ИИ';
 $string['remainingtokens'] = 'Остаток баланса';
+$string['reportspagetitle'] = 'Отчёты поставщика ИИ Datacurso';
 $string['responseinvalidai'] = 'Недопустимый ответ от сервиса ИИ.';
 $string['responseinvalidaimage'] = 'Недопустимый ответ от сервиса ИИ (нет изображения).';
 $string['responseinvalidaimagecreate'] = 'Не удалось создать файл изображения.';

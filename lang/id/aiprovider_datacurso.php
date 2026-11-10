@@ -260,6 +260,7 @@ $string['ratelimit_window_value'] = 'Nilai jendela';
 $string['read_context_course'] = 'Baca konteks untuk pembuatan kursus AI';
 $string['read_context_course_model'] = 'Unggah model akademik untuk pembuatan kursus AI';
 $string['remainingtokens'] = 'Saldo tersisa';
+$string['reportspagetitle'] = 'Laporan penyedia AI Datacurso';
 $string['responseinvalidai'] = 'Respons tidak valid dari layanan AI.';
 $string['responseinvalidaimage'] = 'Respons tidak valid dari layanan AI (tidak ada gambar).';
 $string['responseinvalidaimagecreate'] = 'Tidak dapat membuat file gambar.';

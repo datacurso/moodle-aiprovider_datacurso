@@ -260,6 +260,7 @@ $string['ratelimit_window_value'] = 'Valor de ventana';
 $string['read_context_course'] = 'Leer contexto para creación de curso con IA';
 $string['read_context_course_model'] = 'Cargar modelo académico para creación de curso con IA';
 $string['remainingtokens'] = 'Saldo restante';
+$string['reportspagetitle'] = 'Informes del proveedor de IA Datacurso';
 $string['responseinvalidai'] = 'Respuesta inválida del servicio de IA.';
 $string['responseinvalidaimage'] = 'Respuesta inválida del servicio de IA (sin imagen).';
 $string['responseinvalidaimagecreate'] = 'No se pudo crear el archivo de imagen.';

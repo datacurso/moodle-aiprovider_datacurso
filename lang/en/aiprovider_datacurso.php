@@ -260,6 +260,7 @@ $string['ratelimit_window_value'] = 'Window value';
 $string['read_context_course'] = 'Read context for AI course creation';
 $string['read_context_course_model'] = 'Upload academic model for AI course creation';
 $string['remainingtokens'] = 'Remaining balance';
+$string['reportspagetitle'] = 'Datacurso AI Provider reports';
 $string['responseinvalidai'] = 'Invalid response from AI service.';
 $string['responseinvalidaimage'] = 'Invalid response from AI service(No image).';
 $string['responseinvalidaimagecreate'] = 'Could not create image file.';

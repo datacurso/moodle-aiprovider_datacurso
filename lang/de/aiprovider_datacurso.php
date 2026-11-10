@@ -260,6 +260,7 @@ $string['ratelimit_window_value'] = 'Fensterwert';
 $string['read_context_course'] = 'Kontext für KI-Kurserstellung lesen';
 $string['read_context_course_model'] = 'Akademisches Modell für KI-Kurserstellung hochladen';
 $string['remainingtokens'] = 'Verbleibendes Guthaben';
+$string['reportspagetitle'] = 'Berichte des Datacurso-KI-Anbieters';
 $string['responseinvalidai'] = 'Ungültige Antwort vom KI-Dienst.';
 $string['responseinvalidaimage'] = 'Ungültige Antwort vom KI-Dienst (kein Bild).';
 $string['responseinvalidaimagecreate'] = 'Bilddatei konnte nicht erstellt werden.';
