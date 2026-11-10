@@ -237,19 +237,28 @@ the same person on different sites cannot be matched.
 
 When a Moodle user is deleted, the consumption records of that user already copied to the local history are unlinked
 from the account (they are attributed to nobody and stay in the totals of the site), and the pseudonym of that user is
-removed from the local cache, so records synchronised later are not linked to the account either. The plugin does not
-delete data at the remote services: whether and how a service deletes what it keeps for a pseudonym depends on each
-service.
+removed from the local cache, so records synchronised later are not linked to the account either. The course service is the only Datacurso service that stores
+data per user (generation requests with the pseudonym, consumption and the conversation state). It offers an erase
+operation by site, pseudonym and plugin, which the plugins that send it data invoke from their Privacy API; Smart Rules AI
+(`local_coursedynamicrules`) keeps a record of each request until the service confirms the erasure and retries until it
+does. The other services do not store the data they receive.
 
 ### What the token manager service keeps per user
 
 The token manager service, which applies the per-user consumption limits and reports consumption to the shop, keeps one
 record (in its MongoDB collection `ratelimit`) per license key, site, user pseudonym and service, with the start of the current window, the credits used in it
-and the time of the last update. Records are written only while a consumption limit is enabled for the service. They
-have no expiry and the service has no way to delete them. For each request it forwards the user pseudonym, the action,
+and the time of the last update. Records are written only while a consumption limit is enabled for the service, and they
+are kept while the license exists. For each request it forwards the user pseudonym, the action,
 the service, the credits and the cost detail to the consumption API of the shop.
 
-The retention of the request logs of the services and of the consumption records of the shop is not documented yet.
+### Retention and location
+
+- The request logs of the services are ephemeral: they are deleted every time the services are updated.
+- Token consumption is kept while the license exists.
+- The assignment grading service processes submissions in memory and does not store them.
+- The language models are used in paid mode (Gemini API): the model provider does not use the data for training and
+  keeps logs for about 55 days for abuse detection and legal compliance.
+- The services for the European Union are hosted in Frankfurt (AWS `eu-central-1`).
 
 ## License ##
 

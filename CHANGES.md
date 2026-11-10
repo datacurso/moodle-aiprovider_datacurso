@@ -6,7 +6,7 @@
 - **The AI services no longer receive the user's timezone where they do not use it (AIP-PRIV-001-R1)**
   Requests of the AI services client (`ai_services_api`) carried the user's `timezone` on every route, although the AI services read it only on their CV and job matching routes. It is now sent only on paths starting with `/cv/` or `/jobmatch/`; every other request and upload of that client leaves it out. The course service client (`ai_course_api`), which uses it, keeps receiving it, and `site_id`, `site_url`, `userid` and `lang` are sent as before. Backed by `timezone_minimisation_test::test_ai_services_request_omits_timezone`, `test_ai_services_upload_omits_timezone`, `test_cv_and_jobmatch_routes_keep_timezone` and `test_course_client_keeps_timezone`; `jedomi_contract_test::test_chat_call_sends_the_headers_and_fields_plugins_ai_requires` now pins that the Jedomi route receives no timezone
 - **The README documents the privacy of the requests**
-  New "Privacy and audit" section: the audit event, what the services receive, how the user pseudonym is computed, how deletion of a user is handled today, and what the token manager service keeps per user, marking what is not documented yet
+  New "Privacy and audit" section: the audit event, what the services receive, how the user pseudonym is computed, how deletion of a user is handled today, what the token manager service keeps per user, the retention of the data at the services, where the European services are hosted, and the remote erase operation of the course service
 
 ### Removed
 - **GitHub Actions workflows**
