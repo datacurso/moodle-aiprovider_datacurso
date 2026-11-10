@@ -93,4 +93,13 @@ class fake_curl extends \curl {
     public function delete($url, $param = [], $options = []) {
         return $this->next('DELETE', (string) $url, $param, $options);
     }
+
+    #[\Override]
+    public function download_one($url, $params, $options = []) {
+        $body = $this->next('DOWNLOAD', (string) $url, $params, $options);
+        if (!empty($options['filepath'])) {
+            file_put_contents($options['filepath'], $body);
+        }
+        return $this->error === '' ? true : $this->error;
+    }
 }

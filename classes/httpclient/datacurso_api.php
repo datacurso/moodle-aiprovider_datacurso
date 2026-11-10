@@ -16,6 +16,8 @@
 
 namespace aiprovider_datacurso\httpclient;
 
+use aiprovider_datacurso\local\request_audit;
+use aiprovider_datacurso\local\transport_policy;
 use moodle_exception;
 use moodle_url;
 
@@ -39,15 +41,12 @@ class datacurso_api {
     /**
      * Builder.
      *
-     * @throws moodle_exception
+     * A missing license key is refused when a request is made, so the refusal is recorded in the
+     * audit log with the endpoint it was meant for.
      */
     public function __construct() {
         $this->baseurl    = 'https://shop.datacurso.com/index.php?m=tokens_manager&api=';
         $this->licensekey = get_config('aiprovider_datacurso', 'licensekey');
-
-        if (empty($this->licensekey)) {
-            throw new moodle_exception('invalidlicensekey', 'aiprovider_datacurso');
-        }
     }
 
     /**
@@ -85,7 +84,7 @@ class datacurso_api {
     public function get(string $endpoint, array $params = []): array {
         $url = $this->build_url($endpoint, $params);
         $headers = $this->default_headers();
-        return $this->curl_request($url, 'GET', null, $headers);
+        return $this->curl_request($endpoint, $url, 'GET', null, $headers);
     }
 
     /**
@@ -99,7 +98,7 @@ class datacurso_api {
     public function post(string $endpoint, array $data = []): array {
         $url = $this->build_url($endpoint);
         $headers = $this->default_headers(true);
-        return $this->curl_request($url, 'POST', $data, $headers);
+        return $this->curl_request($endpoint, $url, 'POST', $data, $headers);
     }
 
     /**
@@ -121,21 +120,56 @@ class datacurso_api {
     }
 
     /**
+     * Execute the HTTP request and record it, with its outcome, in the audit log.
+     *
+     * @param string $endpoint The API endpoint, logged without its parameters.
+     * @param string $url The request URL.
+     * @param string $method The request method (GET/POST).
+     * @param array|null $data Data to send (only for POST).
+     * @param array $headers Request headers.
+     * @return array
+     * @throws moodle_exception invalidlicensekey or insecuretransport when nothing is sent, or the request error.
+     */
+    private function curl_request(string $endpoint, string $url, string $method, ?array $data, array $headers): array {
+        $audit = new request_audit(request_audit::CLIENT_SHOP, 'aiprovider_datacurso', $method, $endpoint);
+        try {
+            if (empty($this->licensekey)) {
+                throw new moodle_exception('invalidlicensekey', 'aiprovider_datacurso');
+            }
+            transport_policy::require_secure_url($url);
+        } catch (moodle_exception $e) {
+            $audit->refused($e);
+            throw $e;
+        }
+
+        $httpstatus = 0;
+        try {
+            $decoded = $this->perform_curl_request($url, $method, $data, $headers, $httpstatus);
+        } catch (\Throwable $e) {
+            $audit->failed($e, $httpstatus);
+            throw $e;
+        }
+        $audit->succeeded($httpstatus);
+        return $decoded;
+    }
+
+    /**
      * Execute the HTTP request using Moodle's \curl wrapper.
      *
      * @param string $url The request URL.
      * @param string $method The request method (GET/POST).
      * @param array|null $data Data to send (only for POST).
      * @param array $headers Request headers.
+     * @param int $httpstatus Set to the HTTP status of the answer, 0 while there is none.
      * @return array
      * @throws moodle_exception
      */
-    private function curl_request(string $url, string $method, ?array $data, array $headers): array {
+    private function perform_curl_request(string $url, string $method, ?array $data, array $headers, int &$httpstatus): array {
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
 
         $curl = $this->create_curl();
-        $options = [
+        $options = transport_policy::curl_options(transport_policy::SHOP_TIMEOUT) + [
             'CURLOPT_RETURNTRANSFER' => true,
             'CURLOPT_HTTPHEADER' => $headers,
         ];
@@ -151,6 +185,7 @@ class datacurso_api {
         // those details are only made available to developers via debugging().
         $info = $curl->get_info();
         $httpcode = (int)($info['http_code'] ?? 0);
+        $httpstatus = $httpcode;
 
         if ($curl->error) {
             debugging(
@@ -158,6 +193,12 @@ class datacurso_api {
                 DEBUG_DEVELOPER
             );
             throw new moodle_exception('curlerror', 'aiprovider_datacurso', '', (int)$curl->errno);
+        }
+
+        if (transport_policy::is_redirect($httpcode)) {
+            // A redirect is never followed: it would hand the license key to another host.
+            debugging("Datacurso shop API {$method} request answered redirect {$httpcode}, not followed", DEBUG_DEVELOPER);
+            throw new moodle_exception('httperror', 'aiprovider_datacurso', '', $httpcode);
         }
 
         if ($httpcode >= 400) {

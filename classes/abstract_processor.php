@@ -17,6 +17,8 @@
 namespace aiprovider_datacurso;
 
 use aiprovider_datacurso\local\outbound_privacy;
+use aiprovider_datacurso\local\request_audit;
+use aiprovider_datacurso\local\transport_policy;
 use core\http_client;
 use core_ai\process_base;
 use GuzzleHttp\Exception\TransferException;
@@ -39,6 +41,9 @@ use GuzzleHttp\Psr7\Uri;
 abstract class abstract_processor extends process_base {
     /** @var UriInterface|null Endpoint resolved for this processor instance, see resolve_endpoint(). */
     private ?UriInterface $resolvedendpoint = null;
+
+    /** @var string Error code of the last error answer, recorded in the audit log. */
+    private string $apierrorcode = 'httperror';
 
     /**
      * Returns the endpoint of the specific AI service.
@@ -93,6 +98,26 @@ abstract class abstract_processor extends process_base {
     }
 
     /**
+     * Describe a request of this action for the audit log, in the context of the action.
+     *
+     * @param string $method HTTP method.
+     * @param string $endpoint Endpoint path; its query string is dropped.
+     * @param string|null $serviceid Service the request belongs to, the provider itself when null.
+     * @return request_audit
+     */
+    protected function create_request_audit(string $method, string $endpoint, ?string $serviceid = null): request_audit {
+        $context = \context::instance_by_id((int) $this->action->get_configuration('contextid'), IGNORE_MISSING) ?: null;
+        return new request_audit(
+            request_audit::CLIENT_CORE_AI,
+            $serviceid ?? 'aiprovider_datacurso',
+            $method,
+            $endpoint,
+            $context,
+            request_audit::related_userid($this->action->get_configuration('userid'))
+        );
+    }
+
+    /**
      * Executes the HTTP request to the external Datacurso AI service.
      *
      * @return array Processed response data, either success or error.
@@ -117,11 +142,24 @@ abstract class abstract_processor extends process_base {
         $actionkey = \aiprovider_datacurso\local\ratelimiter::resolve_action_key($serviceid, $path);
         $ratelimitheaders = (new \aiprovider_datacurso\local\ratelimiter())
             ->get_rate_limit_header_map($serviceid, $actionkey);
+        $audit = $this->create_request_audit('POST', $path, $serviceid);
 
         try {
+            transport_policy::require_secure_url((string) $this->resolve_endpoint());
+        } catch (\moodle_exception $e) {
+            $audit->refused($e);
+            return [
+                'success' => false,
+                'errorcode' => 500,
+                'errormessage' => get_string('insecuretransport', 'aiprovider_datacurso'),
+            ];
+        }
+
+        try {
+            // Verified HTTPS, no redirect (it would hand the license key to another host) and a total timeout.
             $response = $client->post(
                 $this->resolve_endpoint(),
-                [
+                transport_policy::guzzle_options(transport_policy::AI_SERVICES_TIMEOUT) + [
                     RequestOptions::HEADERS => array_merge(
                         [
                             'Content-Type' => 'application/json',
@@ -134,6 +172,7 @@ abstract class abstract_processor extends process_base {
                 ]
             );
         } catch (TransferException $e) {
+            $audit->failed($e);
             // The transport message may contain hostnames or internal details: keep it for developers only.
             debugging('Datacurso AI transport error: ' . $e->getMessage(), DEBUG_DEVELOPER);
             return [
@@ -146,10 +185,14 @@ abstract class abstract_processor extends process_base {
         $status = (int)$response->getStatusCode();
 
         if ($status === 200) {
+            $audit->succeeded($status);
             return $this->handle_api_success($response);
         }
 
-        return $this->handle_api_error($response);
+        $this->apierrorcode = 'httperror';
+        $result = $this->handle_api_error($response);
+        $audit->failed($this->apierrorcode, $status);
+        return $result;
     }
 
     /**
@@ -174,10 +217,13 @@ abstract class abstract_processor extends process_base {
                     ? userdate($resetat, get_string('strftimedatetime', 'langconfig'))
                     : '';
                 $actionable = get_string('error_ratelimit_exceeded', 'aiprovider_datacurso', $retryat);
+                $this->apierrorcode = 'error_ratelimit_exceeded';
             } else if ($decoded->detail === 'tokens_not_sufficient') {
                 $actionable = get_string('notenoughtokens', 'aiprovider_datacurso');
+                $this->apierrorcode = 'notenoughtokens';
             } else if ($decoded->detail === 'license_not_allowed') {
                 $actionable = get_string('license_not_allowed', 'aiprovider_datacurso');
+                $this->apierrorcode = 'license_not_allowed';
             }
             if ($actionable !== null) {
                 return [
