@@ -1,4 +1,4 @@
-## [Unreleased]
+## [1.7.1]
 
 **Compatibility note:** This version is compatible only with **Moodle 4.5**.
 
