@@ -8,6 +8,10 @@
 - **The README documents the privacy of the requests**
   New "Privacy and audit" section: the audit event, what the services receive, how the user pseudonym is computed, how deletion of a user is handled today, and what the token manager service keeps per user, marking what is not documented yet
 
+### Removed
+- **GitHub Actions workflows**
+  The `.github` folder (the plugin CI workflow) is removed. CI runs on Jenkins, which publishes the required status check and blocks merges until every test and validation passes.
+
 ### Security
 - **Every external request is recorded in the Moodle log (AIP-SEC-005-R1)**
   The new event `\aiprovider_datacurso\event\external_request_completed` is logged once per request to a Datacurso service: requests, uploads and downloads of the AI services and course service clients, requests of the shop client, and the requests of the core AI actions, including the download of a generated image. It records the user, the context, the client, the service, the HTTP method, the endpoint path without its query string, the result (`success`, `failure`, or `refused` when nothing left the site, such as with the provider disabled or without a license key), the HTTP status and, when the request did not succeed, an error code. Its data is validated against an allowlist, so it never carries the license key, headers, payload, prompt, file names, response body, site URL, user pseudonym or transport error text. The event is logged in the system context unless the plugin making the request passes its own context, and optionally the user the request is for, with the new `set_audit_context()` of the client; the core AI actions use the context of the action. A problem while logging is reported to developers and never breaks the request. New string `event_external_request_completed` in all the plugin's languages. Backed by `external_request_completed_test`
