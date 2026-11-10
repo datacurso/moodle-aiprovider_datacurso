@@ -1,3 +1,11 @@
+## [1.7.1-wp] - 2026-11-10
+
+**Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.
+
+### Fixed
+- **A site that ran the provider of MOODLE_405_STABLE gets the Workplace tables and columns**
+  Moodle only runs the upgrade steps numbered above the installed version. A site that had the provider 1.7.0 (2026110400) or 1.7.1 (2026111000) of `MOODLE_405_STABLE` and then moved to this branch skipped the Workplace steps 2025121900 (table `aiprovider_datacurso_tenant_config`) and 2026100800 (fields `tenant_id` and `licence` of `aiprovider_datacurso_consumption`), and the consumption history failed with `Unknown column 'rbalias3.tenant_id' in 'WHERE'`. The new step 2026111001 creates whatever of them is missing and leaves a site that already has them as it is; when the fields are added, the mirrored rows that carry no tenant are emptied and pulled again on the next visit, as 2026100800 does. Its number is above 1.7.1 of `MOODLE_405_STABLE`, so a site on that release can move to this branch without a downgrade. Tests: `tests/upgrade_test.php`
+
 ## [1.7.0-wp] - 2026-11-09
 
 **Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.

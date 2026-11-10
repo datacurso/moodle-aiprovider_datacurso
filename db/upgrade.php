@@ -109,24 +109,8 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
     }
 
     if ($oldversion < 2025121900) {
-        // Define table aiprovider_datacurso_tenant_config to be created.
-        $table = new xmldb_table('aiprovider_datacurso_tenant_config');
-
-        // Adding fields to table aiprovider_datacurso_tenant_config.
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('plugin', XMLDB_TYPE_CHAR, '100', null, null, null, null);
-        $table->add_field('tenant_id', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
-        $table->add_field('name', XMLDB_TYPE_CHAR, '100', null, null, null, null);
-        $table->add_field('value', XMLDB_TYPE_TEXT, null, null, null, null, null);
-
-        // Adding keys to table aiprovider_datacurso_tenant_config.
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
-        $table->add_key('plugin_tenant_name_uk', XMLDB_KEY_UNIQUE, ['plugin', 'tenant_id', 'name']);
-
-        // Conditionally launch create table for aiprovider_datacurso_tenant_config.
-        if (!$dbman->table_exists($table)) {
-            $dbman->create_table($table);
-        }
+        // Settings of the provider kept per tenant.
+        aiprovider_datacurso_create_tenant_config_table($dbman);
 
         // Datacurso savepoint reached.
         upgrade_plugin_savepoint(true, 2025121900, 'aiprovider', 'datacurso');
@@ -248,28 +232,7 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         // consumed and the fingerprint of the licence it was synced with, so each licence keeps its
         // own sync watermark. The rows already mirrored carry neither and cannot be attributed, so
         // the mirror is emptied; the history is pulled again the next time the page is opened.
-        $table = new xmldb_table('aiprovider_datacurso_consumption');
-
-        $fields = [
-            new xmldb_field('tenant_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'userid'),
-            new xmldb_field('licence', XMLDB_TYPE_CHAR, '40', null, XMLDB_NOTNULL, null, '', 'tenant_id'),
-        ];
-        foreach ($fields as $field) {
-            if (!$dbman->field_exists($table, $field)) {
-                $dbman->add_field($table, $field);
-            }
-        }
-
-        $indexes = [
-            new xmldb_index('tenant_id', XMLDB_INDEX_NOTUNIQUE, ['tenant_id']),
-            new xmldb_index('licence', XMLDB_INDEX_NOTUNIQUE, ['licence']),
-        ];
-        foreach ($indexes as $index) {
-            if (!$dbman->index_exists($table, $index)) {
-                $dbman->add_index($table, $index);
-            }
-        }
-
+        aiprovider_datacurso_add_consumption_tenancy($dbman);
         $DB->delete_records('aiprovider_datacurso_consumption');
 
         upgrade_plugin_savepoint(true, 2026100800, 'aiprovider', 'datacurso');
@@ -283,6 +246,20 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         \aiprovider_datacurso\local\plugin_settings::migrate_legacy_flags();
 
         upgrade_plugin_savepoint(true, 2026102900, 'aiprovider', 'datacurso');
+    }
+
+    if ($oldversion < 2026111001) {
+        // A site that ran the provider of MOODLE_405_STABLE (1.7.0 is 2026110400, 1.7.1 is 2026111000)
+        // and then moved to this branch skips the Workplace steps numbered below its version: 2025121900
+        // (the table of the settings per tenant) and 2026100800 (the tenant and the licence of each
+        // consumption record). The consumption history then fails with "Unknown column tenant_id".
+        // Create what is missing; a site that already has it is left as it is.
+        aiprovider_datacurso_create_tenant_config_table($dbman);
+        aiprovider_datacurso_create_consumption_table($dbman);
+        // When the fields are missing, the rows mirrored without them are emptied and pulled again.
+        aiprovider_datacurso_add_consumption_tenancy($dbman);
+
+        upgrade_plugin_savepoint(true, 2026111001, 'aiprovider', 'datacurso');
     }
 
     return true;
@@ -317,4 +294,69 @@ function aiprovider_datacurso_create_consumption_table(database_manager $dbman):
     if (!$dbman->table_exists($table)) {
         $dbman->create_table($table);
     }
+}
+
+/**
+ * Create the table of the settings kept per tenant when it does not exist yet.
+ *
+ * @param database_manager $dbman
+ */
+function aiprovider_datacurso_create_tenant_config_table(database_manager $dbman): void {
+    $table = new xmldb_table('aiprovider_datacurso_tenant_config');
+
+    $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+    $table->add_field('plugin', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+    $table->add_field('tenant_id', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+    $table->add_field('name', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+    $table->add_field('value', XMLDB_TYPE_TEXT, null, null, null, null, null);
+
+    $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+    $table->add_key('plugin_tenant_name_uk', XMLDB_KEY_UNIQUE, ['plugin', 'tenant_id', 'name']);
+
+    if (!$dbman->table_exists($table)) {
+        $dbman->create_table($table);
+    }
+}
+
+/**
+ * Add the tenant and the licence of each record to the consumption mirror when they are missing.
+ *
+ * The consumption mirror is read per tenant: each record keeps the tenant of the user who consumed
+ * and the fingerprint of the licence it was synced with, so each licence keeps its own sync watermark.
+ *
+ * @param database_manager $dbman
+ * When a field is missing, the rows already mirrored are deleted before it is added.
+ *
+ * @return bool Whether a field was added.
+ */
+function aiprovider_datacurso_add_consumption_tenancy(database_manager $dbman): bool {
+    global $DB;
+
+    $table = new xmldb_table('aiprovider_datacurso_consumption');
+
+    $fields = [
+        new xmldb_field('tenant_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'userid'),
+        new xmldb_field('licence', XMLDB_TYPE_CHAR, '40', null, XMLDB_NOTNULL, null, '', 'tenant_id'),
+    ];
+    $missing = array_filter($fields, static fn(xmldb_field $field): bool => !$dbman->field_exists($table, $field));
+    if ($missing !== []) {
+        // The rows mirrored without them cannot be attributed: the mirror is emptied first and
+        // pulled again the next time it is opened.
+        $DB->delete_records('aiprovider_datacurso_consumption');
+    }
+    foreach ($missing as $field) {
+        $dbman->add_field($table, $field);
+    }
+
+    $indexes = [
+        new xmldb_index('tenant_id', XMLDB_INDEX_NOTUNIQUE, ['tenant_id']),
+        new xmldb_index('licence', XMLDB_INDEX_NOTUNIQUE, ['licence']),
+    ];
+    foreach ($indexes as $index) {
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+    }
+
+    return $missing !== [];
 }
