@@ -125,6 +125,7 @@ $string['error_ratelimit_exceeded'] = 'Разрешенный лимит пот�
 $string['errorgetbalancecredits'] = 'Не удалось получить баланс кредитов из внешнего API';
 $string['errorgetusers'] = 'Не удалось получить список пользователей. Пожалуйста, попробуйте снова позже.';
 $string['errorrequestfailed'] = 'Не удалось выполнить запрос к ИИ';
+$string['event_external_request_completed'] = 'Внешний запрос к сервису Datacurso';
 $string['filter_year'] = 'Year';
 $string['forbidden'] = 'Вам не разрешено выполнять это действие с текущей лицензией. Пожалуйста, проверьте вашу лицензию и доступные кредиты в <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Управление кредитами</a> в магазине Datacurso.';
 $string['generate_activitie'] = 'Создать активность или ресурс с помощью ИИ';
@@ -153,6 +154,7 @@ $string['hour'] = 'час';
 $string['hours'] = 'Часы';
 $string['httperror'] = 'Неожиданная ошибка при обработке вашего запроса (HTTP {$a}). Пожалуйста, попробуйте позже. Если проблема сохраняется, свяжитесь с администратором сайта.';
 $string['id'] = 'ID';
+$string['insecuretransport'] = 'Подключение к сервису Datacurso возможно только по защищённому соединению (HTTPS). Обратитесь к администратору сайта.';
 $string['installed'] = 'Установлено';
 $string['instance_disabled'] = 'Экземпляр провайдера Datacurso отключен';
 $string['invalidjson'] = 'Недопустимый JSON';

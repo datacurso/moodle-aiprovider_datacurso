@@ -125,6 +125,7 @@ $string['error_ratelimit_exceeded'] = 'Das zulässige Verbrauchslimit wurde übe
 $string['errorgetbalancecredits'] = 'Das Kreditguthaben konnte nicht von der externen API abgerufen werden';
 $string['errorgetusers'] = 'Die Liste der Benutzer konnte nicht abgerufen werden. Bitte versuchen Sie es später erneut.';
 $string['errorrequestfailed'] = 'Die KI-Anfrage konnte nicht abgeschlossen werden';
+$string['event_external_request_completed'] = 'Externe Anfrage an einen Datacurso-Dienst';
 $string['filter_year'] = 'Year';
 $string['forbidden'] = 'Sie dürfen diese Aktion mit der aktuellen Lizenz nicht ausführen. Bitte überprüfen Sie Ihre Lizenz und verfügbaren Kredite unter <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Kredite verwalten</a> im Datacurso-Shop.';
 $string['generate_activitie'] = 'Aktivität oder Ressource mit KI generieren';
@@ -153,6 +154,7 @@ $string['hour'] = 'Stunde';
 $string['hours'] = 'Stunden';
 $string['httperror'] = 'Unerwarteter Fehler bei der Verarbeitung Ihrer Anfrage (HTTP {$a}). Bitte versuchen Sie es später erneut. Wenn das Problem weiterhin besteht, wenden Sie sich an Ihren Website-Administrator.';
 $string['id'] = 'ID';
+$string['insecuretransport'] = 'Der Datacurso-Dienst ist nur über eine sichere Verbindung (HTTPS) erreichbar. Bitte wenden Sie sich an die Administration der Website.';
 $string['installed'] = 'Installiert';
 $string['instance_disabled'] = 'Die Datacurso-Anbieterinstanz ist deaktiviert';
 $string['invalidjson'] = 'Ungültiges JSON';

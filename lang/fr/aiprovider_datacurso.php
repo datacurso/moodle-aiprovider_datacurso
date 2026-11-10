@@ -125,6 +125,7 @@ $string['error_ratelimit_exceeded'] = 'La limite de consommation autorisée a é
 $string['errorgetbalancecredits'] = 'Impossible de récupérer le solde de crédits depuis l\'API externe';
 $string['errorgetusers'] = 'Impossible de récupérer la liste des utilisateurs. Veuillez réessayer plus tard.';
 $string['errorrequestfailed'] = 'La requête d\'IA n\'a pas pu aboutir';
+$string['event_external_request_completed'] = 'Requête externe vers un service Datacurso';
 $string['filter_year'] = 'Year';
 $string['forbidden'] = 'Vous n\'êtes pas autorisé à effectuer cette action avec la licence actuelle. Veuillez vérifier votre licence et les crédits disponibles dans <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Gérer les crédits</a> dans la boutique Datacurso.';
 $string['generate_activitie'] = 'Générer une activité ou une ressource avec l\'IA';
@@ -153,6 +154,7 @@ $string['hour'] = 'heure';
 $string['hours'] = 'Heures';
 $string['httperror'] = 'Erreur inattendue lors du traitement de votre demande (HTTP {$a}). Veuillez réessayer plus tard. Si le problème persiste, contactez votre administrateur de site.';
 $string['id'] = 'ID';
+$string['insecuretransport'] = 'Le service Datacurso n\'est accessible que par une connexion sécurisée (HTTPS). Veuillez contacter l\'administrateur du site.';
 $string['installed'] = 'Installé';
 $string['instance_disabled'] = 'L\'instance du fournisseur Datacurso est désactivée';
 $string['invalidjson'] = 'JSON invalide';

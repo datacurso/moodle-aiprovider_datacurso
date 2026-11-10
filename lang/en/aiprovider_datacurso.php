@@ -125,6 +125,7 @@ $string['error_ratelimit_exceeded'] = 'The allowed consumption limit has been ex
 $string['errorgetbalancecredits'] = 'Could not retrieve credits balance from external API';
 $string['errorgetusers'] = 'Could not retrieve the list of users. Please try again later.';
 $string['errorrequestfailed'] = 'The AI request could not be completed';
+$string['event_external_request_completed'] = 'External request to a Datacurso service';
 $string['filter_year'] = 'Year';
 $string['forbidden'] = 'You are not allowed to perform this action with the current license. Please verify your license and available credits in <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Manage Credits</a> in the Datacurso Shop.';
 $string['generate_activitie'] = 'Generate activity or resource with AI';
@@ -153,6 +154,7 @@ $string['hour'] = 'hour';
 $string['hours'] = 'Hours';
 $string['httperror'] = 'Unexpected error while processing your request (HTTP {$a}). Please try again later. If the problem persists, contact your site administrator.';
 $string['id'] = 'ID';
+$string['insecuretransport'] = 'The Datacurso service can only be reached over a secure (HTTPS) connection. Please contact your site administrator.';
 $string['installed'] = 'Installed';
 $string['instance_disabled'] = 'The Datacurso provider instance is disabled';
 $string['invalidjson'] = 'JSON Invalid';

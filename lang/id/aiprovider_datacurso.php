@@ -125,6 +125,7 @@ $string['error_ratelimit_exceeded'] = 'Batas konsumsi yang diizinkan telah terla
 $string['errorgetbalancecredits'] = 'Tidak dapat mengambil saldo kredit dari API eksternal';
 $string['errorgetusers'] = 'Tidak dapat mengambil daftar pengguna. Silakan coba lagi nanti.';
 $string['errorrequestfailed'] = 'Permintaan AI tidak dapat diselesaikan';
+$string['event_external_request_completed'] = 'Permintaan eksternal ke layanan Datacurso';
 $string['filter_year'] = 'Year';
 $string['forbidden'] = 'Anda tidak diizinkan untuk melakukan tindakan ini dengan lisensi saat ini. Silakan verifikasi lisensi dan kredit yang tersedia Anda di <a href="https://shop.datacurso.com/index.php?m=tokens_manager" target="_blank">Kelola Kredit</a> di Toko Datacurso.';
 $string['generate_activitie'] = 'Hasilkan aktivitas atau sumber daya dengan AI';
@@ -153,6 +154,7 @@ $string['hour'] = 'jam';
 $string['hours'] = 'Jam';
 $string['httperror'] = 'Kesalahan tak terduga saat memproses permintaan Anda (HTTP {$a}). Silakan coba lagi nanti. Jika masalah berlanjut, hubungi administrator situs Anda.';
 $string['id'] = 'ID';
+$string['insecuretransport'] = 'Layanan Datacurso hanya dapat diakses melalui koneksi aman (HTTPS). Silakan hubungi administrator situs.';
 $string['installed'] = 'Terpasang';
 $string['instance_disabled'] = 'Instans penyedia Datacurso dinonaktifkan';
 $string['invalidjson'] = 'JSON Tidak Valid';
