@@ -200,6 +200,73 @@ The third section shows the list of Datacurso plugins that are compatible with t
 
 ![List plugins](./_docs/images/aiprovider_datacurso_page-report-listplugins.png)
 
+## Privacy and audit
+
+### Audit log of external requests
+
+Every request the plugin sends to a Datacurso service is recorded in the Moodle log as the event
+`\aiprovider_datacurso\event\external_request_completed`: requests of the AI services and course service clients
+(including uploads and downloads), of the shop client, and of the core AI actions (text, summary, image and the image
+download). Each event records the user, the context, the client, the service, the HTTP method, the endpoint path without
+its query string, the result (`success`, `failure`, or `refused` when nothing left the site, for example when the service
+URL is not HTTPS or the request has no license key), the HTTP status and, on failure, an error code.
+
+The event never records the license key, the headers, the payload or prompt, file names, the response body, the site URL,
+the user id sent to the service or the transport error text. Path segments that identify a record or a session (numbers,
+UUIDs, long hexadecimal strings and long tokens mixing letters and digits) are logged as `{id}`. It is logged in the
+system context unless the plugin making the request passes its own with `set_audit_context()` on the client. The user a
+request is made for, when it is not the current user, is recorded as the related user. Logging never breaks a request.
+
+Only requests sent by the Moodle server are logged. The streams that a browser opens directly to a service, such as the
+chat stream whose URL `ai_services_api::get_streaming_url_for_session()` builds, do not pass through the server and are
+not in the log.
+
+### Transport security
+
+Every request to a Datacurso service travels over HTTPS with the certificate chain and the host name verified. A
+redirect answer is never followed, because it would hand the license key and the content to another host: the request
+fails instead. Requests to the AI services give up after 300 seconds, file downloads after 300 seconds and requests to
+the shop after 30 seconds; opening the connection may take up to 30 seconds.
+
+Developers who run the services locally over plain HTTP can allow it by adding this line to `config.php`:
+
+```php
+$CFG->aiprovider_datacurso_allow_insecure_transport = true;
+```
+
+It only allows the `http` scheme; certificates are still verified on HTTPS and redirects are still refused. Never set it
+on a production site.
+
+### What the services receive about the site and the user
+
+The requests of the AI services and course service clients carry `site_id`, `site_url`, `userid`, `lang` and
+`tenant_id`. The `userid` is the Moodle id of the user: this version does not pseudonymise it. The course service also
+receives the user's `timezone`; the AI services receive it only on the CV and job matching routes, which use it.
+
+### Deletion of user data
+
+When a Moodle user is deleted, the consumption records of that user already copied to the local history are unlinked
+from the account: they are attributed to nobody and stay in the totals of the site. The course service is the only
+Datacurso service that stores data per user (generation requests with the user id, consumption and the conversation
+state). It offers an erase operation by site, user id and plugin, for the plugins that send it data to invoke from their
+Privacy API. The other services do not store the data they receive.
+
+### What the token manager service keeps per user
+
+The token manager service, which applies the per-user consumption limits and reports consumption to the shop, keeps one
+record per license key, site, user id and service, with the start of the current window, the credits used in it and the
+time of the last update. Records are written only while a consumption limit is enabled for the service, and they are
+kept while the license exists.
+
+### Retention and location
+
+- The request logs of the services are ephemeral: they are deleted every time the services are updated.
+- Token consumption is kept while the license exists.
+- The assignment grading service processes submissions in memory and does not store them.
+- The language models are used in paid mode (Gemini API): the model provider does not use the data for training and
+  keeps logs for about 55 days for abuse detection and legal compliance.
+- The services for the European Union are hosted in Frankfurt (AWS `eu-central-1`).
+
 ## License ##
 
 2025 Data Curso LLC <https://datacurso.com>

@@ -45,7 +45,7 @@ $tab = optional_param('tab', 'consumption', PARAM_ALPHAEXT);
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => $tab]));
 $PAGE->set_pagelayout('report');
-$PAGE->set_title(get_string('pluginname', 'aiprovider_datacurso'));
+$PAGE->set_title(get_string('reportspagetitle', 'aiprovider_datacurso'));
 
 // Define tabs for navigation.
 $tabs = [];

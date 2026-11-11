@@ -325,4 +325,27 @@ final class consumption_sync_test extends \advanced_testcase {
         $this->assertSame(2, $DB->count_records('aiprovider_datacurso_consumption'));
         $this->assertEquals(sha1('DC-OTHER'), $DB->get_field('aiprovider_datacurso_consumption', 'licence', ['externalid' => 7]));
     }
+
+    /**
+     * Markup sent by the shop in the service or action of a record is stripped before it is stored.
+     */
+    public function test_markup_in_service_and_action_is_stripped(): void {
+        global $DB;
+
+        $this->sync_with([$this->make_response([
+            $this->make_item(901, [
+                'id_servicio' => '<b id="probe">local_forum_ai</b>',
+                'accion' => '<img src=x onerror="alert(1)">/forum/chat',
+            ]),
+            $this->make_item(900),
+        ])]);
+
+        $records = $DB->get_records('aiprovider_datacurso_consumption', null, 'externalid', 'externalid, service, action');
+        $this->assertSame('bidprobelocal_forum_aib', $records[901]->service);
+        $this->assertStringNotContainsString('<', $records[901]->action);
+        $this->assertStringNotContainsString('"', $records[901]->action);
+        // Real values are stored unchanged.
+        $this->assertSame('local_coursegen', $records[900]->service);
+        $this->assertSame('/course/execute', $records[900]->action);
+    }
 }

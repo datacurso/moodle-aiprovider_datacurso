@@ -197,8 +197,10 @@ class consumption_sync {
         $record = new \stdClass();
         $record->externalid = (int) ($item['id_consumo'] ?? 0);
         $record->userid = (int) ($item['userid'] ?? ($item['id_usuario'] ?? 0));
-        $record->service = (string) ($item['id_servicio'] ?? '');
-        $record->action = (string) ($item['accion'] ?? '');
+        // Services are component names (local_coursegen) and actions are route paths (/assign/answer):
+        // anything else the shop sends is stripped before it is stored.
+        $record->service = clean_param((string) ($item['id_servicio'] ?? ''), PARAM_ALPHANUMEXT);
+        $record->action = clean_param((string) ($item['accion'] ?? ''), PARAM_PATH);
         $record->credits = (float) ($item['cantidad_tokens'] ?? 0);
         $record->balance = (float) ($item['saldo_restante'] ?? 0);
         $record->timecreated = self::to_timestamp($item['created_at'] ?? ($item['fecha'] ?? ''));
