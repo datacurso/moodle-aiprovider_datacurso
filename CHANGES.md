@@ -1,3 +1,11 @@
+## [1.7.3-wp] - 2026-11-11
+
+**Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.
+
+### Security
+- **The Datacurso AI settings never show the site licence key to tenant managers**
+  Since 1.7.2-wp a manager holding `aiprovider/datacurso:manageconfig` may open the Datacurso AI settings of their tenant. When the tenant had no licence key of its own, the "License key" field was filled with the site licence key, so the manager could read it with the unmask button, and saving the form copied the site key into the tenant configuration. Now, for a user without `moodle/site:config`, a tenant with no key of its own gets an empty field with the note "Uses the site licence", and the site key is never sent to the browser; saving the form with the field empty stores nothing, so the tenant keeps using the site licence. A key stored for the tenant is shown to its managers and kept as before, and site administrators see the form as before. The rate-limit fields the form fills from the site configuration hold no secret and are unchanged. New string `licensekey_usessitelicence` in all the plugin's languages. Backed by `settings_tenant_licence_key_test` (`test_tenant_manager_never_receives_the_site_key`, `test_saving_an_empty_key_stores_nothing`, `test_tenant_with_its_own_key_sees_and_keeps_it` and `test_site_administrator_still_sees_the_site_key`)
+
 ## [1.7.2-wp] - 2026-11-11
 
 **Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.
