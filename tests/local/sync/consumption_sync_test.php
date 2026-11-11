@@ -408,7 +408,7 @@ final class consumption_sync_test extends \advanced_testcase {
     /**
      * Sync one page made of the given items, each one a consumption with the given userid.
      *
-     * @param array<int, mixed> $useridsbyexternalid userid echoed by the shop, by consumption id.
+     * @param array $useridsbyexternalid userid echoed by the shop (mixed), indexed by consumption id.
      */
     private function sync_userids(array $useridsbyexternalid): void {
         $items = [];
