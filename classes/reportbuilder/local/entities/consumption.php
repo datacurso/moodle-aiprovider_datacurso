@@ -135,7 +135,8 @@ class consumption extends base {
                 if ($map === null) {
                     $map = self::action_names();
                 }
-                return $map[$value] ?? (string) $value;
+                // The action comes from the shop: never trust it as HTML.
+                return s($map[$value] ?? (string) $value);
             });
 
         // Service column.
@@ -153,7 +154,8 @@ class consumption extends base {
                 if ($map === null) {
                     $map = self::service_names();
                 }
-                return $map[$value] ?? (string) $value;
+                // The service comes from the shop: never trust it as HTML.
+                return s($map[$value] ?? (string) $value);
             });
 
         // Credits consumed column.
