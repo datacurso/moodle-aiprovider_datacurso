@@ -152,6 +152,7 @@ $string['license_not_allowed'] = 'Votre licence ne permet pas d\'effectuer cette
 $string['licensekey'] = 'Clé de licence';
 $string['licensekey_desc'] = 'Entrez la clé de licence de l\'espace client de la boutique Datacurso.';
 $string['licensekey_help'] = 'Enter the tenant license key from the Datacurso Shop customer area. This key is applied only to the current tenant.';
+$string['licensekey_usessitelicence'] = 'Utilise la licence du site. Saisissez une clé uniquement pour donner à ce locataire sa propre licence.';
 $string['link_consumptionhistory'] = 'Historique de consommation des crédits';
 $string['link_generalreport'] = 'Rapport général';
 $string['link_generalreport_datacurso'] = 'Rapport général Datacurso IA';

@@ -152,6 +152,7 @@ $string['license_not_allowed'] = 'Lisensi Anda tidak mengizinkan untuk melakukan
 $string['licensekey'] = 'Kunci lisensi';
 $string['licensekey_desc'] = 'Masukkan kunci lisensi dari area pelanggan Toko Datacurso.';
 $string['licensekey_help'] = 'Enter the tenant license key from the Datacurso Shop customer area. This key is applied only to the current tenant.';
+$string['licensekey_usessitelicence'] = 'Menggunakan lisensi situs. Masukkan kunci hanya untuk memberi tenant ini lisensinya sendiri.';
 $string['link_consumptionhistory'] = 'Riwayat konsumsi kredit';
 $string['link_generalreport'] = 'Laporan umum';
 $string['link_generalreport_datacurso'] = 'Laporan umum Datacurso AI';
