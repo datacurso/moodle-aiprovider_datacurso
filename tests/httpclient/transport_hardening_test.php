@@ -60,7 +60,7 @@ final class transport_hardening_test extends \advanced_testcase {
         set_config('licensekey', self::LICENSE_KEY, 'aiprovider_datacurso');
         // Resolve the region beforehand, so building a client does not ask the shop.
         set_config(license_region::REGION, '0', 'aiprovider_datacurso');
-        set_config(license_region::FINGERPRINT, license_region::fingerprint(), 'aiprovider_datacurso');
+        set_config(license_region::FINGERPRINT, sha1(self::LICENSE_KEY), 'aiprovider_datacurso');
         set_config(license_region::CHECKED, time(), 'aiprovider_datacurso');
         unset($CFG->aiprovider_datacurso_allow_insecure_transport);
     }

@@ -331,6 +331,7 @@ final class consumption_sync_test extends \advanced_testcase {
      */
     public function test_markup_in_service_and_action_is_stripped(): void {
         global $DB;
+        $this->resetAfterTest();
 
         $this->sync_with([$this->make_response([
             $this->make_item(901, [

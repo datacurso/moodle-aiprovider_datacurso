@@ -43,7 +43,7 @@ final class timezone_minimisation_test extends \advanced_testcase {
         set_config('licensekey', 'test-key', 'aiprovider_datacurso');
         // Resolve the region beforehand, so building a client does not ask the shop.
         set_config(license_region::REGION, '0', 'aiprovider_datacurso');
-        set_config(license_region::FINGERPRINT, license_region::fingerprint(), 'aiprovider_datacurso');
+        set_config(license_region::FINGERPRINT, sha1('test-key'), 'aiprovider_datacurso');
         set_config(license_region::CHECKED, time(), 'aiprovider_datacurso');
         $this->setUser($this->getDataGenerator()->create_user(['timezone' => 'America/Bogota']));
     }
