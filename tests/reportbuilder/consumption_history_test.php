@@ -88,6 +88,9 @@ final class consumption_history_test extends \advanced_testcase {
         $DB->insert_record('aiprovider_datacurso_consumption', (object) [
             'externalid' => 1,
             'userid' => 0,
+            // The report only lists the records of the tenant of the viewer, paid with its licence.
+            'tenant_id' => \aiprovider_datacurso\local\tenant_resolver::get_tenant_id(),
+            'licence' => \aiprovider_datacurso\local\sync\consumption_sync::current_licence_fingerprint(),
             'service' => '<b id="probe-service">svc</b>',
             'action' => '<img src=x id="probe-action" onerror="alert(1)">',
             'credits' => 1,
