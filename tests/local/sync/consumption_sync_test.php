@@ -35,6 +35,7 @@ require_once(__DIR__ . '/../../fixtures/test_consumption_api_client.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(consumption_sync::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\aiprovider_datacurso\local\outbound_privacy::class)]
 final class consumption_sync_test extends \advanced_testcase {
     /** @var string Local mirror table. */
     private const TABLE = 'aiprovider_datacurso_consumption';
@@ -402,5 +403,92 @@ final class consumption_sync_test extends \advanced_testcase {
         // Real values are stored unchanged.
         $this->assertSame('local_coursegen', $records[900]->service);
         $this->assertSame('/course/execute', $records[900]->action);
+    }
+
+    /**
+     * Sync one page made of the given items, each one a consumption with the given userid.
+     *
+     * @param array<int, mixed> $useridsbyexternalid userid echoed by the shop, by consumption id.
+     */
+    private function sync_userids(array $useridsbyexternalid): void {
+        $items = [];
+        foreach ($useridsbyexternalid as $externalid => $userid) {
+            $items[] = array_merge($this->make_consumption($externalid), ['userid' => $userid]);
+        }
+        $client = new test_consumption_api_client();
+        $client->responsesbypage[1] = $this->make_page($items, 1);
+        consumption_sync::sync($client);
+    }
+
+    /**
+     * The local user id stored for a consumption.
+     *
+     * @param int $externalid
+     * @return int
+     */
+    private function stored_userid(int $externalid): int {
+        global $DB;
+        return (int) $DB->get_field(self::TABLE, 'userid', ['externalid' => $externalid]);
+    }
+
+    /**
+     * A history item whose userid is the pseudonym of a local user is attributed to that user.
+     *
+     * AIP-PRIV-001-R1: the shop echoes the pseudonym the site sent; the report resolves it.
+     */
+    public function test_pseudonymous_userid_resolves_to_local_user(): void {
+        $user = $this->getDataGenerator()->create_user();
+        $token = \aiprovider_datacurso\local\outbound_privacy::pseudonymise_userid($user->id);
+
+        $this->sync_userids([600 => $token]);
+
+        $this->assertSame((int) $user->id, $this->stored_userid(600));
+    }
+
+    /**
+     * A pseudonym that matches no local user is stored as user 0.
+     */
+    public function test_unknown_pseudonym_maps_to_zero(): void {
+        $this->sync_userids([601 => str_repeat('f', 32)]);
+
+        $this->assertSame(0, $this->stored_userid(601));
+    }
+
+    /**
+     * A numeric userid (history written before 2.2.2) still maps as before, also when sent as a string.
+     */
+    public function test_numeric_userid_still_maps(): void {
+        $this->sync_userids([602 => 42, 603 => '43']);
+
+        $this->assertSame(42, $this->stored_userid(602));
+        $this->assertSame(43, $this->stored_userid(603));
+    }
+
+    /**
+     * A pseudonym that starts with digits is never cast to that number, which would attribute
+     * the consumption to the wrong user.
+     */
+    public function test_hex_token_with_leading_digits_is_not_cast_to_a_user_id(): void {
+        $this->getDataGenerator()->create_user();
+
+        $this->sync_userids([604 => '12' . str_repeat('a', 30)]);
+
+        $this->assertSame(0, $this->stored_userid(604));
+    }
+
+    /**
+     * A token made of 32 digits is still a pseudonym: it is resolved through the reverse map and
+     * never cast to an integer, whether it is known or not.
+     */
+    public function test_all_digit_pseudonym_is_resolved_not_cast(): void {
+        $user = $this->getDataGenerator()->create_user();
+        $knowntoken = str_repeat('7', 32);
+        \aiprovider_datacurso\local\outbound_privacy::reset_static_caches();
+        \cache::make('aiprovider_datacurso', 'pseudonyms')->set($knowntoken, (int) $user->id);
+
+        $this->sync_userids([605 => $knowntoken, 606 => str_repeat('9', 32)]);
+
+        $this->assertSame((int) $user->id, $this->stored_userid(605));
+        $this->assertSame(0, $this->stored_userid(606));
     }
 }
