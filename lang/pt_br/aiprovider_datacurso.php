@@ -152,6 +152,7 @@ $string['license_not_allowed'] = 'Sua licença não permite executar esta solici
 $string['licensekey'] = 'Chave de licença';
 $string['licensekey_desc'] = 'Insira a chave de licença da área de clientes da Loja Datacurso.';
 $string['licensekey_help'] = 'Enter the tenant license key from the Datacurso Shop customer area. This key is applied only to the current tenant.';
+$string['licensekey_usessitelicence'] = 'Usa a licença do site. Informe uma chave somente para dar a este locatário sua própria licença.';
 $string['link_consumptionhistory'] = 'Histórico de consumo de créditos';
 $string['link_generalreport'] = 'Relatório geral';
 $string['link_generalreport_datacurso'] = 'Relatório geral Datacurso IA';

@@ -152,6 +152,7 @@ $string['license_not_allowed'] = 'Ihre Lizenz erlaubt diese Anfrage nicht. Bitte
 $string['licensekey'] = 'Lizenzschlüssel';
 $string['licensekey_desc'] = 'Geben Sie den Lizenzschlüssel aus dem Datacurso-Shop-Kundenbereich ein.';
 $string['licensekey_help'] = 'Enter the tenant license key from the Datacurso Shop customer area. This key is applied only to the current tenant.';
+$string['licensekey_usessitelicence'] = 'Verwendet die Lizenz der Website. Geben Sie nur dann einen Schlüssel ein, wenn dieser Mandant eine eigene Lizenz erhalten soll.';
 $string['link_consumptionhistory'] = 'Kreditverbrauchsverlauf';
 $string['link_generalreport'] = 'Allgemeiner Bericht';
 $string['link_generalreport_datacurso'] = 'Allgemeiner Bericht Datacurso AI';

@@ -60,6 +60,14 @@ class settings_tenant_form extends \moodleform {
             get_string('licensekey', 'aiprovider_datacurso')
         );
         $mform->addHelpButton('licensekey', 'licensekey', 'aiprovider_datacurso');
+        if (self::hides_site_licence()) {
+            $mform->addElement(
+                'static',
+                'licensekey_usessitelicence',
+                '',
+                get_string('licensekey_usessitelicence', 'aiprovider_datacurso')
+            );
+        }
 
         $mform->addElement(
             'header',
@@ -223,8 +231,11 @@ class settings_tenant_form extends \moodleform {
 
         $data->{provider_status::CONFIG_NAME} = provider_status::is_tenant_disabled($tenantid) ? 0 : 1;
 
-        $data->licensekey =
-            \aiprovider_datacurso\local\tenant_config::get(
+        // The site licence key is never sent to a user who may not see the site configuration:
+        // a tenant without a key of its own gets an empty field and keeps using the site licence.
+        $data->licensekey = self::hides_site_licence()
+            ? ''
+            : \aiprovider_datacurso\local\tenant_config::get(
                 'aiprovider_datacurso',
                 $tenantid,
                 'licensekey',
@@ -327,6 +338,24 @@ class settings_tenant_form extends \moodleform {
     }
 
     /**
+     * Whether the licence key field must hide the site licence key from the current user.
+     *
+     * True when the tenant of the user has no licence key of its own, so the field would
+     * otherwise show the site key, and the user may not see the site configuration.
+     *
+     * @return bool
+     */
+    private static function hides_site_licence(): bool {
+        global $USER;
+
+        if (has_capability('moodle/site:config', \context_system::instance())) {
+            return false;
+        }
+        $tenantid = tenant_resolver::get_tenant_id((int) $USER->id);
+        return tenant_config::get_stored('aiprovider_datacurso', $tenantid, 'licensekey') === null;
+    }
+
+    /**
      * Stop unless the current user may change the provider configuration.
      *
      * @return void
@@ -358,6 +387,11 @@ class settings_tenant_form extends \moodleform {
         if (property_exists($values, provider_status::CONFIG_NAME)) {
             provider_status::set_tenant_enabled($tenantid, !empty($values->{provider_status::CONFIG_NAME}));
             unset($values->{provider_status::CONFIG_NAME});
+        }
+        // An empty key for a tenant that has none of its own stores nothing, so the tenant keeps
+        // using the site licence instead of being left with an empty one.
+        if ($previouslicence === null && trim((string) ($values->licensekey ?? '')) === '') {
+            unset($values->licensekey);
         }
         tenant_config::save_from_form('aiprovider_datacurso', $tenantid, $values);
 

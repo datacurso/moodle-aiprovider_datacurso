@@ -163,6 +163,7 @@ $string['license_not_allowed'] = 'Your license is not allowed to perform this re
 $string['licensekey'] = 'License key';
 $string['licensekey_desc'] = 'Enter the tenant license key from the Datacurso Shop customer area. This key is applied only to the current tenant.';
 $string['licensekey_help'] = 'Enter the tenant license key from the Datacurso Shop customer area. This key is applied only to the current tenant.';
+$string['licensekey_usessitelicence'] = 'Uses the site licence. Enter a key only to give this tenant its own licence.';
 $string['link_consumptionhistory'] = 'Credits consumption history';
 $string['link_generalreport'] = 'General report';
 $string['link_generalreport_datacurso'] = 'General report Datacurso AI';
