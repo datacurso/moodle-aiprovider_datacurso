@@ -67,7 +67,8 @@ $tabs[] = new tabobject(
     get_string('link_listplugings', 'aiprovider_datacurso')
 );
 
-if (has_capability('moodle/site:config', $context)) {
+// AIP-SEC-003: only users who may change the configuration get its tab.
+if (\aiprovider_datacurso\form\settings_tenant_form::can_manage()) {
     $tabs[] = new tabobject(
         'configprovider',
         new moodle_url('/ai/provider/datacurso/admin/settings_tenant.php'),

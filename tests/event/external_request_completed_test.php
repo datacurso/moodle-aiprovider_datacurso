@@ -27,6 +27,8 @@ use aiprovider_datacurso\httpclient\ai_services_api;
 use aiprovider_datacurso\httpclient\datacurso_api;
 use aiprovider_datacurso\httpclient\fake_curl;
 use aiprovider_datacurso\local\outbound_privacy;
+use aiprovider_datacurso\local\provider_status;
+use aiprovider_datacurso\local\tenant_resolver;
 use aiprovider_datacurso\process_generate_image;
 use aiprovider_datacurso\process_generate_text;
 use aiprovider_datacurso\provider;
@@ -458,6 +460,62 @@ final class external_request_completed_test extends \advanced_testcase {
         $this->assertSame('curlerror', $events[0]->other['errorcode']);
         $this->assertSame(0, $events[0]->other['httpstatus']);
         $this->assert_event_omits($events[0], [$errortext]);
+    }
+
+    /**
+     * With the provider disabled the request is logged as refused and no connection is opened.
+     */
+    public function test_disabled_provider_logs_refused_without_a_connection(): void {
+        $this->setAdminUser();
+        \core\plugininfo\aiprovider::enable_plugin('datacurso', 0);
+        $curl = new fake_curl();
+        $sink = $this->redirectEvents();
+
+        $this->expect_exception(fn() => $this->make_services_client($curl)->request('POST', '/forum/reply', []));
+
+        $this->assertSame([], $curl->calls);
+        $events = $this->audit_events($sink);
+        $this->assertCount(1, $events);
+        $this->assertSame('refused', $events[0]->other['result']);
+        $this->assertSame('providerdisabled', $events[0]->other['errorcode']);
+        $this->assertSame(0, $events[0]->other['httpstatus']);
+    }
+
+    /**
+     * On Workplace, a core AI action of a user whose tenant switched the provider off is refused and logged,
+     * and nothing is sent.
+     */
+    public function test_core_ai_action_of_a_disabled_tenant_is_refused_and_logged(): void {
+        if (!tenant_resolver::is_tenancy_available()) {
+            $this->markTestSkipped('Tenants exist only on Moodle Workplace.');
+        }
+        $tenants = $this->getDataGenerator()->get_plugin_generator('tool_tenant');
+        $tenantid = (int) $tenants->create_tenant()->id;
+        $user = $this->getDataGenerator()->create_user();
+        $tenants->allocate_user((int) $user->id, $tenantid);
+        resolved_region::keep(self::LICENSE_KEY);
+        provider_status::set_tenant_enabled($tenantid, false);
+        $this->setUser($user);
+        $mock = new MockHandler([new Response(200, [], '{}')]);
+        \core\di::set(\core\http_client::class, new \core\http_client(['handler' => HandlerStack::create($mock)]));
+        $action = new generate_text(\context_system::instance()->id, (int) $user->id, 'hello');
+        $processor = new class (new provider(), $action) extends process_generate_text {
+            #[\Override]
+            protected function get_endpoint(): UriInterface {
+                return new Uri('https://example.invalid/provider/chat/completions');
+            }
+        };
+        $sink = $this->redirectEvents();
+
+        $response = $processor->process();
+
+        $this->assertFalse($response->get_success());
+        $this->assertSame(get_string('providerdisabled_tenant', 'aiprovider_datacurso'), $response->get_errormessage());
+        $this->assertCount(1, $mock, 'Nothing must be sent to the service.');
+        $events = $this->audit_events($sink);
+        $this->assertCount(1, $events);
+        $this->assertSame('refused', $events[0]->other['result']);
+        $this->assertSame('providerdisabled_tenant', $events[0]->other['errorcode']);
     }
 
     /**

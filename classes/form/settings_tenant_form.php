@@ -16,6 +16,12 @@
 
 namespace aiprovider_datacurso\form;
 
+use aiprovider_datacurso\local\license_region;
+use aiprovider_datacurso\local\plugin_settings;
+use aiprovider_datacurso\local\provider_status;
+use aiprovider_datacurso\local\tenant_config;
+use aiprovider_datacurso\local\tenant_resolver;
+
 defined('MOODLE_INTERNAL') || die();
 require_once($CFG->libdir . '/formslib.php');
 
@@ -37,6 +43,16 @@ class settings_tenant_form extends \moodleform {
         $mform = $this->_form;
 
         $mform->addElement('header', 'general', get_string('settings', 'core'));
+
+        // Switches the provider off for this tenant only; the site switch in AI providers still wins.
+        $mform->addElement(
+            'advcheckbox',
+            provider_status::CONFIG_NAME,
+            get_string('provider_enabled', 'aiprovider_datacurso'),
+            get_string('provider_enabled_desc', 'aiprovider_datacurso')
+        );
+        $mform->setType(provider_status::CONFIG_NAME, PARAM_BOOL);
+        $mform->setDefault(provider_status::CONFIG_NAME, 1);
 
         $mform->addElement(
             'passwordunmask',
@@ -205,6 +221,8 @@ class settings_tenant_form extends \moodleform {
 
         $tenantid = \aiprovider_datacurso\local\tenant_resolver::get_tenant_id((int) $USER->id);
 
+        $data->{provider_status::CONFIG_NAME} = provider_status::is_tenant_disabled($tenantid) ? 0 : 1;
+
         $data->licensekey =
             \aiprovider_datacurso\local\tenant_config::get(
                 'aiprovider_datacurso',
@@ -294,6 +312,81 @@ class settings_tenant_form extends \moodleform {
         }
 
         return $data;
+    }
+
+    /**
+     * Whether the current user may change the provider configuration (AIP-SEC-003).
+     *
+     * Viewing the reports (aiprovider/datacurso:viewreports) is not enough: it takes
+     * aiprovider/datacurso:manageconfig, or moodle/site:config as before.
+     *
+     * @return bool
+     */
+    public static function can_manage(): bool {
+        return plugin_settings::can_manage();
+    }
+
+    /**
+     * Stop unless the current user may change the provider configuration.
+     *
+     * @return void
+     * @throws \required_capability_exception When the user may not.
+     */
+    public static function require_manage_capability(): void {
+        plugin_settings::require_manage_capability();
+    }
+
+    /**
+     * Save the submitted configuration for the tenant of the current user.
+     *
+     * The capability is checked here as well as on the page, so the write path is guarded on its own.
+     * The values go to the tenant of the current user only: nobody changes another tenant from here.
+     *
+     * @param \stdClass $data Submitted form data.
+     * @return int Tenant the configuration was saved for.
+     * @throws \required_capability_exception When the user may not change the configuration.
+     */
+    public static function save(\stdClass $data): int {
+        global $USER;
+
+        self::require_manage_capability();
+
+        $tenantid = tenant_resolver::get_tenant_id((int) $USER->id);
+        $previouslicence = tenant_config::get_stored('aiprovider_datacurso', $tenantid, 'licensekey');
+
+        $values = clone $data;
+        if (property_exists($values, provider_status::CONFIG_NAME)) {
+            provider_status::set_tenant_enabled($tenantid, !empty($values->{provider_status::CONFIG_NAME}));
+            unset($values->{provider_status::CONFIG_NAME});
+        }
+        tenant_config::save_from_form('aiprovider_datacurso', $tenantid, $values);
+
+        // Credits per action arrive as a nested {service: {key: value}} array, so they are
+        // saved explicitly here (as one JSON map per service) instead of through the generic
+        // save_from_form(), which would otherwise flatten the map and lose its keys.
+        if (isset($data->credit)) {
+            foreach (array_column(\aiprovider_datacurso\provider::get_services(), 'id') as $sid) {
+                $validkeys = array_column(\aiprovider_datacurso\provider::get_actions_for_service($sid), 'key');
+                $submitted = (array) ($data->credit[$sid] ?? []);
+
+                $map = [];
+                foreach ($validkeys as $key) {
+                    if (isset($submitted[$key])) {
+                        $map[$key] = max(0, (int) $submitted[$key]);
+                    }
+                }
+
+                tenant_config::set('aiprovider_datacurso', $tenantid, "ratelimit_{$sid}_creditperaction", json_encode($map));
+            }
+        }
+
+        // The licence decides the region that serves this tenant: drop the region kept for the
+        // previous licence so the next request resolves it for the new one.
+        if (trim((string) ($data->licensekey ?? '')) !== trim((string) $previouslicence)) {
+            license_region::forget_for_tenant($tenantid);
+        }
+
+        return $tenantid;
     }
 
     /**

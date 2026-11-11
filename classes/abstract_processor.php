@@ -162,6 +162,18 @@ abstract class abstract_processor extends process_base {
             ->get_rate_limit_header_map($serviceid, $actionkey);
         $audit = $this->create_request_audit('POST', $path, $serviceid);
 
+        // Core AI only runs the actions of an enabled provider, so the site switch is already honoured here;
+        // on Workplace the provider may still be switched off for the tenant of the user.
+        $tenantid = \aiprovider_datacurso\local\tenant_resolver::get_tenant_id((int) $userid);
+        if (\aiprovider_datacurso\local\provider_status::is_tenant_disabled($tenantid)) {
+            $audit->refused(new \moodle_exception('providerdisabled_tenant', 'aiprovider_datacurso'));
+            return [
+                'success' => false,
+                'errorcode' => 403,
+                'errormessage' => get_string('providerdisabled_tenant', 'aiprovider_datacurso'),
+            ];
+        }
+
         try {
             transport_policy::require_secure_url((string) $this->resolve_endpoint());
         } catch (\moodle_exception $e) {
