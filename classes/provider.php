@@ -299,6 +299,10 @@ class provider extends \core_ai\provider {
             ['id' => '/smartrules/create-mod', 'name' => get_string('generate_ai_reinforcement_activity', 'aiprovider_datacurso')],
             ['id' => '/chat/message', 'name' => get_string('generate_chat_message', 'aiprovider_datacurso')],
             ['id' => '/jedomi/v1/chat/completions', 'name' => get_string('generate_jedomi_chat', 'aiprovider_datacurso')],
+            // One row per sentence of a Jedomi answer read aloud in the voice conversation.
+            ['id' => '/jedomi/v1/audio/speech', 'name' => get_string('generate_jedomi_speech', 'aiprovider_datacurso')],
+            ['id' => '/jedomi/v1/audio/transcriptions', 'name' => get_string('transcribe_jedomi_audio', 'aiprovider_datacurso')],
+            ['id' => '/jedomi/v1/files/read', 'name' => get_string('read_jedomi_file', 'aiprovider_datacurso')],
             // Moodle activity types.
             self::make_action('create_activity_assign_image'),
             self::make_action('create_activity_assign_noimage'),

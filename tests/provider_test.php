@@ -103,6 +103,31 @@ final class provider_test extends \advanced_testcase {
     }
 
     /**
+     * Every billed Jedomi route has its own readable label, so the consumption history never shows a raw path.
+     *
+     * The text extraction route (/jedomi/v1/files/extract) is not billed, so it never appears in the history.
+     *
+     * @covers \aiprovider_datacurso\provider::get_actions
+     */
+    public function test_get_actions_labels_every_billed_jedomi_route(): void {
+        $actionmap = array_column(provider::get_actions(), 'name', 'id');
+        $expected = [
+            '/jedomi/v1/chat/completions' => 'generate_jedomi_chat',
+            '/jedomi/v1/audio/speech' => 'generate_jedomi_speech',
+            '/jedomi/v1/audio/transcriptions' => 'transcribe_jedomi_audio',
+            '/jedomi/v1/files/read' => 'read_jedomi_file',
+        ];
+
+        foreach ($expected as $path => $stringid) {
+            $this->assertArrayHasKey($path, $actionmap);
+            $this->assertSame(get_string($stringid, 'aiprovider_datacurso'), $actionmap[$path]);
+            $this->assertStringNotContainsString('/jedomi/', $actionmap[$path]);
+        }
+        $this->assertSame('Generate Jedomi voice answer', $actionmap['/jedomi/v1/audio/speech']);
+        $this->assertArrayNotHasKey('/jedomi/v1/files/extract', $actionmap);
+    }
+
+    /**
      * Registering Jedomi leaves the other services and their action catalogs untouched.
      *
      * J7: no regression on the existing services.

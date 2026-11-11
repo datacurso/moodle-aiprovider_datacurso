@@ -1,3 +1,13 @@
+## [1.8.0] - 2026-11-11
+
+**Compatibility note:** This version is compatible only with **Moodle 4.5**.
+
+### Added
+- **`request_raw()` returns the body of an answer without decoding it**
+  The new public method `datacurso_api_base::request_raw(string $method, string $path, array $body = []): string` (available on `ai_services_api` and `ai_course_api`) sends exactly the request `request()` sends: the same headers (license, plugin, `X-RateLimit-*` with the look-ahead credits of the service), the same `site_id`, pseudonymised `userid`, `lang`, `site_url` and, where it applies, `timezone`, the same checks before sending (provider enabled, license key, HTTPS), the same timeouts and the same audit event. Error answers (403 credit, rate limit and license, 426 update required, any status from 400, redirects, empty answers and transport errors) raise the same exceptions as `request()`; only the body of a successful answer is returned unchanged instead of being decoded as JSON, so routes that answer audio or other binary content, such as `POST /jedomi/v1/audio/speech` (audio/mpeg), no longer fail with `jsondecodeerror`. `request()` and `request_raw()` share one implementation; only the JSON decoding of a successful answer differs. Backed by `request_raw_test::test_binary_body_of_a_successful_answer_is_returned_unchanged`, `test_json_body_of_a_successful_answer_is_returned_undecoded`, `test_request_is_identical_to_a_json_request`, `test_error_answers_raise_like_a_json_request` and `test_refused_request_never_reaches_the_service`
+- **The consumption history names every billed Jedomi action**
+  The Jedomi rows of the consumption history and report showed the route instead of a name for everything but the chat. `/jedomi/v1/audio/speech` (one row per sentence of a Jedomi answer read aloud) is now "Generate Jedomi voice answer", `/jedomi/v1/audio/transcriptions` "Transcribe Jedomi audio" and `/jedomi/v1/files/read` (files and images read by the vision model) "Process a file or image with Jedomi", in the history, the action filter, the report builder source and the `get_actions` web service. `/jedomi/v1/files/extract` is not billed, so it never appears in the history. New strings `generate_jedomi_speech`, `transcribe_jedomi_audio` and `read_jedomi_file` in all the plugin's languages. Jedomi keeps a single `default` credits-per-action value. Backed by `provider_test::test_get_actions_labels_every_billed_jedomi_route` and `consumption_service_test::test_jedomi_action_rows_resolve_to_their_labels`
+
 ## [1.7.1]
 
 **Compatibility note:** This version is compatible only with **Moodle 4.5**.
