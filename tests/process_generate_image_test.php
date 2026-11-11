@@ -610,4 +610,27 @@ final class process_generate_image_test extends \advanced_testcase {
         $this->assertSame($before + 1, $this->count_draft_files());
         $this->resetDebugging();
     }
+
+    /**
+     * The request body carries the site-scoped pseudonym of the user, never the raw Moodle id.
+     *
+     * AIP-PRIV-001 (partial): pseudonymous user identifier.
+     */
+    public function test_request_body_carries_pseudonymous_userid(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+
+        $mock = $this->set_mock_http([
+            new Response(500, [], json_encode(['error' => 'boom'])),
+        ]);
+
+        $this->make_processor('A friendly robot')->process();
+        $this->resetDebugging();
+
+        $payload = json_decode((string) $mock->getLastRequest()->getBody(), true);
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{32}$/', $payload['userid']);
+        $this->assertSame(\aiprovider_datacurso\local\outbound_privacy::pseudonymise_userid($user->id), $payload['userid']);
+        $this->assertNotSame((string) $user->id, $payload['userid']);
+    }
 }

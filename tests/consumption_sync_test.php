@@ -43,6 +43,7 @@ final class consumption_sync_test extends \advanced_testcase {
      */
     protected function tearDown(): void {
         testable_consumption_sync::$client = null;
+        \aiprovider_datacurso\local\outbound_privacy::reset_static_caches();
         parent::tearDown();
     }
 
@@ -324,5 +325,122 @@ final class consumption_sync_test extends \advanced_testcase {
 
         $this->assertSame(2, $DB->count_records('aiprovider_datacurso_consumption'));
         $this->assertEquals(sha1('DC-OTHER'), $DB->get_field('aiprovider_datacurso_consumption', 'licence', ['externalid' => 7]));
+    }
+
+    /**
+     * Markup sent by the shop in the service or action of a record is stripped before it is stored.
+     */
+    public function test_markup_in_service_and_action_is_stripped(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $this->sync_with([$this->make_response([
+            $this->make_item(901, [
+                'id_servicio' => '<b id="probe">local_forum_ai</b>',
+                'accion' => '<img src=x onerror="alert(1)">/forum/chat',
+            ]),
+            $this->make_item(900),
+        ])]);
+
+        $records = $DB->get_records('aiprovider_datacurso_consumption', null, 'externalid', 'externalid, service, action');
+        $this->assertSame('bidprobelocal_forum_aib', $records[901]->service);
+        $this->assertStringNotContainsString('<', $records[901]->action);
+        $this->assertStringNotContainsString('"', $records[901]->action);
+        // Real values are stored unchanged.
+        $this->assertSame('local_coursegen', $records[900]->service);
+        $this->assertSame('/course/execute', $records[900]->action);
+    }
+
+    /**
+     * Read the stored userid of a mirrored record.
+     *
+     * @param int $externalid
+     * @return int
+     */
+    private function stored_userid(int $externalid): int {
+        global $DB;
+        return (int) $DB->get_field('aiprovider_datacurso_consumption', 'userid', ['externalid' => $externalid]);
+    }
+
+    /**
+     * A history item whose userid is the pseudonym of a local user is attributed to that user.
+     *
+     * AIP-PRIV-001 (partial): the shop echoes the pseudonym the site sent; the report resolves it.
+     */
+    public function test_pseudonymous_userid_resolves_to_local_user(): void {
+        $this->resetAfterTest();
+
+        $user = $this->getDataGenerator()->create_user();
+        $token = \aiprovider_datacurso\local\outbound_privacy::pseudonymise_userid($user->id);
+
+        $this->sync_with([$this->make_response([$this->make_item(600, ['userid' => $token])])]);
+
+        $this->assertSame((int) $user->id, $this->stored_userid(600));
+    }
+
+    /**
+     * A pseudonym that matches no local user is stored as user 0.
+     */
+    public function test_unknown_pseudonym_maps_to_zero(): void {
+        $this->resetAfterTest();
+
+        $this->sync_with([$this->make_response([$this->make_item(601, ['userid' => str_repeat('f', 32)])])]);
+
+        $this->assertSame(0, $this->stored_userid(601));
+    }
+
+    /**
+     * A numeric userid (legacy history rows) still maps as before, also when sent as a string.
+     */
+    public function test_numeric_userid_still_maps(): void {
+        $this->resetAfterTest();
+
+        $this->sync_with([$this->make_response([
+            $this->make_item(602, ['userid' => 42]),
+            $this->make_item(603, ['userid' => '43']),
+        ])]);
+
+        $this->assertSame(42, $this->stored_userid(602));
+        $this->assertSame(43, $this->stored_userid(603));
+    }
+
+    /**
+     * A pseudonym that starts with digits is never cast to that number, which would attribute
+     * the consumption to the wrong user.
+     */
+    public function test_hex_token_with_leading_digits_is_not_cast_to_a_user_id(): void {
+        $this->resetAfterTest();
+
+        $this->getDataGenerator()->create_user();
+        $token = '12' . str_repeat('a', 30);
+
+        $this->sync_with([$this->make_response([$this->make_item(604, ['userid' => $token])])]);
+
+        $this->assertNotSame(12, $this->stored_userid(604));
+        $this->assertSame(0, $this->stored_userid(604));
+    }
+
+    /**
+     * A token made of 32 digits is still a pseudonym: it is resolved through the reverse map and
+     * never cast to an integer, whether it is known or not.
+     *
+     * REL-001 / RISK-003: pseudonym detection takes precedence over the numeric path.
+     */
+    public function test_all_digit_pseudonym_is_resolved_not_cast(): void {
+        $this->resetAfterTest();
+
+        $user = $this->getDataGenerator()->create_user();
+        $knowntoken = str_repeat('7', 32);
+        \aiprovider_datacurso\local\outbound_privacy::reset_static_caches();
+        \cache::make('aiprovider_datacurso', 'pseudonyms')->set($knowntoken, (int) $user->id);
+        $unknowntoken = str_repeat('9', 32);
+
+        $this->sync_with([$this->make_response([
+            $this->make_item(605, ['userid' => $knowntoken]),
+            $this->make_item(606, ['userid' => $unknowntoken]),
+        ])]);
+
+        $this->assertSame((int) $user->id, $this->stored_userid(605));
+        $this->assertSame(0, $this->stored_userid(606));
     }
 }

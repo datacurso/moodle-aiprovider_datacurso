@@ -57,7 +57,7 @@ final class upgrade_test extends \advanced_testcase {
         $this->assertFalse(plugin_settings::is_enabled('local_jedomi'));
         $this->assertTrue(plugin_settings::is_enabled('local_socialcert'));
         $this->assertTrue(plugin_settings::is_enabled('local_coursegen'));
-        $this->assertSame('2026111001', get_config('aiprovider_datacurso', 'version'));
+        $this->assertSame('2026111002', get_config('aiprovider_datacurso', 'version'));
     }
 
     /**
@@ -100,7 +100,7 @@ final class upgrade_test extends \advanced_testcase {
         // The rows mirrored without a tenant cannot be attributed, so they are pulled again.
         $this->assertSame(0, $DB->count_records('aiprovider_datacurso_consumption'));
         $this->assertSame(0, $DB->count_records('aiprovider_datacurso_consumption', ['tenant_id' => 0, 'licence' => '']));
-        $this->assertSame('2026111001', get_config('aiprovider_datacurso', 'version'));
+        $this->assertSame('2026111002', get_config('aiprovider_datacurso', 'version'));
     }
 
     /**
@@ -122,6 +122,6 @@ final class upgrade_test extends \advanced_testcase {
         unset_config('upgraderunning');
 
         $this->assertSame(1, $DB->count_records('aiprovider_datacurso_consumption', ['externalid' => 8, 'tenant_id' => 3]));
-        $this->assertSame('2026111001', get_config('aiprovider_datacurso', 'version'));
+        $this->assertSame('2026111002', get_config('aiprovider_datacurso', 'version'));
     }
 }

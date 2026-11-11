@@ -75,4 +75,35 @@ final class consumption_history_test extends \advanced_testcase {
         $this->assertContains(get_string('tokensused', 'aiprovider_datacurso'), $titles);
         $this->assertContains(get_string('remainingtokens', 'aiprovider_datacurso'), $titles);
     }
+
+    /**
+     * Markup stored in the action or the service of a record is shown escaped, never rendered.
+     */
+    public function test_markup_in_action_and_service_is_escaped(): void {
+        global $DB, $PAGE;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $PAGE->set_url(new \moodle_url('/ai/provider/datacurso/admin/report_sections.php'));
+
+        $DB->insert_record('aiprovider_datacurso_consumption', (object) [
+            'externalid' => 1,
+            'userid' => 0,
+            // The report only lists the records of the tenant of the viewer, paid with its licence.
+            'tenant_id' => \aiprovider_datacurso\local\tenant_resolver::get_tenant_id(),
+            'licence' => \aiprovider_datacurso\local\sync\consumption_sync::current_licence_fingerprint(),
+            'service' => '<b id="probe-service">svc</b>',
+            'action' => '<img src=x id="probe-action" onerror="alert(1)">',
+            'credits' => 1,
+            'balance' => 1,
+            'timecreated' => time(),
+        ]);
+
+        $report = system_report_factory::create(consumption_history::class, \context_system::instance());
+        $html = $report->output();
+
+        $this->assertStringNotContainsString('<b id="probe-service">', $html);
+        $this->assertStringNotContainsString('<img src=x id="probe-action"', $html);
+        $this->assertStringContainsString('&lt;b id=&quot;probe-service&quot;&gt;', $html);
+        $this->assertStringContainsString('&lt;img src=x id=&quot;probe-action&quot;', $html);
+    }
 }
