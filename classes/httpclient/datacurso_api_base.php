@@ -18,6 +18,7 @@ namespace aiprovider_datacurso\httpclient;
 
 use aiprovider_datacurso\local\license_region;
 use aiprovider_datacurso\local\outbound_privacy;
+use aiprovider_datacurso\local\provider_status;
 use aiprovider_datacurso\local\ratelimiter;
 use aiprovider_datacurso\local\request_audit;
 use aiprovider_datacurso\local\tenant_config;
@@ -292,17 +293,33 @@ class datacurso_api_base {
     }
 
     /**
-     * Refuse a request that must not leave the site: no license key or no HTTPS.
+     * Refuse a request that must not leave the site: provider disabled, no license key or no HTTPS.
      *
      * @param string $url Absolute URL of the request.
-     * @throws \moodle_exception invalidlicensekey or insecuretransport.
+     * @throws \moodle_exception providerdisabled, providerdisabled_tenant, invalidlicensekey or insecuretransport.
      */
     private function require_sendable(string $url): void {
+        $this->require_provider_enabled();
         if (empty($this->licensekey)) {
             debugging('Cannot make this request: invalid license key', DEBUG_DEVELOPER);
             throw new \moodle_exception('invalidlicensekey', 'aiprovider_datacurso');
         }
         transport_policy::require_secure_url($url);
+    }
+
+    /**
+     * Refuse the request when the provider is switched off, for the site or for the tenant of the client.
+     *
+     * Every AI request, upload and download goes through here before a connection is opened, so the
+     * "Enabled" switch of Site administration > AI > AI providers stops all the plugins that use these
+     * clients, and on Moodle Workplace a tenant that switched the provider off stops the requests of its
+     * users. The shop client (datacurso_api) does not extend this class, so balance and consumption
+     * history keep working with the provider disabled.
+     *
+     * @throws \moodle_exception providerdisabled or providerdisabled_tenant when the provider is disabled.
+     */
+    protected function require_provider_enabled(): void {
+        provider_status::require_enabled((int) $this->tenantid);
     }
 
     /**

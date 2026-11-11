@@ -34,12 +34,10 @@ require_once(__DIR__ . '/../../../../config.php');
 require_login();
 
 $context = context_system::instance();
-require_capability('moodle/site:config', $context);
+// AIP-SEC-003: viewing the reports is not enough to change the configuration.
+\aiprovider_datacurso\form\settings_tenant_form::require_manage_capability();
 
-global $PAGE, $OUTPUT, $USER;
-
-// Tenant resolution.
-$tenantid = \aiprovider_datacurso\local\tenant_resolver::get_tenant_id((int) $USER->id);
+global $PAGE, $OUTPUT;
 
 // Page setup.
 $url = new moodle_url('/ai/provider/datacurso/admin/settings_tenant.php');
@@ -55,51 +53,13 @@ $form = new \aiprovider_datacurso\form\settings_tenant_form();
 // Cancel.
 if ($form->is_cancelled()) {
     redirect(
-        new moodle_url('/admin/category.php', ['category' => 'aiproviders'])
+        new moodle_url('/ai/provider/datacurso/admin/report_sections.php')
     );
 }
 
-// Submit.
+// Submit. The form saves for the tenant of the current user and checks the capability again.
 if ($data = $form->get_data()) {
-    $previouslicence = \aiprovider_datacurso\local\tenant_config::get_stored(
-        'aiprovider_datacurso',
-        $tenantid,
-        'licensekey'
-    );
-
-    \aiprovider_datacurso\local\tenant_config::save_from_form(
-        'aiprovider_datacurso',
-        $tenantid,
-        $data
-    );
-
-    // Credits per action arrive as a nested {service: {key: value}} array, so they are
-    // saved explicitly here (as one JSON map per service) instead of through the generic
-    // save_from_form(), which would otherwise flatten the map and lose its keys.
-    foreach (array_column(\aiprovider_datacurso\provider::get_services(), 'id') as $sid) {
-        $validkeys = array_column(\aiprovider_datacurso\provider::get_actions_for_service($sid), 'key');
-        $submitted = (array) ($data->credit[$sid] ?? []);
-
-        $map = [];
-        foreach ($validkeys as $key) {
-            if (isset($submitted[$key])) {
-                $map[$key] = max(0, (int) $submitted[$key]);
-            }
-        }
-
-        \aiprovider_datacurso\local\tenant_config::set(
-            'aiprovider_datacurso',
-            $tenantid,
-            "ratelimit_{$sid}_creditperaction",
-            json_encode($map)
-        );
-    }
-
-    // The licence decides the region that serves this tenant: drop the region kept for the
-    // previous licence so the next request resolves it for the new one.
-    if (trim((string)($data->licensekey ?? '')) !== trim((string)$previouslicence)) {
-        \aiprovider_datacurso\local\license_region::forget_for_tenant($tenantid);
-    }
+    \aiprovider_datacurso\form\settings_tenant_form::save($data);
 
     redirect(
         $url,

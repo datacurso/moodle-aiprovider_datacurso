@@ -57,7 +57,7 @@ final class upgrade_test extends \advanced_testcase {
         $this->assertFalse(plugin_settings::is_enabled('local_jedomi'));
         $this->assertTrue(plugin_settings::is_enabled('local_socialcert'));
         $this->assertTrue(plugin_settings::is_enabled('local_coursegen'));
-        $this->assertSame('2026111002', get_config('aiprovider_datacurso', 'version'));
+        $this->assertSame('2026111101', get_config('aiprovider_datacurso', 'version'));
     }
 
     /**
@@ -100,7 +100,7 @@ final class upgrade_test extends \advanced_testcase {
         // The rows mirrored without a tenant cannot be attributed, so they are pulled again.
         $this->assertSame(0, $DB->count_records('aiprovider_datacurso_consumption'));
         $this->assertSame(0, $DB->count_records('aiprovider_datacurso_consumption', ['tenant_id' => 0, 'licence' => '']));
-        $this->assertSame('2026111002', get_config('aiprovider_datacurso', 'version'));
+        $this->assertSame('2026111101', get_config('aiprovider_datacurso', 'version'));
     }
 
     /**
@@ -122,6 +122,58 @@ final class upgrade_test extends \advanced_testcase {
         unset_config('upgraderunning');
 
         $this->assertSame(1, $DB->count_records('aiprovider_datacurso_consumption', ['externalid' => 8, 'tenant_id' => 3]));
-        $this->assertSame('2026111002', get_config('aiprovider_datacurso', 'version'));
+        $this->assertSame('2026111101', get_config('aiprovider_datacurso', 'version'));
+    }
+
+    /**
+     * Run the upgrade from 1.7.1-wp (2026111002).
+     */
+    private function upgrade_from_1_7_1(): void {
+        set_config('version', 2026111002, 'aiprovider_datacurso');
+        $this->assertTrue(xmldb_aiprovider_datacurso_upgrade(2026111002));
+        // The savepoints mark an upgrade as running; the next test would otherwise see it.
+        unset_config('upgraderunning');
+    }
+
+    /**
+     * Until 1.7.1-wp the AI clients did not read the provider switch, so a site whose switch nobody ever
+     * touched sent its requests with the switch off. The 2026111101 step switches it on, so nothing stops.
+     */
+    public function test_upgrade_keeps_the_ai_clients_sending_when_nobody_touched_the_switch(): void {
+        global $DB;
+        $this->resetAfterTest();
+        unset_config('enabled', 'aiprovider_datacurso');
+        $DB->delete_records('config_log', ['plugin' => 'aiprovider_datacurso', 'name' => 'enabled']);
+
+        $this->upgrade_from_1_7_1();
+
+        $this->assertTrue(\core\plugininfo\aiprovider::is_plugin_enabled('datacurso'));
+        $this->assertSame('2026111101', get_config('aiprovider_datacurso', 'version'));
+    }
+
+    /**
+     * A switch an administrator turned off on purpose stays off: from now on it stops the AI clients too.
+     */
+    public function test_upgrade_keeps_the_provider_off_when_an_administrator_switched_it_off(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        \core\plugininfo\aiprovider::enable_plugin('datacurso', 1);
+        \core\plugininfo\aiprovider::enable_plugin('datacurso', 0);
+
+        $this->upgrade_from_1_7_1();
+
+        $this->assertFalse(\core\plugininfo\aiprovider::is_plugin_enabled('datacurso'));
+    }
+
+    /**
+     * A provider that is on stays on.
+     */
+    public function test_upgrade_keeps_an_enabled_provider_on(): void {
+        $this->resetAfterTest();
+        \core\plugininfo\aiprovider::enable_plugin('datacurso', 1);
+
+        $this->upgrade_from_1_7_1();
+
+        $this->assertTrue(\core\plugininfo\aiprovider::is_plugin_enabled('datacurso'));
     }
 }

@@ -36,6 +36,14 @@ require_once(__DIR__ . '/../fixtures/fake_curl.php');
  * @covers     \aiprovider_datacurso\httpclient\datacurso_api_base
  */
 final class datacurso_api_base_test extends \advanced_testcase {
+    #[\Override]
+    protected function setUp(): void {
+        parent::setUp();
+        $this->resetAfterTest();
+        // These tests exercise the transport, which only runs with the provider enabled.
+        \core\plugininfo\aiprovider::enable_plugin('datacurso', 1);
+    }
+
     /**
      * Build a client whose transport is the given fake cURL wrapper.
      *

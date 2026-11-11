@@ -271,6 +271,19 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026111002, 'aiprovider', 'datacurso');
     }
 
+    if ($oldversion < 2026111101) {
+        // Until 1.7.1-wp the AI clients did not read the provider switch of Site administration > AI >
+        // AI providers, so a site whose switch nobody ever touched sent its requests with it off. From now
+        // on the switch stops them: switch it on for those sites, so nothing stops working on upgrade. A
+        // switch that someone turned off (it has a config_log row) stays off.
+        $touched = $DB->record_exists('config_log', ['plugin' => 'aiprovider_datacurso', 'name' => 'enabled']);
+        if (!$touched && !\core\plugininfo\aiprovider::is_plugin_enabled('datacurso')) {
+            \core\plugininfo\aiprovider::enable_plugin('datacurso', 1);
+        }
+
+        upgrade_plugin_savepoint(true, 2026111101, 'aiprovider', 'datacurso');
+    }
+
     return true;
 }
 
