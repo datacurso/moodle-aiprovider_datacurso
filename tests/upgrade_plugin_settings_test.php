@@ -53,6 +53,7 @@ final class upgrade_plugin_settings_test extends \advanced_testcase {
         $this->assertFalse(plugin_settings::is_enabled('local_jedomi'));
         $this->assertTrue(plugin_settings::is_enabled('local_socialcert'));
         $this->assertTrue(plugin_settings::is_enabled('local_coursegen'));
-        $this->assertSame('2026102900', get_config('aiprovider_datacurso', 'version'));
+        // Later steps also run, so the savepoint of this step is reached or passed.
+        $this->assertGreaterThanOrEqual(2026102900, (int) get_config('aiprovider_datacurso', 'version'));
     }
 }

@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $observers = [
-    // Unlink a deleted user from the local consumption history.
+    // Unlink a deleted user from the local consumption history and forget the pseudonym of the user.
     [
         'eventname' => '\core\event\user_deleted',
         'callback' => '\aiprovider_datacurso\local\user_deletion::user_deleted',

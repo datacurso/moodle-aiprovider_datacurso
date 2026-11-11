@@ -1,3 +1,27 @@
+## [2.2.2] - 2026-11-11
+
+**Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.3**.
+
+**Upgrade note:** When updating from 2.2.1 or earlier, the services receive a new identifier for each user, so the per-user consumption counters and rate-limit windows start again (the totals of the licence are kept), and the data that the course service stored before under the old identifier (the Moodle user id) is not reached by the erasure and export of Moodle's Privacy API. The consumption history already synchronised keeps its users; history rows that the shop returns with the old identifier stay attributed to the same user. No data is migrated. A site coming from the Moodle 4.5 line keeps the secret it already has, so its users keep their identifiers.
+
+### Added
+- **Shared user pseudonym helper for the provider and its consumer plugins**
+  New `\aiprovider_datacurso\local\outbound_privacy` class, the single source of the userid pseudonym, the same as in the Moodle 4.5 line (1.7.1): `pseudonymise_userid()`, `is_pseudonym()`, `pseudonymise_userid_value()` (keeps a value that already is a token), `get_pseudonym_secret()` (the per-site random secret, generated at install or upgrade — lazily on first use as a fallback — stored in the plugin configuration as `pseudonym_secret` and never sent to the services; explicitly not the site UUID, and never to be regenerated because every remote per-user counter depends on it) and `resolve_pseudonym()` (reverse lookup through the new `aiprovider_datacurso/pseudonyms` application cache, rebuilt from the non-deleted user ids at most once per request without loading user objects, with unresolvable tokens remembered for the request). New string `cachedef_pseudonyms` in all the plugin's languages. Backed by `outbound_privacy_test`, including `test_install_generates_the_secret`, `test_upgrade_generates_the_secret`, `test_upgrade_keeps_an_existing_secret`, `test_tokens_are_scoped_by_the_secret` and `test_unknown_tokens_rebuild_the_map_at_most_once_per_process`
+
+### Changed
+- **The consumption report resolves pseudonyms back to local users**
+  The shop echoes in its consumption history whatever `userid` the site sent. The synchronisation now resolves a pseudonym through the reverse map, keeps a shorter all-digit value as the user id (history written before this version) and stores 0 for anything else. Pseudonym detection comes first, so a pseudonym is never cast to an integer. Backed by `consumption_sync_test::test_pseudonymous_userid_resolves_to_local_user`, `test_unknown_pseudonym_maps_to_zero`, `test_numeric_userid_still_maps`, `test_hex_token_with_leading_digits_is_not_cast_to_a_user_id` and `test_all_digit_pseudonym_is_resolved_not_cast`
+- **The README describes the pseudonym**
+  The "Privacy and audit" section no longer says that this version sends the Moodle user id: it explains how the pseudonym is computed, what changes when updating from 2.2.1 or earlier, and that deletion also removes the pseudonym from the local cache.
+
+### Security
+- **The user identifier sent to the Datacurso services is a pseudonym (AIP-PRIV-001-R1)**
+  Every request of the AI services and course service clients, including file uploads, and every core AI action carried the raw Moodle user id as `userid`. It now carries a site-scoped pseudonym: an HMAC-SHA256 of the id, truncated to 32 hexadecimal characters, keyed with the per-site secret. The token is stable per person and site, so the services keep their per-user accounting and rate limits, and it is never empty, so the limits stay enforced; the raw id cannot be recovered from it and tokens cannot be correlated across sites. It is derived in one place per path: the base API client (`datacurso_api_base`, where the outbound value always replaces the caller's: a numeric id handed by a consumer plugin is pseudonymised and a pseudonym it already derived is kept) and the core AI processors (`abstract_processor::query_ai_api`). `site_id`, `site_url`, `timezone` and `lang` are sent exactly as before, and the audit event still never records the user id sent to the service. The privacy metadata strings of both external locations describe the token. Backed by `datacurso_api_base_test::test_post_sends_pseudonymous_userid_and_keeps_site_fields`, `test_post_pseudonymises_caller_provided_numeric_userid`, `test_post_keeps_caller_provided_pseudonym`, `test_upload_sends_pseudonymous_userid`, `processor_pseudonym_test` and `external_request_completed_test`
+- **Deleting a user also forgets the pseudonym of the user**
+  The observer `\aiprovider_datacurso\local\user_deletion::user_deleted()` now also drops the token of the deleted user from the reverse map, so records synchronised later are not attributed to the account. Backed by `outbound_privacy_test::test_deleted_user_token_no_longer_resolves` and `test_deleted_user_consumption_rows_are_unlinked`
+- **A failed core AI request no longer logs the upstream body (AIP-PRIV-002)**
+  When a core AI action failed, the developer debugging output carried up to 1000 characters of the answer of the service, which may contain the prompt or upstream internals. It now carries the HTTP status and the size of the body only, as the API clients already did. Backed by `process_generate_text_errors_test::test_generic_service_error_is_sanitized` and `test_non_json_error_body_is_not_surfaced`
+
 ## [2.2.1] - 2026-11-10
 
 **Compatibility note:** This version is compatible from **Moodle 5.0** to **Moodle 5.3**.
