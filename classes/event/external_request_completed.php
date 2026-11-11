@@ -22,7 +22,7 @@ namespace aiprovider_datacurso\event;
  * One event is logged per external operation. Its data is restricted to an allowlist: which client
  * and service, the HTTP method, the endpoint path (never its query string), the outcome, the HTTP
  * status and an error code. It never carries the license key, headers, payload, prompt, file
- * names, response body, site URL, the user id sent to the service or transport error texts.
+ * names, response body, site URL, the user pseudonym or transport error texts.
  *
  * @property-read array $other {
  *      Extra information about the event.

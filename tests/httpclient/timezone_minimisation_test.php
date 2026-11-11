@@ -19,8 +19,9 @@ namespace aiprovider_datacurso\httpclient;
 defined('MOODLE_INTERNAL') || die();
 
 require_once(__DIR__ . '/../fixtures/fake_curl.php');
+require_once(__DIR__ . '/../fixtures/resolved_region.php');
 
-use aiprovider_datacurso\local\license_region;
+use aiprovider_datacurso\resolved_region;
 
 /**
  * The timezone of the user only reaches the services that use it.
@@ -42,9 +43,7 @@ final class timezone_minimisation_test extends \advanced_testcase {
         \core\plugininfo\aiprovider::enable_plugin('datacurso', 1);
         set_config('licensekey', 'test-key', 'aiprovider_datacurso');
         // Resolve the region beforehand, so building a client does not ask the shop.
-        set_config(license_region::REGION, '0', 'aiprovider_datacurso');
-        set_config(license_region::FINGERPRINT, sha1('test-key'), 'aiprovider_datacurso');
-        set_config(license_region::CHECKED, time(), 'aiprovider_datacurso');
+        resolved_region::keep('test-key');
         $this->setUser($this->getDataGenerator()->create_user(['timezone' => 'America/Bogota']));
     }
 

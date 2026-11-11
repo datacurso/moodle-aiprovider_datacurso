@@ -173,16 +173,16 @@ final class request_audit {
     /**
      * The user a request is made for, from the user id a caller handed over.
      *
-     * Only a Moodle id names a user; any other value is ignored. The current user is the author of
-     * the event, so naming it again as related user is left out.
+     * Only a raw Moodle id names a user; a pseudonym is never reversed. The current user is the
+     * author of the event, so naming it again as related user is left out.
      *
-     * @param mixed $userid User id handed over by the caller, or nothing.
+     * @param mixed $userid User id handed over by the caller: raw id, pseudonym or nothing.
      * @return int|null
      */
     public static function related_userid(mixed $userid): ?int {
         global $USER;
 
-        $israwid = is_int($userid) || (is_string($userid) && ctype_digit($userid));
+        $israwid = is_int($userid) || (is_string($userid) && ctype_digit($userid) && !outbound_privacy::is_pseudonym($userid));
         if (!$israwid || (int) $userid <= 0 || (int) $userid === (int) ($USER->id ?? 0)) {
             return null;
         }

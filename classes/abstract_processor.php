@@ -16,6 +16,7 @@
 
 namespace aiprovider_datacurso;
 
+use aiprovider_datacurso\local\outbound_privacy;
 use aiprovider_datacurso\local\request_audit;
 use aiprovider_datacurso\local\transport_policy;
 use core\http_client;
@@ -142,7 +143,11 @@ abstract class abstract_processor extends process_base {
         global $USER;
 
         $userid = $this->action->get_configuration('userid') ?? $USER->id;
+        // The licence follows the tenant of the local user.
         $licensekey = $this->get_license_key((int)$userid);
+        // The single outbound path of the processors: the body builders receive the site-scoped
+        // pseudonym of the user, so the raw Moodle id never reaches the AI service.
+        $pseudonym = outbound_privacy::pseudonymise_userid_value($userid);
 
         $client = \core\di::get(http_client::class);
 
@@ -180,7 +185,7 @@ abstract class abstract_processor extends process_base {
                         ],
                         $ratelimitheaders
                     ),
-                    RequestOptions::JSON => $this->build_request_body($userid),
+                    RequestOptions::JSON => $this->build_request_body($pseudonym),
                     RequestOptions::HTTP_ERRORS => false,
                 ]
             );

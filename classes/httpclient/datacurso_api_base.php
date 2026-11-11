@@ -17,6 +17,7 @@
 namespace aiprovider_datacurso\httpclient;
 
 use aiprovider_datacurso\local\license_region;
+use aiprovider_datacurso\local\outbound_privacy;
 use aiprovider_datacurso\local\ratelimiter;
 use aiprovider_datacurso\local\request_audit;
 use aiprovider_datacurso\local\tenant_config;
@@ -394,9 +395,13 @@ class datacurso_api_base {
         $url = $this->baseurl . $path;
         $response = null;
 
+        // The services key per-user accounting and rate limits by userid, so it must be a stable,
+        // non-empty value per person and site; the raw Moodle id never leaves the site. The
+        // default wins over the caller's value, so a numeric userid handed by a consumer plugin
+        // is pseudonymised here and a pseudonym it already derived is kept as is.
         $defaultpayload = [
             'site_id' => self::get_site_uuid(),
-            'userid' => $payload['userid'] ?? $USER->id,
+            'userid' => outbound_privacy::pseudonymise_userid_value($payload['userid'] ?? $USER->id),
             'lang' => $payload['lang'] ?? current_language(),
             'tenant_id' => (string)$this->tenantid,
             'site_url' => $CFG->wwwroot,

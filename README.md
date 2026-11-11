@@ -212,10 +212,10 @@ its query string, the result (`success`, `failure`, or `refused` when nothing le
 URL is not HTTPS or the request has no license key), the HTTP status and, on failure, an error code.
 
 The event never records the license key, the headers, the payload or prompt, file names, the response body, the site URL,
-the user id sent to the service or the transport error text. Path segments that identify a record or a session (numbers,
-UUIDs, long hexadecimal strings and long tokens mixing letters and digits) are logged as `{id}`. It is logged in the
-system context unless the plugin making the request passes its own with `set_audit_context()` on the client. The user a
-request is made for, when it is not the current user, is recorded as the related user. Logging never breaks a request.
+the user pseudonym or the transport error text. Path segments that identify a record or a session (numbers, UUIDs, long
+hexadecimal strings and long tokens mixing letters and digits) are logged as `{id}`. It is logged in the system context
+unless the plugin making the request passes its own with `set_audit_context()` on the client. Logging never breaks a
+request.
 
 Only requests sent by the Moodle server are logged. The streams that a browser opens directly to a service, such as the
 chat stream whose URL `ai_services_api::get_streaming_url_for_session()` builds, do not pass through the server and are
@@ -240,23 +240,39 @@ on a production site.
 ### What the services receive about the site and the user
 
 The requests of the AI services and course service clients carry `site_id`, `site_url`, `userid`, `lang` and
-`tenant_id`. The `userid` is the Moodle id of the user: this version does not pseudonymise it. The course service also
-receives the user's `timezone`; the AI services receive it only on the CV and job matching routes, which use it.
+`tenant_id`. The course service also receives the user's `timezone`; the AI services receive it only on the CV and job
+matching routes, which use it.
+
+### How the user pseudonym is computed
+
+The `userid` sent to the services is never the Moodle user id. It is computed in
+`classes/local/outbound_privacy.php` as an HMAC-SHA256 of the user id, keyed with a secret of 32 random bytes generated
+once per site and stored in the plugin configuration, truncated to 32 hexadecimal characters. The secret is never sent to
+any service and is not the `site_id`, so the services cannot recover the user id from the pseudonym, and pseudonyms of
+the same person on different sites cannot be matched.
+
+Updating from a release that sent the Moodle user id gives each user a new identifier at the services. The per-user
+consumption counters and rate-limit windows start again (the totals of the licence are kept), the consumption recorded
+under the old identifier stays in the shop history without a user, and the data the course service stored under the old
+identifier is not reached by the Moodle data erasure and export requests.
 
 ### Deletion of user data
 
 When a Moodle user is deleted, the consumption records of that user already copied to the local history are unlinked
-from the account: they are attributed to nobody and stay in the totals of the site. The course service is the only
-Datacurso service that stores data per user (generation requests with the user id, consumption and the conversation
-state). It offers an erase operation by site, user id and plugin, for the plugins that send it data to invoke from their
-Privacy API. The other services do not store the data they receive.
+from the account (they are attributed to nobody and stay in the totals of the site), and the pseudonym of that user is
+removed from the local cache, so records synchronised later are not linked to the account either. The course service is the only Datacurso service that stores
+data per user (generation requests with the pseudonym, consumption and the conversation state). It offers an erase
+operation by site, pseudonym and plugin, which the plugins that send it data invoke from their Privacy API; Smart Rules AI
+(`local_coursedynamicrules`) keeps a record of each request until the service confirms the erasure and retries until it
+does. The other services do not store the data they receive.
 
 ### What the token manager service keeps per user
 
 The token manager service, which applies the per-user consumption limits and reports consumption to the shop, keeps one
-record per license key, site, user id and service, with the start of the current window, the credits used in it and the
-time of the last update. Records are written only while a consumption limit is enabled for the service, and they are
-kept while the license exists.
+record (in its MongoDB collection `ratelimit`) per license key, site, user pseudonym and service, with the start of the current window, the credits used in it
+and the time of the last update. Records are written only while a consumption limit is enabled for the service, and they
+are kept while the license exists. For each request it forwards the user pseudonym, the action,
+the service, the credits and the cost detail to the consumption API of the shop.
 
 ### Retention and location
 

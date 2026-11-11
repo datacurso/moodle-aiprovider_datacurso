@@ -365,4 +365,28 @@ final class process_generate_text_test extends \advanced_testcase {
         $this->assertStringContainsString('500', $debugmessages[0]->message);
         $this->assertStringContainsString(strlen($body) . ' bytes', $debugmessages[0]->message);
     }
+
+    /**
+     * The request body carries the site-scoped pseudonym of the user, never the raw Moodle id.
+     *
+     * AIP-PRIV-001 (partial): pseudonymous user identifier.
+     */
+    public function test_request_body_carries_pseudonymous_userid(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+
+        $this->set_mock_http([
+            new Response(200, [], json_encode([
+                'choices' => [['message' => ['content' => 'ok'], 'finish_reason' => 'stop']],
+            ])),
+        ]);
+
+        $this->make_processor('Say hi')->process();
+
+        $payload = json_decode((string) $this->capturedbody, true);
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{32}$/', $payload['userid']);
+        $this->assertSame(\aiprovider_datacurso\local\outbound_privacy::pseudonymise_userid($user->id), $payload['userid']);
+        $this->assertNotSame((string) $user->id, $payload['userid']);
+    }
 }

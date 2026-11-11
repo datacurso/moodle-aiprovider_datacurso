@@ -14,29 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
-namespace aiprovider_datacurso\local;
-
 /**
- * Keeps the local consumption history in step with the deletion of a user.
+ * Cache definitions for the Datacurso AI Provider plugin.
  *
  * @package    aiprovider_datacurso
  * @copyright  2026 Datacurso
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-final class user_deletion {
-    /**
-     * Unlink a deleted user from the consumption history: the records already copied to the local
-     * history are attributed to nobody (userid 0).
-     *
-     * The records are kept, unlinked, so the credits stay in the totals of the site.
-     *
-     * Observer of {@see \core\event\user_deleted}, declared in db/events.php.
-     *
-     * @param \core\event\user_deleted $event
-     */
-    public static function user_deleted(\core\event\user_deleted $event): void {
-        global $DB;
 
-        $DB->set_field('aiprovider_datacurso_consumption', 'userid', 0, ['userid' => $event->objectid]);
-    }
-}
+defined('MOODLE_INTERNAL') || die();
+
+$definitions = [
+    // Reverse map from the outbound user pseudonym (32 hex chars) to the local Moodle user id.
+    // Rebuilt in full from the user table whenever a token is not found.
+    'pseudonyms' => [
+        'mode' => cache_store::MODE_APPLICATION,
+        'simplekeys' => true,
+        'simpledata' => true,
+        'staticacceleration' => true,
+    ],
+];

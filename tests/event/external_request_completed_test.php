@@ -20,15 +20,17 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once(__DIR__ . '/../fixtures/fake_curl.php');
+require_once(__DIR__ . '/../fixtures/resolved_region.php');
 
 use aiprovider_datacurso\httpclient\ai_course_api;
 use aiprovider_datacurso\httpclient\ai_services_api;
 use aiprovider_datacurso\httpclient\datacurso_api;
 use aiprovider_datacurso\httpclient\fake_curl;
-use aiprovider_datacurso\local\license_region;
+use aiprovider_datacurso\local\outbound_privacy;
 use aiprovider_datacurso\process_generate_image;
 use aiprovider_datacurso\process_generate_text;
 use aiprovider_datacurso\provider;
+use aiprovider_datacurso\resolved_region;
 use core_ai\aiactions\generate_image;
 use core_ai\aiactions\generate_text;
 use GuzzleHttp\Exception\ConnectException;
@@ -65,9 +67,7 @@ final class external_request_completed_test extends \advanced_testcase {
         \core\plugininfo\aiprovider::enable_plugin('datacurso', 1);
         set_config('licensekey', self::LICENSE_KEY, 'aiprovider_datacurso');
         // Resolve the region beforehand, so building a client does not ask the shop.
-        set_config(license_region::REGION, '0', 'aiprovider_datacurso');
-        set_config(license_region::FINGERPRINT, sha1(self::LICENSE_KEY), 'aiprovider_datacurso');
-        set_config(license_region::CHECKED, time(), 'aiprovider_datacurso');
+        resolved_region::keep(self::LICENSE_KEY);
     }
 
     /**
@@ -269,6 +269,7 @@ final class external_request_completed_test extends \advanced_testcase {
             'secret prompt text',
             'answer-body-text',
             $CFG->wwwroot,
+            outbound_privacy::pseudonymise_userid($user->id),
             'token=abc',
         ]);
     }
@@ -393,8 +394,7 @@ final class external_request_completed_test extends \advanced_testcase {
     }
 
     /**
-     * A request on behalf of another user names that user as the related user, in the context the
-     * consumer plugin gives.
+     * A request on behalf of another user names that user as the related user, never the pseudonym.
      */
     public function test_request_for_another_user_sets_related_user_and_context(): void {
         $this->setAdminUser();
@@ -409,15 +409,16 @@ final class external_request_completed_test extends \advanced_testcase {
 
         $client->request('POST', '/assign/review', ['userid' => (int) $student->id]);
         $client->set_audit_context($coursecontext);
-        $client->request('POST', '/assign/review', ['userid' => (int) $student->id]);
+        $client->request('POST', '/assign/review', ['userid' => outbound_privacy::pseudonymise_userid($student->id)]);
 
         $events = $this->audit_events($sink);
         $this->assertCount(2, $events);
         $this->assertSame((int) $student->id, (int) $events[0]->relateduserid);
         $this->assertSame(\context_system::instance()->id, $events[0]->contextid);
-        $this->assertSame((int) $student->id, (int) $events[1]->relateduserid);
+        // A pseudonym is never reversed to find the related user.
+        $this->assertNull($events[1]->relateduserid);
         $this->assertSame($coursecontext->id, $events[1]->contextid);
-        $this->assertArrayNotHasKey('userid', $events[1]->other);
+        $this->assert_event_omits($events[1], [outbound_privacy::pseudonymise_userid($student->id)]);
     }
 
     /**
@@ -466,7 +467,7 @@ final class external_request_completed_test extends \advanced_testcase {
         $this->setAdminUser();
         unset_config('licensekey', 'aiprovider_datacurso');
         // Keep the region resolved for the new (empty) license, so building the client does not ask the shop.
-        set_config(license_region::FINGERPRINT, '', 'aiprovider_datacurso');
+        resolved_region::keep('');
         $curl = new fake_curl();
         $sink = $this->redirectEvents();
 
@@ -520,6 +521,7 @@ final class external_request_completed_test extends \advanced_testcase {
             'generated-answer-text',
             self::LICENSE_KEY,
             $CFG->wwwroot,
+            outbound_privacy::pseudonymise_userid($student->id),
         ]);
     }
 
