@@ -1,3 +1,11 @@
+## [1.7.4-wp] - 2026-11-12
+
+**Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.
+
+### Fixed
+- **A license that is not bound to the site, or whose subscription is not active, says so**  
+  The Datacurso services refuse a request with `site_not_allowed` (a license used from a site it is not bound to) or `subscription_inactive`, and the clients only knew three reasons, so these two ended as the generic "You are not allowed to perform this action with the current license". Each now has its own message, without links, so the person knows what to ask the administrator for.
+
 ## [1.7.3-wp] - 2026-11-11
 
 **Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.

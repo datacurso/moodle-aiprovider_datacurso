@@ -185,6 +185,14 @@ final class jedomi_contract_test extends \advanced_testcase {
                 '{"detail": "tokens_not_sufficient", "current_balance": 0, "min_required_tokens": 2}',
                 403, 'notenoughtokens', null,
             ],
+            '403 license not bound to the site' => [
+                '{"status": "success", "allowed": false, "detail": "site_not_allowed", "site_reason": "other_site"}',
+                403, 'site_not_allowed', null,
+            ],
+            '403 subscription not active' => [
+                '{"status": "success", "allowed": false, "detail": "subscription_inactive"}',
+                403, 'subscription_inactive', null,
+            ],
             '403 credit limit of the window' => [
                 '{"detail": "rate_limit_exceeded", "reset_at": 0}',
                 403, 'error_ratelimit_exceeded', '',

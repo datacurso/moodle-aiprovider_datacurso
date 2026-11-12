@@ -488,6 +488,14 @@ class datacurso_api_base {
                 debugging('License not allowed to make this request', DEBUG_DEVELOPER);
                 throw new \moodle_exception('license_not_allowed', 'aiprovider_datacurso');
             }
+            if ($detail === 'site_not_allowed') {
+                debugging('License not bound to this site', DEBUG_DEVELOPER);
+                throw new \moodle_exception('site_not_allowed', 'aiprovider_datacurso');
+            }
+            if ($detail === 'subscription_inactive') {
+                debugging('Subscription of the license is not active', DEBUG_DEVELOPER);
+                throw new \moodle_exception('subscription_inactive', 'aiprovider_datacurso');
+            }
 
             debugging('Unknown error from Datacurso API', DEBUG_DEVELOPER);
             throw new \moodle_exception('forbidden', 'aiprovider_datacurso');
