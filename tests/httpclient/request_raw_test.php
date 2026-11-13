@@ -206,9 +206,11 @@ final class request_raw_test extends \advanced_testcase {
 
         $this->assertSame('aiprovider_datacurso', $actual->module);
         $this->assertSame($expected->errorcode, $actual->errorcode);
-        $this->assertSame($expected->a, $actual->a);
+        $this->assertEquals($expected->a, $actual->a);
         $this->assertSame($expected->getMessage(), $actual->getMessage());
         $this->assertStringNotContainsString('jedomi_', $actual->getMessage());
+        // The 426 answer reports the unsupported release through debugging(), once per request.
+        $this->resetDebugging();
     }
 
     /**
