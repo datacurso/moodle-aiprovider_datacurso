@@ -134,6 +134,39 @@ final class consumption_service_test extends \advanced_testcase {
     }
 
     /**
+     * The voice, transcription and file reading rows of Jedomi show their label, not their route.
+     *
+     * Consumption history labels for the Jedomi routes that report credits.
+     */
+    public function test_jedomi_action_rows_resolve_to_their_labels(): void {
+        global $DB;
+        $routes = [
+            '/jedomi/v1/audio/speech' => 'generate_jedomi_speech',
+            '/jedomi/v1/audio/transcriptions' => 'transcribe_jedomi_audio',
+            '/jedomi/v1/files/read' => 'read_jedomi_file',
+        ];
+        $externalid = 100;
+        foreach (array_keys($routes) as $route) {
+            $DB->insert_record('aiprovider_datacurso_consumption', (object) [
+                'externalid' => $externalid++,
+                'userid' => $this->userid,
+                'service' => 'local_jedomi',
+                'action' => $route,
+                'credits' => 1,
+                'balance' => 900,
+                'timecreated' => mktime(12, 0, 0, 3, 1, 2026),
+            ]);
+        }
+
+        $labels = array_column(consumption_service::get_summary('action', 'local_jedomi')['summary'], 'label');
+
+        $expected = array_map(fn(string $id): string => get_string($id, 'aiprovider_datacurso'), array_values($routes));
+        sort($expected);
+        sort($labels);
+        $this->assertSame($expected, $labels);
+    }
+
+    /**
      * Service ids resolve to their plugin names; unknown ids appear verbatim.
      *
      * MDL-UNIT-008: identifier-to-name translation for services.
