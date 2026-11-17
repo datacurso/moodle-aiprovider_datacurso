@@ -130,7 +130,6 @@ $string['generate_plan_course'] = 'Создать план создания ку
 $string['generate_summary'] = 'Создать резюме с помощью ИИ';
 $string['generate_template_course'] = 'Создать курс по шаблону с помощью ИИ';
 $string['generate_template_course_changes'] = 'Применить запрошенные изменения к курсу по шаблону с помощью ИИ';
-$string['generate_template_course_name'] = 'Предложить название курса по шаблону с помощью ИИ';
 $string['generate_text'] = 'Создать текст с помощью ИИ';
 $string['globalratelimit'] = 'Глобальное ограничение запросов';
 $string['globalratelimit_desc'] = 'Максимальное количество запросов, разрешенных в час для всей системы.';

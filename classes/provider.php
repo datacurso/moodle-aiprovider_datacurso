@@ -282,7 +282,6 @@ class provider extends \core_ai\provider {
             ['id' => '/course/execute_image', 'name' => get_string('generate_creation_course_image', 'aiprovider_datacurso')],
             ['id' => '/course/execute_noimage', 'name' => get_string('generate_creation_course_noimage', 'aiprovider_datacurso')],
             ['id' => '/course/start', 'name' => get_string('generate_plan_course', 'aiprovider_datacurso')],
-            ['id' => '/course-template/name', 'name' => get_string('generate_template_course_name', 'aiprovider_datacurso')],
             ['id' => '/course-template/execute', 'name' => get_string('generate_template_course', 'aiprovider_datacurso')],
             [
                 'id' => '/course-template/regenerate',

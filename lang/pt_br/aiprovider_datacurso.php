@@ -130,7 +130,6 @@ $string['generate_plan_course'] = 'Gerar plano de criação de curso com IA';
 $string['generate_summary'] = 'Gerar resumo com IA';
 $string['generate_template_course'] = 'Criar curso a partir de um modelo com IA';
 $string['generate_template_course_changes'] = 'Aplicar as alterações solicitadas ao curso criado a partir de um modelo com IA';
-$string['generate_template_course_name'] = 'Sugerir o nome do curso criado a partir de um modelo com IA';
 $string['generate_text'] = 'Gerar texto com IA';
 $string['globalratelimit'] = 'Limite de solicitações global';
 $string['globalratelimit_desc'] = 'Número máximo de solicitações permitidas por hora para todo o sistema.';
