@@ -1,3 +1,9 @@
+## [Unreleased]
+
+### Added
+- **Names for the actions of a course created from a template**
+  The credit consumption history showed the raw paths `/course-template/execute` and `/course-template/regenerate`. They now read "Create a course from a template with AI" and "Apply the requested changes to a course from a template with AI", in every language of the plugin. The name of the course is part of its generation and is never shown as a consumption of its own.
+
 ## [1.7.1]
 
 **Compatibility note:** This version is compatible only with **Moodle 4.5**.
