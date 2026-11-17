@@ -135,7 +135,6 @@ $string['generate_plan_course'] = 'Générer un plan de création de cours avec 
 $string['generate_summary'] = 'Générer un résumé avec l\'IA';
 $string['generate_template_course'] = 'Créer un cours à partir d\'un modèle avec l\'IA';
 $string['generate_template_course_changes'] = 'Appliquer les modifications demandées à un cours créé à partir d\'un modèle avec l\'IA';
-$string['generate_template_course_name'] = 'Suggérer le nom d\'un cours créé à partir d\'un modèle avec l\'IA';
 $string['generate_text'] = 'Générer du texte avec l\'IA';
 $string['globalratelimit'] = 'Limite de requêtes globale';
 $string['globalratelimit_desc'] = 'Nombre maximum de requêtes autorisées par heure pour l\'ensemble du système.';

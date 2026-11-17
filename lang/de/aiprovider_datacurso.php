@@ -135,7 +135,6 @@ $string['generate_plan_course'] = 'Kurserstellungsplan mit KI generieren';
 $string['generate_summary'] = 'Zusammenfassung mit KI generieren';
 $string['generate_template_course'] = 'Kurs aus einer Vorlage mit KI erstellen';
 $string['generate_template_course_changes'] = 'Gewünschte Änderungen an einem Kurs aus einer Vorlage mit KI anwenden';
-$string['generate_template_course_name'] = 'Namen für einen Kurs aus einer Vorlage mit KI vorschlagen';
 $string['generate_text'] = 'Text mit KI generieren';
 $string['globalratelimit'] = 'Globales Anfragelimit';
 $string['globalratelimit_desc'] = 'Maximale Anzahl von Anfragen pro Stunde für das gesamte System.';

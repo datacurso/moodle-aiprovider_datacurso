@@ -135,7 +135,6 @@ $string['generate_plan_course'] = 'Hasilkan rencana pembuatan kursus dengan AI';
 $string['generate_summary'] = 'Hasilkan ringkasan dengan AI';
 $string['generate_template_course'] = 'Buat kursus dari templat dengan AI';
 $string['generate_template_course_changes'] = 'Terapkan perubahan yang diminta pada kursus dari templat dengan AI';
-$string['generate_template_course_name'] = 'Sarankan nama kursus dari templat dengan AI';
 $string['generate_text'] = 'Hasilkan teks dengan AI';
 $string['globalratelimit'] = 'Batas permintaan global';
 $string['globalratelimit_desc'] = 'Jumlah maksimum permintaan yang diizinkan per jam untuk seluruh sistem.';

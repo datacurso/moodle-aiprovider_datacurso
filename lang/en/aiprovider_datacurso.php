@@ -146,7 +146,6 @@ $string['generate_plan_course'] = 'Generate course creation plan with AI';
 $string['generate_summary'] = 'Generate summary with AI';
 $string['generate_template_course'] = 'Create a course from a template with AI';
 $string['generate_template_course_changes'] = 'Apply the requested changes to a course from a template with AI';
-$string['generate_template_course_name'] = 'Suggest the name of a course from a template with AI';
 $string['generate_text'] = 'Generate text with AI';
 $string['globalratelimit'] = 'Global request limit';
 $string['globalratelimit_desc'] = 'Maximum number of requests allowed per hour for the entire system.';
