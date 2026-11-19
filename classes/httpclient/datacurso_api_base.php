@@ -321,6 +321,24 @@ class datacurso_api_base {
      * @throws \Exception
      */
     protected function send_request(string $method, string $path, $payload = [], array $headers = []): ?array {
+        return $this->dispatch($method, $path, $payload, $headers, true);
+    }
+
+    /**
+     * Send a request with every local check, header and identity field, and log it once with its outcome.
+     *
+     * Shared by the JSON calls (send_request) and the raw calls (request_raw), so both are built,
+     * refused, rate limited and audited the same way; only the handling of a successful body differs.
+     *
+     * @param string $method HTTP method (GET, POST, PUT, DELETE, UPLOAD).
+     * @param string $path Relative endpoint.
+     * @param mixed $payload Data for request (array, string, or multipart).
+     * @param array $headers Extra headers if needed.
+     * @param bool $decode True to decode a successful body as JSON, false to return it unchanged.
+     * @return array|string|null The decoded body, or the raw body when $decode is false.
+     * @throws \Exception
+     */
+    private function dispatch(string $method, string $path, $payload, array $headers, bool $decode): array|string|null {
         if (!str_starts_with($path, '/')) {
             $path = '/' . $path;
         }
@@ -336,28 +354,48 @@ class datacurso_api_base {
 
         $httpstatus = 0;
         try {
-            $decodedresponse = $this->perform_request($method, $path, $payload, $headers, $httpstatus);
+            $response = $this->perform_request($method, $path, $payload, $headers, $httpstatus);
+            $result = $decode ? self::decode_json_body($response) : $response;
         } catch (\Throwable $e) {
             $audit->failed($e, $httpstatus);
             throw $e;
         }
         $audit->succeeded($httpstatus);
 
+        return $result;
+    }
+
+    /**
+     * Decode the JSON body of a successful answer.
+     *
+     * @param string $response Body of the answer.
+     * @return array|null
+     * @throws \moodle_exception jsondecodeerror when the body is not JSON.
+     */
+    private static function decode_json_body(string $response): ?array {
+        $decodedresponse = json_decode($response, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            debugging('JSON decode error: ' . json_last_error_msg() . ' (' . strlen($response) . ' bytes)', DEBUG_DEVELOPER);
+            throw new \moodle_exception('jsondecodeerror', 'aiprovider_datacurso', '', json_last_error_msg());
+        }
         return $decodedresponse;
     }
 
     /**
-     * Send a request that passed the local checks and decode its answer.
+     * Send a request that passed the local checks and return the body of a successful answer.
+     *
+     * Error answers (redirect, empty, cURL error, 403, 426 and any status from 400) raise here, so a
+     * caller only ever sees the body of a successful answer, undecoded.
      *
      * @param string $method HTTP method (GET, POST, PUT, DELETE, UPLOAD).
      * @param string $path Relative endpoint, starting with "/".
      * @param mixed $payload Data for request (array, string, or multipart).
      * @param array $headers Extra headers if needed.
      * @param int $httpstatus Set to the HTTP status of the answer, 0 while there is none.
-     * @return array|null
+     * @return string Body of the successful answer.
      * @throws \Exception
      */
-    private function perform_request(string $method, string $path, $payload, array $headers, int &$httpstatus): ?array {
+    private function perform_request(string $method, string $path, $payload, array $headers, int &$httpstatus): string {
         global $USER, $CFG;
 
         // Resolve the configured service for this path; null when the path is not mapped.
@@ -480,13 +518,7 @@ class datacurso_api_base {
             throw new \moodle_exception('httperror', 'aiprovider_datacurso', '', $httpcode);
         }
 
-        $decodedresponse = json_decode($response, true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            debugging('JSON decode error: ' . json_last_error_msg() . ' (' . strlen($response) . ' bytes)', DEBUG_DEVELOPER);
-            throw new \moodle_exception('jsondecodeerror', 'aiprovider_datacurso', '', json_last_error_msg());
-        }
-
-        return $decodedresponse;
+        return (string) $response;
     }
 
     /**
@@ -501,6 +533,26 @@ class datacurso_api_base {
     public function request(string $method, string $path, array $body = []): ?array {
         $headers = ['Content-Type: application/json'];
         return $this->send_request($method, $path, $body, $headers);
+    }
+
+    /**
+     * JSON API call whose successful answer is returned as is, for routes that answer a binary body.
+     *
+     * The request is the one request() sends: same headers (license, plugin, rate limit), same site,
+     * pseudonymised user, language and timezone fields, same checks before sending, timeouts and audit
+     * log. Error answers raise the same exceptions as request(), because they are JSON error bodies.
+     * Only the body of a successful answer is not decoded, so audio or other binary content (for
+     * example the audio/mpeg of POST /jedomi/v1/audio/speech) comes back byte for byte.
+     *
+     * @param string $method HTTP method (GET, POST, PUT, DELETE).
+     * @param string $path Relative endpoint. Example: '/jedomi/v1/audio/speech'.
+     * @param array $body Data for request.
+     * @return string Body of the successful answer, unchanged.
+     * @throws \Exception
+     */
+    public function request_raw(string $method, string $path, array $body = []): string {
+        $headers = ['Content-Type: application/json'];
+        return $this->dispatch($method, $path, $body, $headers, false);
     }
 
     /**

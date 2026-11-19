@@ -181,13 +181,15 @@ class config_form extends \moodleform {
             $defaultlimit = provider::get_default_window_limit($sid);
             $limit[$sid] = ($storedlimit === false || $storedlimit === '') ? $defaultlimit : (int) $storedlimit;
 
-            // Credits per action: stored JSON map, falling back to the catalog default per key.
+            // Credits per action: stored JSON map, then the catalog default per key. For Jedomi, a stored 'default'
+            // (saved while it had a single action) prefills every action before the catalog, as provider does.
             $stored = json_decode((string) get_config('aiprovider_datacurso', "ratelimit_{$sid}_creditperaction"), true);
             $stored = is_array($stored) ? $stored : [];
+            $legacy = $sid === 'local_jedomi' ? ($stored['default'] ?? null) : null;
             $credit[$sid] = [];
             foreach (provider::get_actions_for_service($sid) as $action) {
                 $key = $action['key'];
-                $credit[$sid][$key] = isset($stored[$key]) ? (int) $stored[$key] : (int) $action['default'];
+                $credit[$sid][$key] = (int) ($stored[$key] ?? $legacy ?? $action['default']);
             }
 
             // Window {value, unit}.
