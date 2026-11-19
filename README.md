@@ -90,16 +90,22 @@ These Moodle security settings directly affect the Datacurso AI Provider and, th
 
 ## Development settings
 
-For development or staging only, the provider settings page (Site administration > AI > AI providers > Datacurso AI
-Provider) has a "Development" section that points the DataCurso AI services client (`ai_services_api`) to another
+For development or staging only, a separate page points the DataCurso AI services client (`ai_services_api`) to another
 server, such as a local one, without changing the code. Leave both fields empty in production.
+
+The page is deliberately not linked from the site administration, the navigation or any menu, so customers do not find
+it by accident. Open it by typing its URL, `/ai/provider/datacurso/admin/devsettings.php` (for example
+`https://your-site/ai/provider/datacurso/admin/devsettings.php`). Only site administrators can use it; managers or other
+roles with `moodle/site:config` are refused. Below each field the page shows the URL currently in use for that region
+(the development URL, or the production URL when the field is empty). Every change is recorded in the config changes
+report (config log).
 
 | Setting | Config name | Used for |
 | --- | --- | --- |
 | Services URL (development) | `aiprovider_datacurso/devservicesurl` | Sites whose licence belongs to the standard region |
 | Services URL, Europe (development) | `aiprovider_datacurso/devservicesurleu` | Sites whose licence belongs to the European region |
 
-Each field accepts an absolute `http://` or `https://` URL, or nothing. The client picks its base URL in this order:
+Each field accepts an absolute `http://` or `https://` URL, or nothing (an empty field removes the setting). The client picks its base URL in this order:
 
 1. The URL passed to the `ai_services_api` constructor, when a caller passes one.
 2. The development URL of the site's region, when it is set.

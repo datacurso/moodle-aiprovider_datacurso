@@ -44,7 +44,7 @@ class ai_services_api extends datacurso_api_base {
      * Constructor.
      *
      * The base URL is, in this order: the URL passed for the region of the site, the development
-     * URL configured for that region (Development settings of the provider), and the production URL
+     * URL configured for that region (unlinked development settings page of the provider), and the production URL
      * of that region. The European region never uses the standard development URL, so the data of a
      * European site does not leave the European deployment by accident. The transport policy still
      * applies to whichever URL is chosen.
@@ -55,12 +55,28 @@ class ai_services_api extends datacurso_api_base {
      */
     public function __construct(?string $licensekey = null, ?string $baseurl = null, ?string $baseurleu = null) {
         if ($this->is_for_ue()) {
-            $finalbaseurl = $baseurleu ?? self::development_url(self::DEV_URL_SETTING_EU) ?? self::DEFAULT_BASE_URL_EU;
+            $finalbaseurl = $baseurleu ?? self::configured_base_url(true);
         } else {
-            $finalbaseurl = $baseurl ?? self::development_url(self::DEV_URL_SETTING) ?? self::DEFAULT_BASE_URL;
+            $finalbaseurl = $baseurl ?? self::configured_base_url(false);
         }
 
         parent::__construct($finalbaseurl, $licensekey);
+    }
+
+    /**
+     * The base URL a region uses when no URL is passed to the constructor.
+     *
+     * It is the development URL configured for that region, or the production URL of that region.
+     * The European region never uses the standard development URL.
+     *
+     * @param bool $eu True for the European region.
+     * @return string The base URL.
+     */
+    public static function configured_base_url(bool $eu): string {
+        if ($eu) {
+            return self::development_url(self::DEV_URL_SETTING_EU) ?? self::DEFAULT_BASE_URL_EU;
+        }
+        return self::development_url(self::DEV_URL_SETTING) ?? self::DEFAULT_BASE_URL;
     }
 
     /**
