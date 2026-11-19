@@ -70,6 +70,23 @@ if ($hassiteconfig) {
                 'url' => (new moodle_url('/ai/provider/datacurso/admin/report_sections.php', ['tab' => 'config']))->out(),
             ])
         ));
+
+        // Development: overrides of the AI services URLs, for development or staging sites only.
+        $settings->add(new admin_setting_heading(
+            'aiprovider_datacurso/devsettings',
+            new lang_string('devsettings', 'aiprovider_datacurso'),
+            new lang_string('devsettings_desc', 'aiprovider_datacurso')
+        ));
+        $settings->add(new \aiprovider_datacurso\admin\setting_service_url(
+            'aiprovider_datacurso/' . \aiprovider_datacurso\httpclient\ai_services_api::DEV_URL_SETTING,
+            new lang_string('devservicesurl', 'aiprovider_datacurso'),
+            new lang_string('devservicesurl_desc', 'aiprovider_datacurso')
+        ));
+        $settings->add(new \aiprovider_datacurso\admin\setting_service_url(
+            'aiprovider_datacurso/' . \aiprovider_datacurso\httpclient\ai_services_api::DEV_URL_SETTING_EU,
+            new lang_string('devservicesurleu', 'aiprovider_datacurso'),
+            new lang_string('devservicesurleu_desc', 'aiprovider_datacurso')
+        ));
     }
 
     $ADMIN->add('reports', new admin_externalpage(
