@@ -112,13 +112,12 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
     /**
      * Export the user data held locally by this plugin.
      *
-     * Remote data (prompts and consumption ledger retained by the Datacurso services) is not
-     * reachable from here yet: the services expose no privacy endpoints. Once they do
-     * (GET /privacy/users/export on plugins-ai and course-ai-v2, GET tokens/usuario-datos on the
-     * shop, authenticated by License-Key and keyed by (site_id, userid)), a
-     * self::request_remote_export($userid) call should be added here, wrapped in
-     * try/catch (\Throwable) + debugging() so a remote failure never breaks the Moodle export.
-     * Until then, erasure and export requests for remote data are handled through Datacurso support.
+     * Remote data is not exported here, because this provider stores no per-user data in the
+     * Datacurso services itself: it only carries the plugins' requests. The single privacy contract
+     * of the services is the one described in README.md ("Privacy contract of the course service"):
+     * the course service is the only one that keeps data per user, and each plugin that sends it data
+     * calls POST /api/v1/privacy/export from its own Privacy API (today Smart Rules AI). There is no
+     * per-site or per-user export route (no GET /privacy/users/export) on any service.
      *
      * @param approved_contextlist $contextlist The approved contexts to export information for.
      */
@@ -191,13 +190,11 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
     /**
      * Delete all user data from this plugin tables for a given user.
      *
-     * Remote erasure is not implemented yet because the Datacurso services expose no privacy
-     * endpoints. The intended contract, to be wired here once available, is
-     * self::request_remote_erasure($userid) right after the local delete_records() loop:
-     * DELETE /privacy/users on plugins-ai and course-ai-v2, DELETE tokens/usuario-datos on the shop;
-     * authenticated by License-Key, keyed by (site_id, userid), idempotent, 204 on success. The
-     * call must be wrapped in try/catch (\Throwable) + debugging() so a remote failure never blocks
-     * the Moodle deletion. Until then, remote erasure requests are handled through Datacurso support.
+     * Remote erasure is not requested here, for the same reason as the export: the course service
+     * is the only Datacurso service that keeps data per user, and each plugin that sends it data
+     * calls POST /api/v1/privacy/erase from its own Privacy API (today Smart Rules AI, which retries
+     * until the erasure is confirmed and verified). There is no DELETE /privacy/users route on any
+     * service. The contract is described in README.md ("Privacy contract of the course service").
      *
      * @param int $userid The user ID
      * @return void

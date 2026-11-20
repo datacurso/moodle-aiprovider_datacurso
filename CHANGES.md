@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Changed
+- **One privacy contract for the Datacurso services (CDR-PRIV-001-R2)**
+  The privacy provider described per-user routes that no service implements (`DELETE /privacy/users`, `GET /privacy/users/export`, and the same on the shop), while Smart Rules AI used the course service's erase and export by thread. The README now has a single section, "Privacy contract of the course service", with the routes, body, scope, answers and limits the course service really implements, including `client_request_ids` and `erased_thread_ids` from course service pull request #338, and the privacy provider points to it. Documentation only; no code changes.
+
 ### Added
 - **Names for the actions of a course created from a template**
   The credit consumption history showed the raw paths `/course-template/execute` and `/course-template/regenerate`. They now read "Create a course from a template with AI" and "Apply the requested changes to a course from a template with AI", in every language of the plugin. The name of the course is part of its generation and is never shown as a consumption of its own.
