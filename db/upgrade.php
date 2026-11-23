@@ -358,7 +358,7 @@ function aiprovider_datacurso_add_consumption_tenancy(database_manager $dbman): 
 
     $fields = [
         new xmldb_field('tenant_id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'userid'),
-        new xmldb_field('licence', XMLDB_TYPE_CHAR, '40', null, XMLDB_NOTNULL, null, '', 'tenant_id'),
+        new xmldb_field('licence', XMLDB_TYPE_CHAR, '40', null, XMLDB_NOTNULL, null, null, 'tenant_id'),
     ];
     $missing = array_filter($fields, static fn(xmldb_field $field): bool => !$dbman->field_exists($table, $field));
     if ($missing !== []) {
