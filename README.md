@@ -88,6 +88,45 @@ These Moodle security settings directly affect the Datacurso AI Provider and, th
 
 ![cURL settings](./_docs/images/aiprovider_datacurso_curl_settings.png)
 
+## Development settings
+
+For development or staging only, a separate page points the DataCurso AI services client (`ai_services_api`) to another
+server, such as a local one, without changing the code. Leave both fields empty in production.
+
+The page is deliberately not linked from the site administration, the navigation or any menu, so customers do not find
+it by accident. Open it by typing its URL, `/ai/provider/datacurso/admin/devsettings.php` (for example
+`https://your-site/ai/provider/datacurso/admin/devsettings.php`). Only site administrators can use it; managers or other
+roles with `moodle/site:config` are refused. Below each field the page shows the URL currently in use for that region
+(the development URL, or the production URL when the field is empty). Every change is recorded in the config changes
+report (config log).
+
+These are site-wide settings (plugin config), not settings of the provider instance: they apply to every
+`ai_services_api` client of the site, whichever provider instance holds the license key.
+
+| Setting | Config name | Used for |
+| --- | --- | --- |
+| Services URL (development) | `aiprovider_datacurso/devservicesurl` | Sites whose licence belongs to the standard region |
+| Services URL, Europe (development) | `aiprovider_datacurso/devservicesurleu` | Sites whose licence belongs to the European region |
+
+Each field accepts an absolute `http://` or `https://` URL, or nothing (an empty field removes the setting). The client picks its base URL in this order:
+
+1. The URL passed to the `ai_services_api` constructor, when a caller passes one.
+2. The development URL of the site's region, when it is set.
+3. The production URL of the site's region.
+
+The European region never falls back to the standard development URL: a site with a European licence keeps using the
+European production URL until "Services URL, Europe (development)" is set, so its data does not leave the European
+deployment by accident. Set both fields when a single local server answers for both regions.
+
+The transport rules still apply to the development URL: a plain `http://` URL is refused before any connection unless
+`$CFG->aiprovider_datacurso_allow_insecure_transport = true;` is in `config.php` (see "Transport security"). The
+settings can also be set from the command line, for example:
+
+```bash
+php admin/cli/cfg.php --component=aiprovider_datacurso --name=devservicesurl --set=http://localhost:8002
+php admin/cli/cfg.php --component=aiprovider_datacurso --name=devservicesurleu --set=http://localhost:8002
+```
+
 ## Getting license keys
 
 1. Sign in or create an account on the [shop DataCurso](https://shop.datacurso.com)
@@ -168,6 +207,25 @@ no per-user token limits, and no per-service user allowlist: access control is h
 by Moodle permissions, and consumption limits are enforced centrally by the Datacurso service
 against the values sent from this form.
 
+Each service declares how many credits each of its actions consumes; the provider sends that value to the token manager
+(`X-RateLimit-MaxPerAction`) so it can stop a request that would exceed the limit. It only declares the consumption of
+an action: the real charge is still calculated by the token manager.
+
+Jedomi (`local_jedomi`) has one value per action, 2 credits each by default, stored in the provider instance as
+`ratelimit_local_jedomi_credit_{key}`. The provider tells the action from the route Jedomi calls, so Jedomi needs no
+extra parameter:
+
+| Action | Key | Route |
+| --- | --- | --- |
+| Generate Jedomi chat message | `chat` | `/jedomi/v1/chat/completions` |
+| Generate Jedomi voice answer | `speech` | `/jedomi/v1/audio/speech` |
+| Transcribe Jedomi audio | `transcription` | `/jedomi/v1/audio/transcriptions` |
+| Process a file or image with Jedomi | `file_read` | `/jedomi/v1/files/read` |
+
+Any other Jedomi route (such as `/jedomi/v1/files/extract`, which is not billed) uses the `default` value. A single
+value saved before version 2.3.0 (`ratelimit_local_jedomi_credit_default`) keeps applying to every Jedomi action, and
+prefills every Jedomi action of the provider form, until the form is saved again.
+
 ## Actions
 
 From the same configuration page of the **Datacurso AI Provider**, you can enable and customize the following Moodle AI-powered actions, seamlessly integrated with Moodle’s native capabilities:
@@ -213,7 +271,7 @@ built without an enabled provider instance that holds a license key (`instance_d
 refusal happens before there is any request, so it is not logged.
 
 The event never records the license key, the headers, the payload or prompt, file names, the response body, the site URL,
-the user id sent to the service or the transport error text. Path segments that identify a record or a session (numbers,
+the user pseudonym sent to the service or the transport error text. Path segments that identify a record or a session (numbers,
 UUIDs, long hexadecimal strings and long tokens mixing letters and digits) are logged as `{id}`. It is logged in the
 system context unless the plugin making the request passes its own with `set_audit_context()` on the client; only the
 user named there is recorded as the related user. Logging never breaks a request.
@@ -240,22 +298,35 @@ on a production site.
 
 ### What the services receive about the site and the user
 
-The requests of the AI services and course service clients carry `site_id`, `site_url`, `userid` and `lang`. The
-`userid` is the Moodle id of the user: this version does not pseudonymise it. The course service also receives the
-user's `timezone`; the AI services receive it only on the CV and job matching routes, which use it.
+The requests of the AI services and course service clients carry `site_id`, `site_url`, `userid` and `lang`. The course
+service also receives the user's `timezone`; the AI services receive it only on the CV and job matching routes, which use
+it.
+
+### How the user pseudonym is computed
+
+The `userid` sent to the services is never the Moodle user id. It is computed in
+`classes/local/outbound_privacy.php` as an HMAC-SHA256 of the user id, keyed with a secret of 32 random bytes generated
+once per site and stored in the plugin configuration, truncated to 32 hexadecimal characters. The secret is never sent to
+any service and is not the `site_id`, so the services cannot recover the user id from the pseudonym, and pseudonyms of
+the same person on different sites cannot be matched.
+
+When updating from 2.2.1 or earlier, the services receive a new identifier for each user, so the per-user consumption
+counters start again (the totals of the licence are kept) and the data that the course service stored before under the
+old identifier is not reached by the erasure and export of Moodle's Privacy API.
 
 ### Deletion of user data
 
 When a Moodle user is deleted, the consumption records of that user already copied to the local history are unlinked
-from the account: they are attributed to nobody and stay in the totals of the site. The course service is the only
-Datacurso service that stores data per user (generation requests with the user id, consumption and the conversation
-state). It offers an erase operation by site, user id and plugin, for the plugins that send it data to invoke from their
-Privacy API. The other services do not store the data they receive.
+from the account (they are attributed to nobody and stay in the totals of the site), and the pseudonym of that user is
+removed from the local cache, so records synchronised later are not linked to the account either. The course service is
+the only Datacurso service that stores data per user (generation requests with the pseudonym, consumption and the
+conversation state). It offers an erase operation by site, pseudonym and plugin, for the plugins that send it data to
+invoke from their Privacy API. The other services do not store the data they receive.
 
 ### What the token manager service keeps per user
 
 The token manager service, which applies the per-user consumption limits and reports consumption to the shop, keeps one
-record per license key, site, user id and service, with the start of the current window, the credits used in it and the
+record per license key, site, user pseudonym and service, with the start of the current window, the credits used in it and the
 time of the last update. Records are written only while a consumption limit is enabled for the service, and they are
 kept while the license exists.
 

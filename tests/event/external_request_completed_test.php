@@ -279,6 +279,7 @@ final class external_request_completed_test extends \advanced_testcase {
             'secret prompt text',
             'answer-body-text',
             $CFG->wwwroot,
+            \aiprovider_datacurso\local\outbound_privacy::pseudonymise_userid($user->id),
             'token=abc',
         ]);
         $this->assertArrayNotHasKey('userid', $event->other);
@@ -551,6 +552,7 @@ final class external_request_completed_test extends \advanced_testcase {
             'generated-answer-text',
             self::LICENSE_KEY,
             $CFG->wwwroot,
+            \aiprovider_datacurso\local\outbound_privacy::pseudonymise_userid($student->id),
         ]);
     }
 

@@ -234,4 +234,110 @@ final class hook_listener_test extends \advanced_testcase {
 
         $this->assertContains($field, $hideifs["ratelimit_{$sid}_enable"]['eq']['0'] ?? []);
     }
+
+    /**
+     * Build the form as ai/configure.php does when it edits the given provider instance.
+     *
+     * The hook does not receive the instance, so it reads the "id" parameter of the page.
+     *
+     * @param int $id Id of the edited provider instance.
+     * @return \MoodleQuickForm
+     */
+    private function dispatch_for_instance(int $id): \MoodleQuickForm {
+        $_GET['id'] = $id;
+        try {
+            return $this->dispatch();
+        } finally {
+            unset($_GET['id']);
+        }
+    }
+
+    /**
+     * Create a provider instance with the given config.
+     *
+     * @param array $config Instance config.
+     * @param string $classname Provider class of the instance.
+     * @return \core_ai\provider
+     */
+    private function create_instance(array $config, string $classname = provider::class): \core_ai\provider {
+        global $DB;
+        return (new \core_ai\manager($DB))->create_provider_instance(
+            classname: $classname,
+            name: 'test',
+            enabled: true,
+            config: $config,
+        );
+    }
+
+    /**
+     * The four Jedomi actions are prefilled with a `ratelimit_local_jedomi_credit_default` saved before the split.
+     *
+     * Decision 10: saving the form then keeps N on every action instead of the catalog defaults. On Moodle 5.0 the
+     * core form saves exactly the submitted fields, so the legacy key, which has no field, is dropped on that save.
+     */
+    public function test_jedomi_actions_prefill_from_a_saved_default(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $this->assertSame(
+            ['chat' => 2, 'speech' => 2, 'transcription' => 2, 'file_read' => 2],
+            hook_listener::get_credit_defaults('local_jedomi', [])
+        );
+        $this->assertSame(
+            ['chat' => 7, 'speech' => 7, 'transcription' => 7, 'file_read' => 7],
+            hook_listener::get_credit_defaults('local_jedomi', ['ratelimit_local_jedomi_credit_default' => 7])
+        );
+        $this->assertSame(
+            ['chat' => 7, 'speech' => 1, 'transcription' => 7, 'file_read' => 7],
+            hook_listener::get_credit_defaults('local_jedomi', [
+                'ratelimit_local_jedomi_credit_default' => 7,
+                'ratelimit_local_jedomi_credit_speech' => 1,
+            ])
+        );
+
+        $instance = $this->create_instance(['licensekey' => 'k', 'ratelimit_local_jedomi_credit_default' => 7]);
+        $mform = $this->dispatch_for_instance((int) $instance->id);
+
+        foreach (['chat', 'speech', 'transcription', 'file_read'] as $key) {
+            $this->assertEquals(7, $mform->getElement("ratelimit_local_jedomi_credit_{$key}")->getValue(), $key);
+        }
+        $this->assertFalse($mform->elementExists('ratelimit_local_jedomi_credit_default'));
+    }
+
+    /**
+     * REL-001: a saved 'default' does not prefill the actions of a service other than Jedomi; they keep the
+     * catalog values.
+     */
+    public function test_other_service_actions_do_not_prefill_from_a_saved_default(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $config = ['licensekey' => 'k', 'ratelimit_local_coursegen_credit_default' => 5];
+        $expected = ['course_image' => 2000, 'course_noimage' => 1000, 'activity_image' => 100, 'activity_noimage' => 50];
+
+        $this->assertSame($expected, hook_listener::get_credit_defaults('local_coursegen', $config));
+
+        $mform = $this->dispatch_for_instance((int) $this->create_instance($config)->id);
+        foreach ($expected as $key => $credits) {
+            $this->assertEquals($credits, $mform->getElement("ratelimit_local_coursegen_credit_{$key}")->getValue(), $key);
+        }
+    }
+
+    /**
+     * Only an existing Datacurso instance is read: a new instance or another provider's instance keeps the catalog.
+     */
+    public function test_jedomi_prefill_ignores_instances_that_are_not_datacurso(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $other = $this->create_instance(
+            ['apikey' => 'k', 'ratelimit_local_jedomi_credit_default' => 7],
+            \aiprovider_openai\provider::class
+        );
+
+        foreach ([0, (int) $other->id, -1] as $id) {
+            $mform = $this->dispatch_for_instance($id);
+            $this->assertEquals(2, $mform->getElement('ratelimit_local_jedomi_credit_chat')->getValue(), (string) $id);
+        }
+    }
 }
