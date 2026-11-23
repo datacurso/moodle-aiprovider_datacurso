@@ -88,6 +88,42 @@ These Moodle security settings directly affect the Datacurso AI Provider and, th
 
 ![cURL settings](./_docs/images/aiprovider_datacurso_curl_settings.png)
 
+## Development settings
+
+For development or staging only, a separate page points the DataCurso AI services client (`ai_services_api`) to another
+server, such as a local one, without changing the code. Leave both fields empty in production.
+
+The page is deliberately not linked from the site administration, the navigation or any menu, so customers do not find
+it by accident. Open it by typing its URL, `/ai/provider/datacurso/admin/devsettings.php` (for example
+`https://your-site/ai/provider/datacurso/admin/devsettings.php`). Only site administrators can use it; managers or other
+roles with `moodle/site:config` are refused. Below each field the page shows the URL currently in use for that region
+(the development URL, or the production URL when the field is empty). Every change is recorded in the config changes
+report (config log).
+
+| Setting | Config name | Used for |
+| --- | --- | --- |
+| Services URL (development) | `aiprovider_datacurso/devservicesurl` | Sites whose licence belongs to the standard region |
+| Services URL, Europe (development) | `aiprovider_datacurso/devservicesurleu` | Sites whose licence belongs to the European region |
+
+Each field accepts an absolute `http://` or `https://` URL, or nothing (an empty field removes the setting). The client picks its base URL in this order:
+
+1. The URL passed to the `ai_services_api` constructor, when a caller passes one.
+2. The development URL of the site's region, when it is set.
+3. The production URL of the site's region.
+
+The European region never falls back to the standard development URL: a site with a European licence keeps using the
+European production URL until "Services URL, Europe (development)" is set, so its data does not leave the European
+deployment by accident. Set both fields when a single local server answers for both regions.
+
+The transport rules still apply to the development URL: a plain `http://` URL is refused before any connection unless
+`$CFG->aiprovider_datacurso_allow_insecure_transport = true;` is in `config.php` (see "Transport security"). The
+settings can also be set from the command line, for example:
+
+```bash
+php admin/cli/cfg.php --component=aiprovider_datacurso --name=devservicesurl --set=http://localhost:8002
+php admin/cli/cfg.php --component=aiprovider_datacurso --name=devservicesurleu --set=http://localhost:8002
+```
+
 ## Getting license keys
 
 1. Sign in or create an account on the [shop DataCurso](https://shop.datacurso.com)
@@ -154,6 +190,26 @@ From the same configuration page of the **Datacurso AI Provider**, you can enabl
 ![Actions](./_docs/images/aiprovider_datacurso_actions.png)
 
 > **Image delivery contract.** The AI service returns generated images inline (`b64_json`). If it returns an image URL instead, the plugin only downloads it over `https` from the same host as the AI service endpoint, with a `png`/`jpg`/`jpeg`/`webp` extension, without following redirects and up to 10 MiB; images hosted on a third-party CDN are rejected by design.
+
+## Consumption limits and credits per action
+
+The **Configuration** tab of the provider lets an administrator limit, per service, the credits a user can consume in a
+time window. Each service also declares how many credits each of its actions consumes; the provider sends that value to
+the token manager (`X-RateLimit-MaxPerAction`) so it can stop a request that would exceed the limit. It only declares the
+consumption of an action: the real charge is still calculated by the token manager.
+
+Jedomi (`local_jedomi`) has one value per action, 2 credits each by default. The provider tells the action from the
+route Jedomi calls, so Jedomi needs no extra parameter:
+
+| Action | Key | Route |
+| --- | --- | --- |
+| Generate Jedomi chat message | `chat` | `/jedomi/v1/chat/completions` |
+| Generate Jedomi voice answer | `speech` | `/jedomi/v1/audio/speech` |
+| Transcribe Jedomi audio | `transcription` | `/jedomi/v1/audio/transcriptions` |
+| Process a file or image with Jedomi | `file_read` | `/jedomi/v1/files/read` |
+
+Any other Jedomi route (such as `/jedomi/v1/files/extract`, which is not billed) uses the `default` value. A single
+value saved before version 1.9.0 (`{"default": N}`) keeps applying to every Jedomi action until the form is saved again.
 
 ## Reports Datacurso AI Provider
 

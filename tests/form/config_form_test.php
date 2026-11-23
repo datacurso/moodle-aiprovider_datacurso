@@ -116,6 +116,54 @@ final class config_form_test extends \advanced_testcase {
     }
 
     /**
+     * The form shows the four Jedomi actions and prefills them with a {"default": N} saved before the split.
+     *
+     * Decision 10: saving the form then keeps N on every action instead of the catalog defaults.
+     */
+    public function test_jedomi_actions_prefill_from_a_saved_default(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $current = config_form::current_data();
+        $this->assertSame(
+            ['chat' => 2, 'speech' => 2, 'transcription' => 2, 'file_read' => 2],
+            $current['credit']['local_jedomi']
+        );
+
+        set_config('ratelimit_local_jedomi_creditperaction', json_encode(['default' => 7]), 'aiprovider_datacurso');
+        $current = config_form::current_data();
+        $this->assertSame(
+            ['chat' => 7, 'speech' => 7, 'transcription' => 7, 'file_read' => 7],
+            $current['credit']['local_jedomi']
+        );
+
+        config_form::save((object) [
+            'credit' => ['local_jedomi' => $current['credit']['local_jedomi'] + ['default' => 9]],
+        ]);
+        $this->assertSame(
+            ['chat' => 7, 'speech' => 7, 'transcription' => 7, 'file_read' => 7],
+            json_decode(get_config('aiprovider_datacurso', 'ratelimit_local_jedomi_creditperaction'), true)
+        );
+    }
+
+    /**
+     * REL-001: a saved {"default": N} does not prefill the actions of a service other than Jedomi; they keep the
+     * catalog values.
+     */
+    public function test_other_service_actions_do_not_prefill_from_a_saved_default(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        set_config('ratelimit_local_coursegen_creditperaction', json_encode(['default' => 5]), 'aiprovider_datacurso');
+        $current = config_form::current_data();
+
+        $this->assertSame(
+            ['course_image' => 2000, 'course_noimage' => 1000, 'activity_image' => 100, 'activity_noimage' => 50],
+            $current['credit']['local_coursegen']
+        );
+    }
+
+    /**
      * The license key uses the same config storage as the native provider page.
      *
      * MDL-INT-002: shared license key between native config and the Configuration tab.
