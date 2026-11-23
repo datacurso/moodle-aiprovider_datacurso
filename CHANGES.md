@@ -1,3 +1,9 @@
+## [1.7.5-wp] - 2026112300
+
+### Fixed
+- **No XMLDB warning on install or upgrade**
+  The licence fingerprint and action columns of the consumption history are declared without an empty default, which XMLDB rejected with a warning on every install and upgrade.
+
 ## [1.7.4-wp] - 2026111700
 
 ### Added
