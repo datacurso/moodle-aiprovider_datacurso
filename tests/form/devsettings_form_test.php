@@ -206,8 +206,8 @@ final class devsettings_form_test extends \advanced_testcase {
     /**
      * The development settings are not in the admin tree: the provider page keeps none of them.
      *
-     * On Moodle 5.0 the provider settings page (core_ai\admin\admin_settingspage_provider) holds no license
-     * key either, because the key belongs to each provider instance.
+     * On Moodle 5.0 core\plugininfo\aiprovider does not load the plugin settings.php into the admin tree,
+     * so a provider settings page may not exist at all; when it does, it must hold no development setting.
      */
     public function test_settings_page_does_not_define_the_development_settings(): void {
         global $CFG;
@@ -215,12 +215,16 @@ final class devsettings_form_test extends \advanced_testcase {
         $this->resetAfterTest();
         $this->setAdminUser();
 
-        $page = admin_get_root(true, true)->locate('aiprovider_datacurso');
+        $root = admin_get_root(true, true);
 
-        $this->assertNotEmpty($page);
-        $this->assertNull(admin_get_root(true, true)->locate('aiprovider_datacurso_devsettings'));
-        $this->assertFalse(property_exists($page->settings, 'aiprovider_datacursodevservicesurl'));
-        $this->assertFalse(property_exists($page->settings, 'aiprovider_datacursodevservicesurleu'));
-        $this->assertFalse(property_exists($page->settings, 'aiprovider_datacursodevsettings'));
+        $this->assertNull($root->locate('aiprovider_datacurso_devsettings'));
+        $this->assertSame([], $root->search('devservicesurl'));
+
+        $page = $root->locate('aiprovider_datacurso');
+        if ($page instanceof \admin_settingpage) {
+            $this->assertFalse(property_exists($page->settings, 'aiprovider_datacursodevservicesurl'));
+            $this->assertFalse(property_exists($page->settings, 'aiprovider_datacursodevservicesurleu'));
+            $this->assertFalse(property_exists($page->settings, 'aiprovider_datacursodevsettings'));
+        }
     }
 }
