@@ -238,10 +238,31 @@ the same person on different sites cannot be matched.
 When a Moodle user is deleted, the consumption records of that user already copied to the local history are unlinked
 from the account (they are attributed to nobody and stay in the totals of the site), and the pseudonym of that user is
 removed from the local cache, so records synchronised later are not linked to the account either. The course service is the only Datacurso service that stores
-data per user (generation requests with the pseudonym, consumption and the conversation state). It offers an erase
-operation by site, pseudonym and plugin, which the plugins that send it data invoke from their Privacy API; Smart Rules AI
-(`local_coursedynamicrules`) keeps a record of each request until the service confirms the erasure and retries until it
-does. The other services do not store the data they receive.
+data per user (generation requests with the pseudonym, consumption and the conversation state); its privacy contract is
+described below. The plugins service does not store the data it receives. The token manager service keeps only the
+consumption-limit records described in the next section.
+
+### Privacy contract of the course service
+
+This is the single privacy contract of the Datacurso services. This provider does not call it itself: each plugin that
+sends data to the course service calls it from its own Privacy API, through this provider's transport, which adds
+`site_id` and `site_url` and replaces `userid` with the site-scoped pseudonym.
+
+- `POST /api/v1/privacy/erase` and `POST /api/v1/privacy/export`.
+- Body: `userid` (the pseudonym), `service_id` (the calling plugin), `scope` (`threads` or `user`) and `thread_ids` (at
+  most 1000). Since course service pull request #338, the body may also carry `client_request_ids`: the key a plugin sends
+  as `client_request_id` on `/activity/init` and records before the call, so a request whose answer was lost can still be
+  reached. At most 1000 ids in total per call.
+- Only data of the same site, pseudonym and plugin is reached, and only threads created with the same license key.
+- Erase answers `{"status": "erased", "requests": n, "threads": n}`, is idempotent, and since pull request #338 adds
+  `erased_thread_ids` as a receipt of what was erased. Export answers `{"status": "exported", "data": {...}}` and is
+  read-only.
+- The privacy routes do not check the license balance.
+- There is no per-site or per-user route (`DELETE /privacy/users`, `GET /privacy/users/export`) on any service.
+
+Smart Rules AI (`local_coursedynamicrules`) keeps a record of each request, erases by thread id and by key, and deletes
+its record only after the erasure is confirmed and an export of the same threads comes back empty; it retries until then
+and shows erasures pending too long on its settings page.
 
 ### What the token manager service keeps per user
 
