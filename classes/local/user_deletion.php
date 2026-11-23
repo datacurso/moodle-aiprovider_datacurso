@@ -17,7 +17,7 @@
 namespace aiprovider_datacurso\local;
 
 /**
- * Keeps the local consumption history in step with the deletion of a user.
+ * Keeps the local consumption history and the pseudonym cache in step with the deletion of a user.
  *
  * @package    aiprovider_datacurso
  * @copyright  2026 Datacurso
@@ -26,7 +26,8 @@ namespace aiprovider_datacurso\local;
 final class user_deletion {
     /**
      * Unlink a deleted user from the consumption history: the records already copied to the local
-     * history are attributed to nobody (userid 0).
+     * history are attributed to nobody (userid 0), and the pseudonym of the user is dropped from the
+     * reverse map so the records synchronised later are not attributed to the account either.
      *
      * The records are kept, unlinked, so the credits stay in the totals of the site.
      *
@@ -38,5 +39,6 @@ final class user_deletion {
         global $DB;
 
         $DB->set_field('aiprovider_datacurso_consumption', 'userid', 0, ['userid' => $event->objectid]);
+        outbound_privacy::forget_user((int) $event->objectid);
     }
 }

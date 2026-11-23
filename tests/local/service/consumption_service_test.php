@@ -253,4 +253,27 @@ final class consumption_service_test extends \advanced_testcase {
         $this->assertSame(['Jedomi'], $services);
         $this->assertSame([get_string('generate_jedomi_chat', 'aiprovider_datacurso')], $actions);
     }
+
+    /**
+     * The voice, transcription and file reading rows of Jedomi show their label, not their route.
+     *
+     * Consumption history labels for the Jedomi routes that report credits.
+     */
+    public function test_jedomi_action_rows_resolve_to_their_labels(): void {
+        $routes = [
+            '/jedomi/v1/audio/speech' => 'generate_jedomi_speech',
+            '/jedomi/v1/audio/transcriptions' => 'transcribe_jedomi_audio',
+            '/jedomi/v1/files/read' => 'read_jedomi_file',
+        ];
+        foreach (array_keys($routes) as $route) {
+            $this->insert_consumption('local_jedomi', $route, 1, '2026-03-01 12:00:00', 7);
+        }
+
+        $labels = array_column(consumption_service::get_summary('action', 'local_jedomi')['summary'], 'label');
+
+        $expected = array_map(fn(string $id): string => get_string($id, 'aiprovider_datacurso'), array_values($routes));
+        sort($expected);
+        sort($labels);
+        $this->assertSame($expected, $labels);
+    }
 }

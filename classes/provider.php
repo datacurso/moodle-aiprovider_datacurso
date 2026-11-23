@@ -161,7 +161,10 @@ class provider extends \core_ai\provider {
                 ['key' => 'default', 'name' => self::lang('action_default'), 'default' => 2],
             ],
             'local_jedomi' => [
-                ['key' => 'default', 'name' => self::lang('action_default'), 'default' => 2],
+                ['key' => 'chat', 'name' => self::lang('generate_jedomi_chat'), 'default' => 2],
+                ['key' => 'speech', 'name' => self::lang('generate_jedomi_speech'), 'default' => 2],
+                ['key' => 'transcription', 'name' => self::lang('transcribe_jedomi_audio'), 'default' => 2],
+                ['key' => 'file_read', 'name' => self::lang('read_jedomi_file'), 'default' => 2],
             ],
         ];
     }
@@ -200,9 +203,11 @@ class provider extends \core_ai\provider {
      *
      * Reads the instance-scoped flat key `ratelimit_{sid}_credit_{actionkey}` from
      * $this->config (never from global plugin config: settings live per provider instance).
-     * Falls back to the catalog default for the key, then to the service's 'default'
-     * action, then to 1. This is the look-ahead value sent as X-RateLimit-MaxPerAction
-     * so the token-manager can block before overshooting the limit.
+     * Falls back to a saved 'default' (a value saved while the service had a single action keeps
+     * applying to every action until the admin saves the new ones), then to the catalog default
+     * for the key, then to the catalog 'default' action, then to the first action, then to 1.
+     * This is the look-ahead value sent as X-RateLimit-MaxPerAction so the token-manager can
+     * block before overshooting the limit.
      *
      * @param string $serviceid Service identifier such as 'local_coursegen'.
      * @param string $actionkey Sub-action key such as 'course_image' (defaults to 'default').
@@ -217,13 +222,27 @@ class provider extends \core_ai\provider {
             $defaults[$action['key']] = (int) $action['default'];
         }
 
-        // Prefer the requested key; fall back to 'default'; then to any first action; then 1.
+        // Saved instance values, keyed by action.
+        $stored = [];
         foreach ([$actionkey, 'default'] as $key) {
             if (isset($this->config["ratelimit_{$serviceid}_credit_{$key}"])) {
-                return max(1, (int) $this->config["ratelimit_{$serviceid}_credit_{$key}"]);
+                $stored[$key] = $this->config["ratelimit_{$serviceid}_credit_{$key}"];
             }
-            if (isset($defaults[$key])) {
-                return max(1, $defaults[$key]);
+        }
+
+        // The saved value of the action wins. For Jedomi, whose single saved 'default' predates its split into actions,
+        // that saved 'default' comes next, so an old value keeps applying to every action. Other services keep their
+        // order: the catalog value of the action before any saved 'default'.
+        $lookups = [[$stored, $actionkey]];
+        if ($serviceid === 'local_jedomi') {
+            $lookups[] = [$stored, 'default'];
+        }
+        $lookups[] = [$defaults, $actionkey];
+        $lookups[] = [$stored, 'default'];
+        $lookups[] = [$defaults, 'default'];
+        foreach ($lookups as [$values, $key]) {
+            if (isset($values[$key])) {
+                return max(1, (int) $values[$key]);
             }
         }
 
@@ -270,6 +289,10 @@ class provider extends \core_ai\provider {
             ['id' => '/smartrules/create-mod', 'name' => get_string('generate_ai_reinforcement_activity', 'aiprovider_datacurso')],
             ['id' => '/chat/message', 'name' => get_string('generate_chat_message', 'aiprovider_datacurso')],
             ['id' => '/jedomi/v1/chat/completions', 'name' => get_string('generate_jedomi_chat', 'aiprovider_datacurso')],
+            // One row per sentence of a Jedomi answer read aloud in the voice conversation.
+            ['id' => '/jedomi/v1/audio/speech', 'name' => get_string('generate_jedomi_speech', 'aiprovider_datacurso')],
+            ['id' => '/jedomi/v1/audio/transcriptions', 'name' => get_string('transcribe_jedomi_audio', 'aiprovider_datacurso')],
+            ['id' => '/jedomi/v1/files/read', 'name' => get_string('read_jedomi_file', 'aiprovider_datacurso')],
             // Moodle activity types.
             self::make_action('create_activity_assign_image'),
             self::make_action('create_activity_assign_noimage'),

@@ -309,5 +309,14 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026102900, 'aiprovider', 'datacurso');
     }
 
+    if ($oldversion < 2026111100) {
+        // Generate the per-site secret behind the user pseudonyms sent to the Datacurso
+        // services, so it exists before the first request instead of being written lazily.
+        // A site that already has one (coming from the Moodle 4.5 line) keeps it.
+        \aiprovider_datacurso\local\outbound_privacy::get_pseudonym_secret();
+
+        upgrade_plugin_savepoint(true, 2026111100, 'aiprovider', 'datacurso');
+    }
+
     return true;
 }

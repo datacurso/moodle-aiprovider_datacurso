@@ -31,7 +31,8 @@ use GuzzleHttp\Psr7\Response;
  * These tests assert the security-hardening contract: actionable 403 rejections (rate limit,
  * insufficient credits, license not allowed) surface a localized message, while every other
  * upstream error (generic HTTP error, non-JSON body, network failure) is sanitized before it
- * reaches the end user -- the raw upstream text only reaches the developer debugging channel.
+ * reaches the end user. The developer debugging channel gets the HTTP status and the size of the
+ * upstream body, never the body itself (AIP-PRIV-002), and the raw transport error text.
  *
  * Ported from the 4.5 security-hardening release (1.5.1) and re-implemented against this
  * branch's harness: a real seeded provider instance (see {@see \core_ai\manager}) instead of
@@ -121,8 +122,8 @@ final class process_generate_text_errors_test extends \advanced_testcase {
     /**
      * A generic service error must not leak the upstream detail to the end user.
      *
-     * The localized httperror string is returned instead, and the upstream message only reaches
-     * the developer debugging channel.
+     * The localized httperror string is returned instead, and the developer debugging channel
+     * gets the status and the size of the upstream body only.
      */
     public function test_generic_service_error_is_sanitized(): void {
         $this->set_mock_http([
@@ -136,9 +137,11 @@ final class process_generate_text_errors_test extends \advanced_testcase {
         $this->assertSame(get_string('httperror', 'aiprovider_datacurso', 500), $response->get_errormessage());
         $this->assertStringNotContainsString('boom', $response->get_errormessage());
 
+        // AIP-PRIV-002: the developer output carries the status and the body size, never the body.
         $debugmessages = $this->getDebuggingMessages();
         $this->assertDebuggingCalledCount(1);
-        $this->assertStringContainsString('boom', $debugmessages[0]->message);
+        $this->assertStringNotContainsString('boom', $debugmessages[0]->message);
+        $this->assertStringContainsString('HTTP 500 (4 bytes)', $debugmessages[0]->message);
     }
 
     /**
@@ -159,7 +162,9 @@ final class process_generate_text_errors_test extends \advanced_testcase {
 
         $debugmessages = $this->getDebuggingMessages();
         $this->assertDebuggingCalledCount(1);
-        $this->assertStringContainsString('gateway secret', $debugmessages[0]->message);
+        $this->assertStringNotContainsString('gateway secret', $debugmessages[0]->message);
+        $bodysize = strlen('<html>gateway secret</html>');
+        $this->assertStringContainsString('HTTP 502 (' . $bodysize . ' bytes)', $debugmessages[0]->message);
     }
 
     /**

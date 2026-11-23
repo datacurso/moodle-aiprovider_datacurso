@@ -43,6 +43,7 @@ require_once(__DIR__ . '/../fixtures/fake_curl.php');
 #[\PHPUnit\Framework\Attributes\CoversMethod(\aiprovider_datacurso\httpclient\datacurso_api_base::class, 'upload_file')]
 #[\PHPUnit\Framework\Attributes\CoversMethod(\aiprovider_datacurso\httpclient\datacurso_api_base::class, 'get_site_uuid')]
 #[\PHPUnit\Framework\Attributes\CoversMethod(\aiprovider_datacurso\httpclient\datacurso_api_base::class, 'request')]
+#[\PHPUnit\Framework\Attributes\CoversClass(\aiprovider_datacurso\local\outbound_privacy::class)]
 final class datacurso_api_base_test extends \advanced_testcase {
     /**
      * Seed an enabled provider instance with a license key.
@@ -346,5 +347,106 @@ final class datacurso_api_base_test extends \advanced_testcase {
         $this->assertStringContainsString('á', $client->capturedpayload);
         $this->assertStringNotContainsString($escapedn, $client->capturedpayload);
         $this->assertStringNotContainsString($escapeda, $client->capturedpayload);
+    }
+
+    /**
+     * Decode the JSON body of the first request, which must be a POST.
+     *
+     * @param fake_curl $curl
+     * @return array
+     */
+    private function posted_body(fake_curl $curl): array {
+        $this->assertSame('POST', $curl->calls[0]['method']);
+        return json_decode((string) $curl->calls[0]['params'], true);
+    }
+
+    /**
+     * The outbound userid is the site-scoped pseudonym of the current user, never the raw id,
+     * while the site and locale fields the services rely on are sent exactly as before.
+     *
+     * AIP-PRIV-001-R1: pseudonymous user identifier.
+     */
+    public function test_post_sends_pseudonymous_userid_and_keeps_site_fields(): void {
+        global $CFG;
+
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+
+        $curl = new fake_curl();
+        $curl->enqueue(json_encode(['ok' => true]), 200);
+        $this->make_client($curl)->request('POST', '/course/execute', ['prompt' => 'hello']);
+
+        $body = $this->posted_body($curl);
+        $expected = \aiprovider_datacurso\local\outbound_privacy::pseudonymise_userid($user->id);
+        $this->assertSame($expected, $body['userid']);
+        $this->assertNotSame((string) $user->id, $body['userid']);
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{32}$/', $body['userid']);
+
+        // The HMAC secret behind the pseudonym stays on the site: not in the body, nor in the headers,
+        // and it is not the site UUID the services receive as site_id.
+        $secret = \aiprovider_datacurso\local\outbound_privacy::get_pseudonym_secret();
+        $this->assertStringNotContainsString($secret, (string) $curl->calls[0]['params']);
+        $this->assertStringNotContainsString($secret, implode("\n", $curl->calls[0]['options']['CURLOPT_HTTPHEADER']));
+        $this->assertNotSame($secret, $body['site_id']);
+
+        $this->assertSame(datacurso_api_base::get_site_uuid(), $body['site_id']);
+        $this->assertSame($CFG->wwwroot, $body['site_url']);
+        $this->assertSame(\core_date::get_user_timezone(), $body['timezone']);
+        $this->assertSame(current_language(), $body['lang']);
+        $this->assertSame('hello', $body['prompt']);
+    }
+
+    /**
+     * A caller that passes a raw numeric userid gets it pseudonymised too.
+     */
+    public function test_post_pseudonymises_caller_provided_numeric_userid(): void {
+        $this->setAdminUser();
+
+        $curl = new fake_curl();
+        $curl->enqueue(json_encode(['ok' => true]), 200);
+        $this->make_client($curl)->request('POST', '/course/execute', ['userid' => 12345]);
+
+        $body = $this->posted_body($curl);
+        $this->assertSame(\aiprovider_datacurso\local\outbound_privacy::pseudonymise_userid(12345), $body['userid']);
+        $this->assertNotSame('12345', (string) $body['userid']);
+    }
+
+    /**
+     * A caller that already pseudonymised the userid (a consumer plugin) keeps its token.
+     */
+    public function test_post_keeps_caller_provided_pseudonym(): void {
+        $this->setAdminUser();
+
+        $token = \aiprovider_datacurso\local\outbound_privacy::pseudonymise_userid(777);
+        $curl = new fake_curl();
+        $curl->enqueue(json_encode(['ok' => true]), 200);
+        $this->make_client($curl)->request('POST', '/course/execute', ['userid' => $token]);
+
+        $this->assertSame($token, $this->posted_body($curl)['userid']);
+    }
+
+    /**
+     * A file upload carries the pseudonym of the current user, never the raw id, also when the
+     * caller passes the raw id among the extra parameters.
+     */
+    public function test_upload_sends_pseudonymous_userid(): void {
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+
+        $curl = new fake_curl();
+        $curl->enqueue(json_encode(['ok' => true]), 200);
+        $curl->enqueue(json_encode(['ok' => true]), 200);
+        $client = $this->make_client($curl);
+        $client->upload_file('/course/sillabus/upload', $this->make_stored_file('syllabus'));
+        $client->upload_file('/course/sillabus/upload', $this->make_stored_file('syllabus', 'other.txt'), [
+            'userid' => (int) $user->id,
+        ]);
+
+        $expected = \aiprovider_datacurso\local\outbound_privacy::pseudonymise_userid($user->id);
+        foreach ($curl->calls as $call) {
+            $this->assertSame('POST', $call['method']);
+            $this->assertIsArray($call['params']);
+            $this->assertSame($expected, $call['params']['userid']);
+        }
     }
 }

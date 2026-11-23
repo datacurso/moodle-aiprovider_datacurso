@@ -34,23 +34,60 @@ class ai_services_api extends datacurso_api_base {
     /** Default base URL for the EU-hosted DataCurso AI service. */
     private const DEFAULT_BASE_URL_EU = 'https://eu.plugins-ai.datacurso.com';
 
+    /** Setting holding the development URL of the standard region. */
+    public const DEV_URL_SETTING = 'devservicesurl';
+
+    /** Setting holding the development URL of the European region. */
+    public const DEV_URL_SETTING_EU = 'devservicesurleu';
+
     /**
      * Constructor.
+     *
+     * The base URL is, in this order: the URL passed for the region of the site, the development
+     * URL configured for that region (unlinked development settings page of the provider), and the production URL
+     * of that region. The European region never uses the standard development URL, so the data of a
+     * European site does not leave the European deployment by accident. The transport policy still
+     * applies to whichever URL is chosen.
      *
      * @param string|null $licensekey The license key obtained from Datacurso SHOP.
      * @param string|null $baseurl Optional standard-region base URL to override the default endpoint.
      * @param string|null $baseurleu Optional EU-region base URL to override the default endpoint.
      */
     public function __construct(?string $licensekey = null, ?string $baseurl = null, ?string $baseurleu = null) {
-        global $CFG;
-
         if ($this->is_for_ue()) {
-            $finalbaseurl    = $baseurleu ?? self::DEFAULT_BASE_URL_EU;
+            $finalbaseurl = $baseurleu ?? self::configured_base_url(true);
         } else {
-            $finalbaseurl    = $baseurl ?? self::DEFAULT_BASE_URL;
+            $finalbaseurl = $baseurl ?? self::configured_base_url(false);
         }
 
         parent::__construct($finalbaseurl, $licensekey);
+    }
+
+    /**
+     * The base URL a region uses when no URL is passed to the constructor.
+     *
+     * It is the development URL configured for that region, or the production URL of that region.
+     * The European region never uses the standard development URL.
+     *
+     * @param bool $eu True for the European region.
+     * @return string The base URL.
+     */
+    public static function configured_base_url(bool $eu): string {
+        if ($eu) {
+            return self::development_url(self::DEV_URL_SETTING_EU) ?? self::DEFAULT_BASE_URL_EU;
+        }
+        return self::development_url(self::DEV_URL_SETTING) ?? self::DEFAULT_BASE_URL;
+    }
+
+    /**
+     * The development URL configured in the given setting.
+     *
+     * @param string $setting Name of the setting.
+     * @return string|null Null when the setting is empty.
+     */
+    private static function development_url(string $setting): ?string {
+        $url = trim((string) get_config('aiprovider_datacurso', $setting));
+        return $url === '' ? null : $url;
     }
 
     /**

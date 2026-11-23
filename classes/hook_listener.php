@@ -68,6 +68,9 @@ class hook_listener {
         $services = \aiprovider_datacurso\provider::get_services();
         \core_collator::asort_array_of_arrays_by_key($services, 'name');
 
+        // Saved config of the instance being edited (empty for a new one): the hook does not receive it.
+        $config = self::get_edited_instance_config();
+
         foreach ($services as $service) {
             $sid = $service['id'];
             $sname = $service['name'];
@@ -142,7 +145,7 @@ class hook_listener {
             $mform->addHelpButton("ratelimit_{$sid}_window", 'ratelimit_window', 'aiprovider_datacurso');
             $mform->hideIf("ratelimit_{$sid}_window", "ratelimit_{$sid}_enable", 'eq', 0);
 
-            self::add_credit_per_action_fields($mform, $sid);
+            self::add_credit_per_action_fields($mform, $sid, $config);
         }
 
         $mform->addElement(
@@ -155,16 +158,64 @@ class hook_listener {
     }
 
     /**
+     * Saved config of the Datacurso provider instance the form edits.
+     *
+     * core_ai\form\ai_provider_form dispatches after_ai_provider_form_hook before it calls set_data() and
+     * the hook does not carry the instance, so it is read from the "id" parameter of ai/configure.php.
+     * Anything that is not an existing Datacurso instance (a new instance, another provider) gives [].
+     *
+     * @return array Saved instance config, keyed by setting name.
+     */
+    private static function get_edited_instance_config(): array {
+        $id = optional_param('id', 0, PARAM_INT);
+        if ($id <= 0) {
+            return [];
+        }
+
+        $record = \core\di::get(\core_ai\manager::class)->get_provider_record(['id' => $id]);
+        if (!$record || $record->provider !== \aiprovider_datacurso\provider::class) {
+            return [];
+        }
+
+        $config = json_decode((string) $record->config, true);
+        return is_array($config) ? $config : [];
+    }
+
+    /**
+     * Values the credits-per-action fields of a service are prefilled with.
+     *
+     * The saved value of each action, then the catalogue default. For Jedomi, a saved
+     * `ratelimit_local_jedomi_credit_default` (saved while Jedomi had a single action) prefills every
+     * action before the catalogue, as provider::get_credit_for_action() does, so saving the form keeps
+     * that value on every action instead of the catalogue defaults.
+     *
+     * @param string $sid Service identifier.
+     * @param array $config Saved instance config, keyed by setting name.
+     * @return array<string, int> Action key => credits.
+     */
+    public static function get_credit_defaults(string $sid, array $config): array {
+        $legacy = $sid === 'local_jedomi' ? ($config["ratelimit_{$sid}_credit_default"] ?? null) : null;
+
+        $credits = [];
+        foreach (\aiprovider_datacurso\provider::get_actions_for_service($sid) as $action) {
+            $key = $action['key'];
+            $credits[$key] = (int) ($config["ratelimit_{$sid}_credit_{$key}"] ?? $legacy ?? $action['default']);
+        }
+        return $credits;
+    }
+
+    /**
      * Add the "Credits per action" block for a service: a bold title and description,
      * then one PARAM_INT text field per action of the service (flat-keyed per D1:
      * `ratelimit_{sid}_credit_{actionkey}`), each with a help button and prefilled
-     * from the catalogue default, hidden together with the rest of the service's
+     * from get_credit_defaults(), hidden together with the rest of the service's
      * rate-limit fields when the service is disabled.
      *
      * @param \MoodleQuickForm $mform
      * @param string $sid Service identifier.
+     * @param array $config Saved config of the edited instance, empty for a new one.
      */
-    private static function add_credit_per_action_fields(\MoodleQuickForm $mform, string $sid): void {
+    private static function add_credit_per_action_fields(\MoodleQuickForm $mform, string $sid, array $config): void {
         $mform->addElement(
             'static',
             "ratelimit_{$sid}_creditperaction_head",
@@ -181,13 +232,14 @@ class hook_listener {
         );
         $mform->hideIf("ratelimit_{$sid}_creditperaction_head", "ratelimit_{$sid}_enable", 'eq', 0);
 
+        $defaults = self::get_credit_defaults($sid, $config);
         foreach (\aiprovider_datacurso\provider::get_actions_for_service($sid) as $action) {
             $key = $action['key'];
             $field = "ratelimit_{$sid}_credit_{$key}";
 
             $mform->addElement('text', $field, (string) $action['name'], ['size' => 10]);
             $mform->setType($field, PARAM_INT);
-            $mform->setDefault($field, (int) $action['default']);
+            $mform->setDefault($field, $defaults[$key]);
             $mform->addHelpButton($field, 'ratelimit_creditperaction', 'aiprovider_datacurso');
             $mform->hideIf($field, "ratelimit_{$sid}_enable", 'eq', 0);
 
