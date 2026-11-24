@@ -75,7 +75,9 @@ class provider implements core_userlist_provider, metadata_provider, plugin_prov
             'licensekey' => 'privacy:metadata:datacurso_shop:licensekey',
         ], 'privacy:metadata:datacurso_shop');
 
-        // Local mirror of the credit-consumption history used for the admin reports.
+        // The rate limit is enforced and accumulated by the external Datacurso service
+        // (token-manager); the consumption mirror table below only stores a local, synced-on-demand
+        // copy of that same external history for the Report Builder report.
         $collection->add_database_table('aiprovider_datacurso_consumption', [
             'externalid' => 'privacy:metadata:aiprovider_datacurso_consumption:externalid',
             'userid' => 'privacy:metadata:aiprovider_datacurso_consumption:userid',

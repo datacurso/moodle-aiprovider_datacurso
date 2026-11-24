@@ -284,6 +284,18 @@ function xmldb_aiprovider_datacurso_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026111101, 'aiprovider', 'datacurso');
     }
 
+    if ($oldversion < 2026112400) {
+        // A site that ran 1.8.0 or 1.9.0 of MOODLE_405_STABLE (2026111100 to 2026111900) and then moved to
+        // this branch skips the 2026111001 repair, numbered below its version, and misses the table of the
+        // settings per tenant and the tenant and licence of each consumption record. Run the same repair
+        // again; a site that already has them is left as it is.
+        aiprovider_datacurso_create_tenant_config_table($dbman);
+        aiprovider_datacurso_create_consumption_table($dbman);
+        aiprovider_datacurso_add_consumption_tenancy($dbman);
+
+        upgrade_plugin_savepoint(true, 2026112400, 'aiprovider', 'datacurso');
+    }
+
     return true;
 }
 

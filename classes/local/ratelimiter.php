@@ -53,6 +53,16 @@ class ratelimiter {
     }
 
     /**
+     * Jedomi route => credits-per-action key. Jedomi tells the provider the action of a call by the route it calls.
+     */
+    private const JEDOMI_ACTIONS = [
+        '/jedomi/v1/chat/completions' => 'chat',
+        '/jedomi/v1/audio/speech' => 'speech',
+        '/jedomi/v1/audio/transcriptions' => 'transcription',
+        '/jedomi/v1/files/read' => 'file_read',
+    ];
+
+    /**
      * Resolve the configured service id from a request path.
      *
      * @param string $path Request path starting with '/'.
@@ -92,6 +102,8 @@ class ratelimiter {
      *  - local_coursegen: course vs activity (by path) x with/without image (by body's
      *    'generate_images' flag) -> course_image|course_noimage|activity_image|activity_noimage.
      *  - local_coursedynamicrules: activity with/without image (by body's 'generate_images').
+     *  - local_jedomi: the route Jedomi calls is the action (see JEDOMI_ACTIONS); any other Jedomi
+     *    route, such as the free text extraction, is 'default'.
      * Anything else falls back to 'default'.
      *
      * @param string|null $serviceid Service identifier.
@@ -115,6 +127,8 @@ class ratelimiter {
             case 'aiprovider_datacurso':
                 // Provider's own actions: image generation vs text/summary, by endpoint path.
                 return str_contains($normalised, '/images/') ? 'image' : 'text';
+            case 'local_jedomi':
+                return self::JEDOMI_ACTIONS[$normalised] ?? 'default';
             default:
                 return 'default';
         }
@@ -220,6 +234,8 @@ class ratelimiter {
             'minutes' => MINSECS,
             'hours' => HOURSECS,
             'days' => DAYSECS,
+            'months' => DAYSECS * 30,
+            'years' => DAYSECS * 365,
             default => HOURSECS,
         };
 

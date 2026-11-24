@@ -1,3 +1,29 @@
+## [1.9.0-wp] - 2026-11-24
+
+**Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.
+
+**Brings releases 1.8.0 and 1.9.0 of `MOODLE_405_STABLE` to Workplace**, adapted to the configuration per tenant.
+
+### Added
+- **`request_raw()` returns the body of an answer without decoding it, and every billed Jedomi action has a label**
+  The new public method `datacurso_api_base::request_raw(string $method, string $path, array $body = []): string` (on `ai_services_api` and `ai_course_api`) sends exactly the request `request()` sends, including the `tenant_id` of the user and the tenant licence, through the same shared `dispatch()`: the same checks before sending (provider enabled for the site and for the tenant, AIP-SEC-003; licence key; HTTPS), the same timeouts and the same audit event. Error answers raise the same exceptions as `request()`; only the body of a successful answer is returned unchanged, so binary routes such as `POST /jedomi/v1/audio/speech` no longer fail with `jsondecodeerror`. The consumption history now names `/jedomi/v1/audio/speech` ("Generate Jedomi voice answer"), `/jedomi/v1/audio/transcriptions` ("Transcribe Jedomi audio") and `/jedomi/v1/files/read` ("Process a file or image with Jedomi"). New strings `generate_jedomi_speech`, `transcribe_jedomi_audio` and `read_jedomi_file` in all the plugin's languages. Backed by `request_raw_test` (including `test_request_of_a_disabled_tenant_never_reaches_the_service`), `provider_test::test_get_actions_labels_every_billed_jedomi_route` and `consumption_service_test::test_jedomi_action_rows_resolve_to_their_labels`
+- **Hidden development settings page for the AI services URLs**
+  `/ai/provider/datacurso/admin/devsettings.php` holds `devservicesurl` and `devservicesurleu` for development or staging sites only. It is not linked from any menu nor found by the admin search, and only site administrators can use it. `ai_services_api` uses, in this order, the URL passed to its constructor, the development URL of the region and the production URL of the region (`ai_services_api::configured_base_url(bool $eu)`); a European licence never falls back to the standard development URL. On Workplace the second constructor argument may still be a tenant id, whose licence and region then decide the URL. New strings `devsettings`, `devsettings_desc`, `devsettings_effectiveurl`, `devsettings_saved`, `devservicesurl`, `devservicesurl_desc`, `devservicesurleu`, `devservicesurleu_desc` and `devservicesurl_invalid` in all the plugin's languages; README section "Development settings". Backed by `ai_services_api_test` and `devsettings_form_test`
+
+### Changed
+- **Jedomi has a credits-per-action value for each of its actions, per tenant**
+  Jedomi lists four billed actions, `chat`, `speech`, `transcription` and `file_read`, 2 credits each by default, resolved from the route Jedomi calls; any other Jedomi route uses `default`. A tenant may save its own values in its Datacurso AI settings, and a tenant without them follows the site-wide values. A `{"default": N}` saved before this version, for the site or for a tenant, keeps applying to every Jedomi action, and the tenant settings form prefills every action with N, until new values are saved. Backed by `provider_test` (including `test_tenant_overrides_the_jedomi_credits_of_each_action`), `ratelimiter_test` and `settings_tenant_form_test::test_jedomi_actions_prefill_from_a_saved_default`, `test_jedomi_saved_action_wins_over_the_legacy_default` and `test_other_service_actions_do_not_prefill_from_a_saved_default`
+- **CI uses the standard Jenkinsfile for Moodle 4.5**
+  `Jenkinsfile.moodleplugin` runs the plugin CI on MariaDB and PostgreSQL; the stale root `Jenkinsfile` is removed
+
+### Fixed
+- **Rate limit windows in months and years**
+  A window saved in months or years was enforced as one hour. Months now count 30 days and years 365 days, as on `MOODLE_500_STABLE`. Backed by `ratelimiter_test::test_window_units_map_to_their_length`
+- **A site that ran 1.8.0 or 1.9.0 of `MOODLE_405_STABLE` gets the Workplace tables and columns**
+  Those versions (2026111100 to 2026111900) are above the 2026111001 repair, so a site moving from them to this branch skipped it. The new step 2026112400 creates the table `aiprovider_datacurso_tenant_config` and the fields `tenant_id` and `licence` of `aiprovider_datacurso_consumption` when they are missing (the rows mirrored without them are pulled again), and leaves a Workplace site as it is. Backed by `upgrade_test::test_a_site_from_the_moodle_branch_1_9_gets_the_workplace_schema` and `test_a_workplace_1_7_3_site_keeps_its_records`
+- **The site installs when a suite plugin asks for the tenant before tool_tenant exists**
+  `tenant_resolver::get_tenant_id()` resolves no tenant during the initial install, when the tables of `tool_tenant` may not exist yet; the settings of `report_lifestory` asked for it and the install failed with `Table "tool_tenant" does not exist`. Backed by `tenant_resolver_test`
+
 ## [1.7.3-wp] - 2026-11-11
 
 **Compatibility note:** This version is compatible only with **Moodle Workplace 4.5**.

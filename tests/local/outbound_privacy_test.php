@@ -308,6 +308,8 @@ final class outbound_privacy_test extends \advanced_testcase {
         unset_config('pseudonym_secret', 'aiprovider_datacurso');
         set_config('version', 2026111001, 'aiprovider_datacurso');
         xmldb_aiprovider_datacurso_upgrade(2026111001);
+        // The 2026112400 step declares the licence field; XMLDB warns about its empty default, as in install.xml.
+        $this->resetDebugging();
         // The savepoint marks the upgrade as running; leave the next test a clean site.
         unset_config('upgraderunning');
 
