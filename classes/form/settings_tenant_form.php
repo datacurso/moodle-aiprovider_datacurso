@@ -298,19 +298,25 @@ class settings_tenant_form extends \moodleform {
                 $data->{"ratelimit_{$sid}_window_unit"} = $windowunit;
             }
 
-            // Credits per action: stored map (tenant override or site-wide fallback),
-            // merged with the catalog default for any key not yet configured.
+            // Credits per action: stored map (tenant override or site-wide fallback), then the catalog default
+            // per key. tenant_config::get() returns the tenant value already decoded, or the raw JSON of the
+            // site-wide setting. For Jedomi, a stored 'default' (saved while it had a single action) prefills
+            // every action before the catalog, as provider::get_credit_for_action() does.
             $storedcredit = \aiprovider_datacurso\local\tenant_config::get(
                 'aiprovider_datacurso',
                 $tenantid,
                 "ratelimit_{$sid}_creditperaction"
             );
+            if (is_string($storedcredit)) {
+                $storedcredit = json_decode($storedcredit, true);
+            }
             $storedcredit = (is_object($storedcredit) || is_array($storedcredit)) ? (array) $storedcredit : [];
+            $legacy = $sid === 'local_jedomi' ? ($storedcredit['default'] ?? null) : null;
 
             $data->credit[$sid] = [];
             foreach (\aiprovider_datacurso\provider::get_actions_for_service($sid) as $action) {
                 $key = $action['key'];
-                $data->credit[$sid][$key] = isset($storedcredit[$key]) ? (int) $storedcredit[$key] : (int) $action['default'];
+                $data->credit[$sid][$key] = (int) ($storedcredit[$key] ?? $legacy ?? $action['default']);
             }
 
             $classname = "\\aiprovider_datacurso\\local\\ratelimit\\{$sid}";

@@ -62,27 +62,170 @@ final class provider_test extends \advanced_testcase {
     }
 
     /**
-     * Jedomi exposes a single 'default' action costing 2 credits, which an admin override replaces.
+     * Jedomi lists one credits-per-action entry per billed action, labelled like the consumption history.
      *
-     * J2: Jedomi credits-per-action catalog and override.
+     * Decision 10: chat, voice of the answer, audio transcription and file or image reading, 2 credits each.
      *
      * @covers \aiprovider_datacurso\provider::get_actions_for_service
-     * @covers \aiprovider_datacurso\provider::get_credit_for_action
+     * @covers \aiprovider_datacurso\provider::get_service_actions
      */
-    public function test_jedomi_has_a_single_default_action_of_two_credits(): void {
-        $this->resetAfterTest();
-
+    public function test_jedomi_lists_its_actions_with_labels_and_defaults(): void {
         $actions = provider::get_actions_for_service('local_jedomi');
 
-        $this->assertCount(1, $actions);
-        $this->assertSame('default', $actions[0]['key']);
-        $this->assertSame(2, $actions[0]['default']);
-        $this->assertArrayHasKey('local_jedomi', provider::get_service_actions());
-        $this->assertSame(2, provider::get_credit_for_action('local_jedomi'));
+        $this->assertSame(
+            ['chat' => 2, 'speech' => 2, 'transcription' => 2, 'file_read' => 2],
+            array_column($actions, 'default', 'key')
+        );
+        $labels = [];
+        foreach ($actions as $action) {
+            $labels[$action['key']] = (string) $action['name'];
+        }
+        $this->assertSame([
+            'chat' => get_string('generate_jedomi_chat', 'aiprovider_datacurso'),
+            'speech' => get_string('generate_jedomi_speech', 'aiprovider_datacurso'),
+            'transcription' => get_string('transcribe_jedomi_audio', 'aiprovider_datacurso'),
+            'file_read' => get_string('read_jedomi_file', 'aiprovider_datacurso'),
+        ], $labels);
+        $this->assertSame(
+            array_column($actions, 'default', 'key'),
+            array_column(provider::get_service_actions()['local_jedomi'], 'default', 'key')
+        );
+    }
+
+    /**
+     * Each Jedomi action uses its own saved value, and the catalog default for an action not saved.
+     *
+     * @covers \aiprovider_datacurso\provider::get_credit_for_action
+     */
+    public function test_jedomi_action_credits_follow_their_saved_values(): void {
+        $this->resetAfterTest();
+
+        foreach (['chat', 'speech', 'transcription', 'file_read'] as $key) {
+            $this->assertSame(2, provider::get_credit_for_action('local_jedomi', $key), $key);
+        }
+
+        set_config(
+            'ratelimit_local_jedomi_creditperaction',
+            json_encode(['chat' => 5, 'speech' => 1, 'file_read' => 4]),
+            'aiprovider_datacurso'
+        );
+
+        $this->assertSame(5, provider::get_credit_for_action('local_jedomi', 'chat'));
+        $this->assertSame(1, provider::get_credit_for_action('local_jedomi', 'speech'));
+        $this->assertSame(2, provider::get_credit_for_action('local_jedomi', 'transcription'));
+        $this->assertSame(4, provider::get_credit_for_action('local_jedomi', 'file_read'));
+    }
+
+    /**
+     * A {"default": N} saved before the actions were split keeps applying to every Jedomi action.
+     *
+     * @covers \aiprovider_datacurso\provider::get_credit_for_action
+     */
+    public function test_saved_default_keeps_applying_to_every_jedomi_action(): void {
+        $this->resetAfterTest();
 
         set_config('ratelimit_local_jedomi_creditperaction', json_encode(['default' => 7]), 'aiprovider_datacurso');
 
-        $this->assertSame(7, provider::get_credit_for_action('local_jedomi'));
+        foreach (['chat', 'speech', 'transcription', 'file_read', 'default', 'unknown'] as $key) {
+            $this->assertSame(7, provider::get_credit_for_action('local_jedomi', $key), $key);
+        }
+
+        set_config(
+            'ratelimit_local_jedomi_creditperaction',
+            json_encode(['default' => 7, 'speech' => 1]),
+            'aiprovider_datacurso'
+        );
+
+        $this->assertSame(1, provider::get_credit_for_action('local_jedomi', 'speech'));
+        $this->assertSame(7, provider::get_credit_for_action('local_jedomi', 'chat'));
+    }
+
+    /**
+     * A tenant overrides the Jedomi credits of each action; other tenants keep the site-wide values.
+     *
+     * @covers \aiprovider_datacurso\provider::get_credit_for_action
+     */
+    public function test_tenant_overrides_the_jedomi_credits_of_each_action(): void {
+        $this->resetAfterTest();
+
+        set_config('ratelimit_local_jedomi_creditperaction', json_encode(['speech' => 3]), 'aiprovider_datacurso');
+        local\tenant_config::set(
+            'aiprovider_datacurso',
+            5,
+            'ratelimit_local_jedomi_creditperaction',
+            json_encode(['speech' => 9, 'file_read' => 6])
+        );
+
+        $this->assertSame(9, provider::get_credit_for_action('local_jedomi', 'speech', 5));
+        $this->assertSame(6, provider::get_credit_for_action('local_jedomi', 'file_read', 5));
+        $this->assertSame(2, provider::get_credit_for_action('local_jedomi', 'chat', 5));
+        // A tenant without its own values follows the site-wide ones.
+        $this->assertSame(3, provider::get_credit_for_action('local_jedomi', 'speech', 6));
+        $this->assertSame(3, provider::get_credit_for_action('local_jedomi', 'speech'));
+
+        // A legacy {"default": N} saved for the tenant applies to every Jedomi action of that tenant.
+        local\tenant_config::set(
+            'aiprovider_datacurso',
+            5,
+            'ratelimit_local_jedomi_creditperaction',
+            json_encode(['default' => 7, 'chat' => 4])
+        );
+        $this->assertSame(4, provider::get_credit_for_action('local_jedomi', 'chat', 5));
+        foreach (['speech', 'transcription', 'file_read'] as $key) {
+            $this->assertSame(7, provider::get_credit_for_action('local_jedomi', $key, 5), $key);
+        }
+    }
+
+    /**
+     * REL-001: a saved {"default": N} goes before the catalog only for Jedomi; another multi-action service keeps
+     * the catalog value of an action that is not saved.
+     *
+     * @covers \aiprovider_datacurso\provider::get_credit_for_action
+     */
+    public function test_saved_default_does_not_override_the_catalog_of_other_services(): void {
+        $this->resetAfterTest();
+
+        set_config('ratelimit_local_coursegen_creditperaction', json_encode(['default' => 5]), 'aiprovider_datacurso');
+        set_config('ratelimit_local_jedomi_creditperaction', json_encode(['default' => 5]), 'aiprovider_datacurso');
+
+        $this->assertSame(2000, provider::get_credit_for_action('local_coursegen', 'course_image'));
+        $this->assertSame(50, provider::get_credit_for_action('local_coursegen', 'activity_noimage'));
+        $this->assertSame(5, provider::get_credit_for_action('local_coursegen', 'unknown'));
+        foreach (['chat', 'speech', 'transcription', 'file_read'] as $key) {
+            $this->assertSame(5, provider::get_credit_for_action('local_jedomi', $key), $key);
+        }
+    }
+
+    /**
+     * An action Jedomi does not list (or 'default') costs the first catalog value when nothing is saved.
+     *
+     * @covers \aiprovider_datacurso\provider::get_credit_for_action
+     */
+    public function test_unknown_jedomi_action_falls_back_to_the_catalog(): void {
+        $this->resetAfterTest();
+
+        $this->assertSame(2, provider::get_credit_for_action('local_jedomi'));
+        $this->assertSame(2, provider::get_credit_for_action('local_jedomi', 'unknown'));
+    }
+
+    /**
+     * The labels of the Jedomi actions exist in every language of the plugin.
+     *
+     * @coversNothing
+     */
+    public function test_jedomi_action_labels_exist_in_every_language(): void {
+        global $CFG;
+
+        $ids = ['generate_jedomi_chat', 'generate_jedomi_speech', 'transcribe_jedomi_audio', 'read_jedomi_file'];
+        $files = glob($CFG->dirroot . '/ai/provider/datacurso/lang/*/aiprovider_datacurso.php');
+        $this->assertCount(7, $files);
+        foreach ($files as $file) {
+            $string = [];
+            include($file);
+            foreach ($ids as $id) {
+                $this->assertNotEmpty($string[$id] ?? '', basename(dirname($file)) . ': ' . $id);
+            }
+        }
     }
 
     /**
@@ -100,6 +243,31 @@ final class provider_test extends \advanced_testcase {
             get_string('generate_jedomi_chat', 'aiprovider_datacurso'),
             $actionmap['/jedomi/v1/chat/completions']
         );
+    }
+
+    /**
+     * Every billed Jedomi route has its own readable label, so the consumption history never shows a raw path.
+     *
+     * The text extraction route (/jedomi/v1/files/extract) is not billed, so it never appears in the history.
+     *
+     * @covers \aiprovider_datacurso\provider::get_actions
+     */
+    public function test_get_actions_labels_every_billed_jedomi_route(): void {
+        $actionmap = array_column(provider::get_actions(), 'name', 'id');
+        $expected = [
+            '/jedomi/v1/chat/completions' => 'generate_jedomi_chat',
+            '/jedomi/v1/audio/speech' => 'generate_jedomi_speech',
+            '/jedomi/v1/audio/transcriptions' => 'transcribe_jedomi_audio',
+            '/jedomi/v1/files/read' => 'read_jedomi_file',
+        ];
+
+        foreach ($expected as $path => $stringid) {
+            $this->assertArrayHasKey($path, $actionmap);
+            $this->assertSame(get_string($stringid, 'aiprovider_datacurso'), $actionmap[$path]);
+            $this->assertStringNotContainsString('/jedomi/', $actionmap[$path]);
+        }
+        $this->assertSame('Generate Jedomi voice answer', $actionmap['/jedomi/v1/audio/speech']);
+        $this->assertArrayNotHasKey('/jedomi/v1/files/extract', $actionmap);
     }
 
     /**

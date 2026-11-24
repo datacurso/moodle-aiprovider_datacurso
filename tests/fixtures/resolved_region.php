@@ -33,15 +33,16 @@ use aiprovider_datacurso\local\tenant_resolver;
  */
 final class resolved_region {
     /**
-     * Store the standard region for the licence, on the site and on every tenant.
+     * Store the region for the licence, on the site and on every tenant.
      *
      * @param string $licensekey Licence in force; empty when there is none.
+     * @param bool $european True to store the European region, false (default) for the standard one.
      */
-    public static function keep(string $licensekey): void {
+    public static function keep(string $licensekey, bool $european = false): void {
         global $DB;
 
         $values = [
-            license_region::REGION => '0',
+            license_region::REGION => $european ? '1' : '0',
             license_region::FINGERPRINT => $licensekey === '' ? '' : sha1($licensekey),
             license_region::CHECKED => (string) time(),
         ];

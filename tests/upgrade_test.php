@@ -48,7 +48,7 @@ final class upgrade_test extends \advanced_testcase {
         set_config('version', 2026102800, 'aiprovider_datacurso');
 
         $this->assertTrue(xmldb_aiprovider_datacurso_upgrade(2026102800));
-        // xmldb warns about the empty default of licence, declared the same in db/install.xml.
+        // XMLDB warns about the empty default of licence, declared the same in db/install.xml.
         $this->resetDebugging();
         // The savepoints mark an upgrade as running; the next test would otherwise see it.
         unset_config('upgraderunning');
@@ -57,7 +57,7 @@ final class upgrade_test extends \advanced_testcase {
         $this->assertFalse(plugin_settings::is_enabled('local_jedomi'));
         $this->assertTrue(plugin_settings::is_enabled('local_socialcert'));
         $this->assertTrue(plugin_settings::is_enabled('local_coursegen'));
-        $this->assertSame('2026111101', get_config('aiprovider_datacurso', 'version'));
+        $this->assertSame('2026112400', get_config('aiprovider_datacurso', 'version'));
     }
 
     /**
@@ -73,14 +73,7 @@ final class upgrade_test extends \advanced_testcase {
 
         // The schema of MOODLE_405_STABLE 1.7.0: no tenant settings, no tenant nor licence per record.
         $consumption = new \xmldb_table('aiprovider_datacurso_consumption');
-        foreach (['tenant_id', 'licence'] as $name) {
-            $index = new \xmldb_index($name, XMLDB_INDEX_NOTUNIQUE, [$name]);
-            if ($dbman->index_exists($consumption, $index)) {
-                $dbman->drop_index($consumption, $index);
-            }
-            $dbman->drop_field($consumption, new \xmldb_field($name));
-        }
-        $dbman->drop_table(new \xmldb_table('aiprovider_datacurso_tenant_config'));
+        $this->use_the_moodle_branch_schema();
         $DB->insert_record('aiprovider_datacurso_consumption', (object)[
             'externalid' => 7, 'userid' => 0, 'service' => 'local_dttutor', 'action' => 'chat',
             'credits' => 1, 'balance' => 9, 'timecreated' => time(),
@@ -88,7 +81,7 @@ final class upgrade_test extends \advanced_testcase {
         set_config('version', 2026110400, 'aiprovider_datacurso');
 
         $this->assertTrue(xmldb_aiprovider_datacurso_upgrade(2026110400));
-        // xmldb warns about the empty default of licence, declared the same in db/install.xml.
+        // XMLDB warns about the empty default of licence, declared the same in db/install.xml.
         $this->resetDebugging();
         // The savepoints mark an upgrade as running; the next test would otherwise see it.
         unset_config('upgraderunning');
@@ -100,7 +93,79 @@ final class upgrade_test extends \advanced_testcase {
         // The rows mirrored without a tenant cannot be attributed, so they are pulled again.
         $this->assertSame(0, $DB->count_records('aiprovider_datacurso_consumption'));
         $this->assertSame(0, $DB->count_records('aiprovider_datacurso_consumption', ['tenant_id' => 0, 'licence' => '']));
-        $this->assertSame('2026111101', get_config('aiprovider_datacurso', 'version'));
+        $this->assertSame('2026112400', get_config('aiprovider_datacurso', 'version'));
+    }
+
+    /**
+     * Turn the schema into the one of MOODLE_405_STABLE: no tenant settings, no tenant nor licence per record.
+     */
+    private function use_the_moodle_branch_schema(): void {
+        global $DB;
+        $dbman = $DB->get_manager();
+
+        $consumption = new \xmldb_table('aiprovider_datacurso_consumption');
+        foreach (['tenant_id', 'licence'] as $name) {
+            $index = new \xmldb_index($name, XMLDB_INDEX_NOTUNIQUE, [$name]);
+            if ($dbman->index_exists($consumption, $index)) {
+                $dbman->drop_index($consumption, $index);
+            }
+            $dbman->drop_field($consumption, new \xmldb_field($name));
+        }
+        $dbman->drop_table(new \xmldb_table('aiprovider_datacurso_tenant_config'));
+    }
+
+    /**
+     * A site on MOODLE_405_STABLE 1.8.0 or 1.9.0 (2026111100 to 2026111900) gets the Workplace schema.
+     *
+     * Its version is above the 2026111001 repair, so the 2026112400 step creates what is missing.
+     */
+    public function test_a_site_from_the_moodle_branch_1_9_gets_the_workplace_schema(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $dbman = $DB->get_manager();
+
+        $this->use_the_moodle_branch_schema();
+        $DB->insert_record('aiprovider_datacurso_consumption', (object)[
+            'externalid' => 9, 'userid' => 0, 'service' => 'local_jedomi', 'action' => '/jedomi/v1/audio/speech',
+            'credits' => 2, 'balance' => 8, 'timecreated' => time(),
+        ]);
+        set_config('version', 2026111900, 'aiprovider_datacurso');
+
+        $this->assertTrue(xmldb_aiprovider_datacurso_upgrade(2026111900));
+        // XMLDB warns about the empty default of licence, declared the same in db/install.xml.
+        $this->resetDebugging();
+        // The savepoints mark an upgrade as running; the next test would otherwise see it.
+        unset_config('upgraderunning');
+
+        $consumption = new \xmldb_table('aiprovider_datacurso_consumption');
+        $this->assertTrue($dbman->field_exists($consumption, 'tenant_id'));
+        $this->assertTrue($dbman->field_exists($consumption, 'licence'));
+        $this->assertTrue($dbman->index_exists($consumption, new \xmldb_index('tenant_id', XMLDB_INDEX_NOTUNIQUE, ['tenant_id'])));
+        $this->assertTrue($dbman->index_exists($consumption, new \xmldb_index('licence', XMLDB_INDEX_NOTUNIQUE, ['licence'])));
+        $this->assertTrue($dbman->table_exists('aiprovider_datacurso_tenant_config'));
+        // The rows mirrored without a tenant cannot be attributed, so they are pulled again.
+        $this->assertSame(0, $DB->count_records('aiprovider_datacurso_consumption'));
+        $this->assertSame('2026112400', get_config('aiprovider_datacurso', 'version'));
+    }
+
+    /**
+     * A Workplace site on 1.7.3-wp (2026111102) keeps its schema and records through the 2026112400 step.
+     */
+    public function test_a_workplace_1_7_3_site_keeps_its_records(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $DB->insert_record('aiprovider_datacurso_consumption', (object)[
+            'externalid' => 10, 'userid' => 0, 'tenant_id' => 4, 'licence' => sha1('DC-KEY'),
+            'service' => 'local_jedomi', 'action' => 'chat', 'credits' => 2, 'balance' => 8, 'timecreated' => time(),
+        ]);
+        set_config('version', 2026111102, 'aiprovider_datacurso');
+
+        $this->assertTrue(xmldb_aiprovider_datacurso_upgrade(2026111102));
+        $this->resetDebugging();
+        unset_config('upgraderunning');
+
+        $this->assertSame(1, $DB->count_records('aiprovider_datacurso_consumption', ['externalid' => 10, 'tenant_id' => 4]));
+        $this->assertSame('2026112400', get_config('aiprovider_datacurso', 'version'));
     }
 
     /**
@@ -116,13 +181,13 @@ final class upgrade_test extends \advanced_testcase {
         set_config('version', 2026110901, 'aiprovider_datacurso');
 
         $this->assertTrue(xmldb_aiprovider_datacurso_upgrade(2026110901));
-        // xmldb warns about the empty default of licence, declared the same in db/install.xml.
+        // XMLDB warns about the empty default of licence, declared the same in db/install.xml.
         $this->resetDebugging();
         // The savepoints mark an upgrade as running; the next test would otherwise see it.
         unset_config('upgraderunning');
 
         $this->assertSame(1, $DB->count_records('aiprovider_datacurso_consumption', ['externalid' => 8, 'tenant_id' => 3]));
-        $this->assertSame('2026111101', get_config('aiprovider_datacurso', 'version'));
+        $this->assertSame('2026112400', get_config('aiprovider_datacurso', 'version'));
     }
 
     /**
@@ -131,6 +196,8 @@ final class upgrade_test extends \advanced_testcase {
     private function upgrade_from_1_7_1(): void {
         set_config('version', 2026111002, 'aiprovider_datacurso');
         $this->assertTrue(xmldb_aiprovider_datacurso_upgrade(2026111002));
+        // The 2026112400 step declares the licence field; xmldb warns about its empty default, as in install.xml.
+        $this->resetDebugging();
         // The savepoints mark an upgrade as running; the next test would otherwise see it.
         unset_config('upgraderunning');
     }
@@ -148,7 +215,7 @@ final class upgrade_test extends \advanced_testcase {
         $this->upgrade_from_1_7_1();
 
         $this->assertTrue(\core\plugininfo\aiprovider::is_plugin_enabled('datacurso'));
-        $this->assertSame('2026111101', get_config('aiprovider_datacurso', 'version'));
+        $this->assertSame('2026112400', get_config('aiprovider_datacurso', 'version'));
     }
 
     /**

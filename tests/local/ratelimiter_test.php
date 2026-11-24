@@ -129,16 +129,78 @@ final class ratelimiter_test extends \advanced_testcase {
     }
 
     /**
-     * Jedomi endpoints resolve to the local_jedomi service and its single 'default' action.
+     * Each Jedomi route resolves to the local_jedomi service and the action it is billed as.
      *
-     * J4: Jedomi path resolution for the rate-limit headers.
+     * Decision 10: Jedomi tells the provider the action of a call by the route it calls; a route that is not a
+     * billed action (the free text extraction, or a future one) resolves to 'default'.
      */
-    public function test_jedomi_path_resolves_to_jedomi_service(): void {
-        $path = '/jedomi/v1/chat/completions';
-        $serviceid = ratelimiter::resolve_service_for_path($path);
+    public function test_jedomi_routes_resolve_to_their_actions(): void {
+        $expected = [
+            '/jedomi/v1/chat/completions' => 'chat',
+            '/jedomi/v1/audio/speech' => 'speech',
+            '/jedomi/v1/audio/transcriptions' => 'transcription',
+            '/jedomi/v1/files/read' => 'file_read',
+            'jedomi/v1/files/read' => 'file_read',
+            '/jedomi/v1/files/extract' => 'default',
+            '/jedomi/v1/unknown' => 'default',
+        ];
 
-        $this->assertSame('local_jedomi', $serviceid);
-        $this->assertSame('default', ratelimiter::resolve_action_key($serviceid, $path));
+        foreach ($expected as $path => $actionkey) {
+            $serviceid = ratelimiter::resolve_service_for_path($path);
+            $this->assertSame('local_jedomi', $serviceid, $path);
+            $this->assertSame($actionkey, ratelimiter::resolve_action_key($serviceid, $path), $path);
+            $this->assertSame($actionkey, ratelimiter::resolve_action_key($serviceid, $path, ['model' => 'x']), $path);
+        }
+    }
+
+    /**
+     * The look-ahead header of a Jedomi call carries the credits of its action.
+     */
+    public function test_jedomi_headers_carry_the_credits_of_each_action(): void {
+        $this->resetAfterTest();
+
+        set_config('ratelimit_local_jedomi_enable', 1, 'aiprovider_datacurso');
+        set_config('ratelimit_local_jedomi_limit', 40, 'aiprovider_datacurso');
+        set_config('ratelimit_local_jedomi_window', json_encode(['value' => 1, 'unit' => 'hours']), 'aiprovider_datacurso');
+        set_config(
+            'ratelimit_local_jedomi_creditperaction',
+            json_encode(['chat' => 3, 'speech' => 1, 'transcription' => 2, 'file_read' => 4]),
+            'aiprovider_datacurso'
+        );
+
+        $rl = new ratelimiter();
+        $expected = [
+            '/jedomi/v1/chat/completions' => '3',
+            '/jedomi/v1/audio/speech' => '1',
+            '/jedomi/v1/audio/transcriptions' => '2',
+            '/jedomi/v1/files/read' => '4',
+        ];
+        foreach ($expected as $path => $credits) {
+            $actionkey = ratelimiter::resolve_action_key('local_jedomi', $path);
+            $map = $rl->get_rate_limit_header_map('local_jedomi', $actionkey);
+            $this->assertSame($credits, $map['X-RateLimit-MaxPerAction'], $path);
+        }
+    }
+
+    /**
+     * Splitting the Jedomi actions leaves the action keys of the other services unchanged.
+     */
+    public function test_existing_action_keys_are_unchanged(): void {
+        $this->assertSame('course_image', ratelimiter::resolve_action_key(
+            'local_coursegen',
+            '/course/execute',
+            ['generate_images' => 1]
+        ));
+        $this->assertSame('activity_noimage', ratelimiter::resolve_action_key('local_coursegen', '/resources/create-mod'));
+        $this->assertSame('activity_image', ratelimiter::resolve_action_key(
+            'local_coursedynamicrules',
+            '/smartrules/create-mod',
+            ['generate_images' => true]
+        ));
+        $this->assertSame('image', ratelimiter::resolve_action_key('aiprovider_datacurso', '/provider/images/generate'));
+        $this->assertSame('text', ratelimiter::resolve_action_key('aiprovider_datacurso', '/provider/chat/completions'));
+        $this->assertSame('default', ratelimiter::resolve_action_key('local_dttutor', '/chat/message'));
+        $this->assertSame('default', ratelimiter::resolve_action_key(null, '/unknown/path'));
     }
 
     /**
@@ -150,7 +212,7 @@ final class ratelimiter_test extends \advanced_testcase {
         $this->resetAfterTest();
 
         $rl = new ratelimiter();
-        $this->assertSame([], $rl->get_rate_limit_header_map('local_jedomi', 'default'));
+        $this->assertSame([], $rl->get_rate_limit_header_map('local_jedomi', 'chat'));
 
         set_config('ratelimit_local_jedomi_enable', 1, 'aiprovider_datacurso');
         set_config('ratelimit_local_jedomi_limit', 40, 'aiprovider_datacurso');
@@ -160,7 +222,7 @@ final class ratelimiter_test extends \advanced_testcase {
             'aiprovider_datacurso'
         );
 
-        $map = $rl->get_rate_limit_header_map('local_jedomi', 'default');
+        $map = $rl->get_rate_limit_header_map('local_jedomi', 'chat');
 
         $this->assertSame('1', $map['X-RateLimit-Enable']);
         $this->assertSame('40', $map['X-RateLimit-Limit']);
@@ -169,7 +231,7 @@ final class ratelimiter_test extends \advanced_testcase {
 
         set_config('ratelimit_local_jedomi_enable', 0, 'aiprovider_datacurso');
 
-        $this->assertSame([], $rl->get_rate_limit_header_map('local_jedomi', 'default'));
+        $this->assertSame([], $rl->get_rate_limit_header_map('local_jedomi', 'chat'));
     }
 
     /**
@@ -196,5 +258,50 @@ final class ratelimiter_test extends \advanced_testcase {
         foreach ($expected as $path => $serviceid) {
             $this->assertSame($serviceid, ratelimiter::resolve_service_for_path($path), $path);
         }
+    }
+
+    /**
+     * Every window unit the tenant settings form offers maps to its length in seconds.
+     *
+     * Months and years used to fall back to one hour, so a monthly limit was enforced per hour.
+     *
+     * @dataProvider window_unit_provider
+     * @param string $unit Window unit saved by the settings form.
+     * @param int $expected Expected length of a window of 2 units, in seconds.
+     */
+    public function test_window_units_map_to_their_length(string $unit, int $expected): void {
+        $this->resetAfterTest();
+
+        set_config('ratelimit_local_coursegen_enable', 1, 'aiprovider_datacurso');
+        set_config('ratelimit_local_coursegen_limit', 100, 'aiprovider_datacurso');
+        set_config('ratelimit_local_coursegen_window_value', 2, 'aiprovider_datacurso');
+        set_config('ratelimit_local_coursegen_window_unit', $unit, 'aiprovider_datacurso');
+
+        $map = (new ratelimiter())->get_rate_limit_header_map('local_coursegen', 'course_image');
+        $this->assertSame((string) $expected, $map['X-RateLimit-WindowSeconds']);
+
+        // The legacy JSON window maps the same units.
+        unset_config('ratelimit_local_coursegen_window_value', 'aiprovider_datacurso');
+        unset_config('ratelimit_local_coursegen_window_unit', 'aiprovider_datacurso');
+        set_config('ratelimit_local_coursegen_window', json_encode(['value' => 2, 'unit' => $unit]), 'aiprovider_datacurso');
+
+        $map = (new ratelimiter())->get_rate_limit_header_map('local_coursegen', 'course_image');
+        $this->assertSame((string) $expected, $map['X-RateLimit-WindowSeconds']);
+    }
+
+    /**
+     * Window units offered by the settings form and the length of 2 of them.
+     *
+     * @return array
+     */
+    public static function window_unit_provider(): array {
+        return [
+            'seconds' => ['seconds', 2],
+            'minutes' => ['minutes', 2 * MINSECS],
+            'hours' => ['hours', 2 * HOURSECS],
+            'days' => ['days', 2 * DAYSECS],
+            'months' => ['months', 2 * 30 * DAYSECS],
+            'years' => ['years', 2 * 365 * DAYSECS],
+        ];
     }
 }

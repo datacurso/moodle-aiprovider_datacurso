@@ -41,7 +41,9 @@ class tenant_resolver {
     public static function get_tenant_id(?int $userid = null): int {
         global $USER;
 
-        if (!self::is_tenancy_available()) {
+        // During the initial install the tables of tool_tenant may not exist yet, while the settings of
+        // other plugins already ask for the tenant of the current user.
+        if (!self::is_tenancy_available() || during_initial_install()) {
             return self::NO_TENANT;
         }
 
